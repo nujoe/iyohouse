@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iyo Grid Prototype</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <img src="assets/logo.png" alt="logo" class="logo-img">
+            <div class="logo-text">
+                <span class="logo-title">IYO HOUSE</span>
+
+            </div>
+        </div>
+        <div class="btn-sep"></div>
+        <nav class="controls">
+            <button class="active" data-preset="main">HOUSE</button>
+
+            <button data-preset="about">ABOUT</button>
+
+            <button data-preset="workshop">WORKSHOP</button>
+
+            <button data-preset="club">IYOCA</button>
+
+            <button data-preset="diary">CALENDAR</button>
+            <button data-preset="contact">CONTACT</button>
+        </nav>
+    </header>
+
+    <main class="stage">
+        <div class="grid-frame">
+            <!-- Content Cells -->
+            <div class="cell cell-workshop">
+                <div class="cell-cover">
+                    <div class="cover-text">THIS IS WORKSHOP SECTION THIS IS WORKSHOP SECTION</div>
+                </div>
+                <div class="cell-content workshop-wrapper">
+                    <div class="workshop-grid" id="workshopGrid"></div>
+                </div>
+            </div>
+            <div class="cell cell-about">
+                <div class="cell-cover">
+                    <div class="cover-text">THIS IS ABOUT SECTION THIS IS ABOUT SECTION</div>
+                </div>
+                <div class="cell-content about-content">
+                    <div class="about-text-wrapper">
+                        <h2>고양(이요)람 (Cat's Cradle)</h2>
+                        <p class="dict-def">[명사] 1. 두 사람 이상이 실을 양 손가락에 걸고 주고받으며, 실의 모양을 여러 형태로 바꾸어 가는 놀이. 또는 그때 만들어지는 실의
+                            모양.</p>
+                        <div class="about-divider"></div>
+                        <p>가느다란 실이 손가락 사이를 자유롭게 오가듯, '이요'는 우연한 교차에 주목합니다. 팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이
+                            변형됩니다.</p>
+                        <p>요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다. 하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다.</p>
+                        <p>가지런한 정답보다 가설 속 표류를 환영하는 곳. 창작자를 위한 '공공공원'은 '이요하우스'로 이어집니다.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell cell-club">
+                <div class="cell-cover">
+                    <div class="cover-text">THIS IS CLUB SECTION THIS IS CLUB SECTION</div>
+                </div>
+                <div class="cell-content">Club</div>
+            </div>
+            <div class="cell cell-diary">
+                <div class="cell-cover">
+                    <div class="cover-text">THIS IS DIARY SECTION THIS IS DIARY SECTION</div>
+                </div>
+                <div class="cell-content">Diary</div>
+            </div>
+            <div class="cell cell-main active" id="mainContent">
+                <div class="cell-cover">
+                    <div class="cover-text">THIS IS MAIN SECTION THIS IS MAIN SECTION</div>
+                </div>
+                <div class="cell-content" style="width:100%; height:100%; position:relative;">
+
+                    <div class="main-left-text">
+                        <p>Through experimental interventions and architectural layouts, 'iyohouse' acts as a public
+                            park for creators. It constantly expands the definition of spatial networking, merging
+                            disjointed narratives into a coherent aesthetic structure.</p>
+                        <p>This grid framework operates on the premise of an evolving topology, where visual nodes
+                            establish dynamic relationships based on user interaction, rendering a landscape that is
+                            both digital and spatial.</p>
+                    </div>
+
+                    <div id="network-container">
+                        <canvas id="edgeCanvas"></canvas>
+                        <div id="nodesContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h-line grid-row-1"></div>
+            <div class="h-line grid-row-2"></div>
+
+            <div class="v-line top-v-1"></div>
+            <div class="v-line top-v-2"></div>
+            <div class="v-line top-v-3"></div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

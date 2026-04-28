@@ -3,17 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@sanity/client": "^7.20.0",
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/vision": "^5.20.0",
+    "@supabase/supabase-js": "^2.101.1",
+    "@tosspayments/payment-sdk": "^1.9.2",
+    "@tosspayments/payment-widget-sdk": "^0.12.1",
+    "d3": "^7.9.0",
     "next": "16.2.1",
+    "next-sanity": "^12.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resend": "^6.10.0",
+    "sanity": "^5.20.0"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
