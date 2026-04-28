@@ -21,12 +21,12 @@ export async function POST(request: Request) {
     const data = await resend.emails.send({
       from: 'IYOHOUSE Contact <onboarding@resend.dev>',
       to: ['goyangiyoram@gmail.com'],
-      subject: `[IYOHOUSE 문의] ${subject}`,
+      subject: `[IYOHOUSE Inquiry] ${subject}`,
       html: `
-        <h2>새로운 문의가 도착했습니다.</h2>
-        <p><strong>보낸 사람:</strong> ${email}</p>
-        <p><strong>제목:</strong> ${subject}</p>
-        <p><strong>내용:</strong></p>
+        <h2>New inquiry has arrived.</h2>
+        <p><strong>From:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
         <div style="padding: 15px; background: #f5f5f5; border-radius: 5px;">
           ${message.replace(/\n/g, '<br/>')}
         </div>

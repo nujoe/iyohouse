@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, CSSProperties, useMemo } from "react";
+import { useEffect, useRef, useState, CSSProperties, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { urlFor } from "@/sanity/image";
@@ -72,7 +72,7 @@ const randomColor = () => {
     return `hsl(${h}, 90%, 50%)`;
 };
 
-export default function Home() {
+function HomeContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -96,12 +96,9 @@ export default function Home() {
     const [scrollColor, setScrollColor] = useState<string | null>(null);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isContactOpen, setIsContactOpen] = useState(false);
-    // CLS 핵심 수정: 초기 로딩 시 transition을 완전히 끔
-    // 격자가 main 위치에서 현재 preset으로 슬라이드하며 발생하는 CLS를 원천 방지
     const [isBooting, setIsBooting] = useState(true);
 
     useEffect(() => {
-        // 첫 페인트 두 프레임 후 booting 해제 → 이후부터 애니메이션 정상 작동
         const raf = requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 setIsBooting(false);
@@ -110,8 +107,6 @@ export default function Home() {
         return () => cancelAnimationFrame(raf);
     }, []);
 
-    // C+A: 각 탭이 한 번이라도 방문됐는지 추적 (hasVisited 패턴)
-    // → 첫 방문 전까지 DOM에서 제외, 방문 후엔 유지하며 active로만 제어
     const [visited, setVisited] = useState<Record<string, boolean>>({ main: true });
 
     const [inputText, setInputText] = useState("");
@@ -179,7 +174,6 @@ export default function Home() {
             return;
         }
         setIsContactOpen(false);
-        // hasVisited: 방문한 탭 기록
         setVisited(v => ({ ...v, [preset]: true }));
         const params = new URLSearchParams(createQueryString('preset', preset === 'main' ? null : preset));
         params.delete('workshop');
@@ -188,15 +182,13 @@ export default function Home() {
         setSelectedWorkshop(null);
         setSelectedSession(null);
         setShowSchedule(false);
-        setIsContactOpen(false); // Ensure contact is closed when navigating
+        setIsContactOpen(false); 
         setDynamicColor(randomColor());
         setScrollColor(null);
     };
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const target = e.currentTarget;
-        // 픽셀 기반으로 계산하여 페이지 길이에 상관없이 일정한 속도 유지
-        // 5px당 약 1도씩 변화 (값이 클수록 더 천천히 변함)
         const h = Math.floor(target.scrollTop / 5) % 360;
         setScrollColor(`hsl(${h}, 90%, 50%)`);
     };
@@ -282,7 +274,6 @@ export default function Home() {
     const intersectColor = scrollColor || dynamicColor;
     const currentPreset = presets[activePreset as keyof typeof presets] || presets.main;
 
-    // Contact Overlay Grid Logic
     let line1 = currentPreset.line1;
     let line2 = currentPreset.line2;
     let line3 = currentPreset.line3;
@@ -331,8 +322,6 @@ export default function Home() {
 
             <main className="stage">
                 <div className="grid-frame">
-
-                    {/* C: 방문한 적 있을 때만 DOM에 마운트, 아니면 완전히 제외 */}
                     <div className={`cell cell-member ${activePreset === 'member' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
                         <div className="cell-content scroll-container" onScroll={handleScroll}>
@@ -343,7 +332,6 @@ export default function Home() {
                     <div className={`cell cell-club ${activePreset === 'club' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
                         <div className="cell-content">
-                            {/* A: active prop으로 D3 시뮬레이션 pause/resume */}
                             {visited.club && <IyocaView active={activePreset === 'club'} />}
                         </div>
                     </div>
@@ -359,7 +347,6 @@ export default function Home() {
                                                 <div className="detail-poster-wrapper">
                                                     {(() => {
                                                         const isSanity = !!selectedWorkshop._id;
-                                                        // 비율 계산
                                                         let aspectRatio = "1080 / 1350";
                                                         if (isSanity && selectedWorkshop.posterMeta) {
                                                             aspectRatio = `${selectedWorkshop.posterMeta.width} / ${selectedWorkshop.posterMeta.height}`;
@@ -421,7 +408,6 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* Main은 항상 마운트, GuestbookCanvas는 active prop으로 시뮬레이션 제어 */}
                     <div className={`cell cell-main ${activePreset === 'main' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
                         <div className="cell-content" style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -430,7 +416,6 @@ export default function Home() {
                                 <p>팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.</p>
                                 <p>하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.</p>
                             </div>
-                            {/* A: active prop으로 D3 시뮬레이션 pause 처리 */}
                             <GuestbookCanvas
                                 messages={guestMessages}
                                 mainTextRef={mainTextRef}
@@ -453,7 +438,6 @@ export default function Home() {
                 </div>
             </main>
 
-            {/* 컨택 오버레이: app-container 최상위에 배치 */}
             <div className={`contact-overlay-wrapper ${isContactOpen ? 'active' : ''} ${['workshop', 'diary', 'main', 'member', 'club'].includes(activePreset) ? 'from-left' : 'from-right'}`}>
                 <div className="contact-dimmer" onClick={() => setIsContactOpen(false)}></div>
                 <div className="contact-slide-panel">
@@ -523,5 +507,13 @@ export default function Home() {
                 {showInfo && (<div className="info-text">주식회사 이요하우스<br />ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />BUSINESS LICENSE : 718-88-02112<br />MALL-ORDER LICENSE : 2024-서울송파-2708<br />EMAIL : goyangiyoram@gmail.com<br />웹사이트 디자인 : 어준 / <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>@djwns1234</a></div>)}
             </div>
         </div>
+    );
+}
+
+export default function Home() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HomeContent />
+        </Suspense>
     );
 }
