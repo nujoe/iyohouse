@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Original Grid System Replica</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --line: #000000;
+            --intersect: #2563eb;
+
+            --line-thickness: 1px;
+            --line-gap: 8px;
+
+            /* 상단 행 높이 */
+            --top-row-1: 40px;
+            --top-row-2: calc(var(--top-row-1) + 7px);
+
+            /* 세로선 초기 좌표 (Main 모드 기준) */
+            --line-x-1: calc(100% - 21px);
+            --line-x-2: calc(100% - 14px);
+            --line-x-3: calc(100% - 7px);
+
+            /* 원본과 동일한 베지어 곡선 */
+            --transition: 700ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ─── 컨트롤러 (원본 버튼 느낌 재현) ─── */
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--top-row-1);
+            display: flex;
+            z-index: 12000;
+            background: var(--bg);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .menu-items {
+            display: flex;
+            flex: 1;
+        }
+
+        .auth-item {
+            width: 120px; /* 로그인 버튼 영역 너비 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 1px solid var(--line);
+            transition: all var(--transition);
+        }
+
+        /* 프리셋에 따라 로그인 버튼 위치나 스타일이 변동될 수 있도록 대비 */
+        .auth-item button {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            transition: all 0.3s;
+        }
+
+        .auth-item button:hover {
+            background: var(--intersect);
+            color: white;
+        }
+
+        .controls button {
+            flex: 1;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            transition: all 0.3s;
+        }
+
+        .controls .menu-items button {
+            border-right: 1px solid var(--line);
+        }
+
+        .controls .menu-items button:last-child {
+            border-right: none;
+        }
+
+        .controls button:hover {
+            background: #f0f0f0;
+        }
+
+        .controls button.active {
+            background: var(--intersect);
+            color: white;
+        }
+
+        /* ─── 격자 프레임 엔진 ─── */
+        .grid-frame {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* 공통 라인 스타일 */
+        .h-line,
+        .v-line {
+            position: absolute;
+            background: var(--bg);
+            z-index: 11000;
+            transition: all var(--transition);
+        }
+
+        .h-line::before,
+        .h-line::after,
+        .v-line::before,
+        .v-line::after {
+            content: "";
+            position: absolute;
+            background: var(--line);
+        }
+
+        /* 가로 더블라인 */
+        .h-line {
+            left: 0;
+            width: 100%;
+            height: var(--line-gap);
+        }
+
+        .h-line::before,
+        .h-line::after {
+            width: 100%;
+            height: var(--line-thickness);
+            left: 0;
+        }
+
+        .h-line::before {
+            top: 0;
+        }
+
+        .h-line::after {
+            bottom: 0;
+        }
+
+        /* 세로 더블라인 */
+        .v-line {
+            top: 0;
+            width: var(--line-gap);
+            height: 100%;
+        }
+
+        .v-line::before,
+        .v-line::after {
+            width: var(--line-thickness);
+            height: 100%;
+            top: 0;
+        }
+
+        .v-line::before {
+            left: 0;
+        }
+
+        .v-line::after {
+            right: 0;
+        }
+
+        /* ─── 햄버거 메뉴 스타일 (모바일용) ─── */
+        .hamburger {
+            display: none;
+            width: 50px;
+            height: 100%;
+            cursor: pointer;
+            border-right: 1px solid var(--line);
+            position: relative;
+            z-index: 14000;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 1px;
+            background: var(--line);
+            position: absolute;
+            left: 13px;
+            transition: all 0.3s;
+        }
+
+        .hamburger span:nth-child(1) { top: 15px; }
+        .hamburger span:nth-child(2) { top: 20px; }
+        .hamburger span:nth-child(3) { top: 25px; }
+
+        .hamburger.active span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: translateY(-5deg) rotate(-45deg); }
+
+        /* ─── 모바일 미디어 쿼리 ─── */
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+
+            .menu-items {
+                position: fixed;
+                top: var(--top-row-1);
+                left: -100%;
+                width: 100%;
+                height: calc(100vh - var(--top-row-1));
+                flex-direction: column;
+                background: var(--bg);
+                transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+                z-index: 13000;
+                border-right: 1px solid var(--line);
+            }
+
+            .menu-items.active {
+                left: 0;
+            }
+
+            .controls .menu-items button {
+                width: 100%;
+                height: 60px;
+                flex: none;
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                padding-left: 20px;
+            }
+
+            .auth-item {
+                width: 80px; /* 모바일에서 조금 줄임 */
+            }
+        }
+
+        /* ─── 수평선 위치 ─── */
+        .grid-row-1 {
+            top: var(--top-row-1);
+        }
+
+        .grid-row-2 {
+            top: var(--top-row-2);
+            z-index: 11000;
+        }
+
+        /* ─── 특수 상단 수직선 (Top-V-Lines) ─── */
+        /* 헤더와 2번 가로선 사이에서만 존재하며, 교차점에 색상이 들어감 */
+        .top-v-1,
+        .top-v-2,
+        .top-v-3 {
+            position: absolute;
+            top: var(--top-row-1);
+            width: var(--line-gap);
+            /* 핵심 로직: 가로선의 위치에 따라 높이가 유동적으로 변함 */
+            height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+            z-index: 11001;
+            transition: left var(--transition), height var(--transition);
+
+            /* 위아래 교차점에만 파란색이 들어가는 그라데이션 */
+            background: linear-gradient(to bottom,
+                    var(--intersect) var(--line-gap),
+                    var(--bg) var(--line-gap),
+                    var(--bg) calc(100% - var(--line-gap)),
+                    var(--intersect) calc(100% - var(--line-gap)));
+        }
+
+        /* 수직선 속성 (Before/After 라인) */
+        .top-v-1::before,
+        .top-v-1::after,
+        .top-v-2::before,
+        .top-v-2::after,
+        .top-v-3::before,
+        .top-v-3::after {
+            content: "";
+            position: absolute;
+            background: var(--line);
+            width: var(--line-thickness);
+            height: 100%;
+            top: 0;
+        }
+
+        .top-v-1::before,
+        .top-v-2::before,
+        .top-v-3::before {
+            left: 0;
+        }
+
+        .top-v-1::after,
+        .top-v-2::after,
+        .top-v-3::after {
+            right: 0;
+        }
+
+        /* 수직선 가로 위치 */
+        .top-v-1 {
+            left: var(--line-x-1);
+        }
+
+        .top-v-2 {
+            left: var(--line-x-2);
+        }
+
+        .top-v-3 {
+            left: var(--line-x-3);
+        }
+
+        /* ─── 콘텐츠 영역 (레이아웃 가이드용) ─── */
+        .stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 메인 영역 배경 처리 */
+        .cell-main {
+            position: absolute;
+            top: calc(var(--top-row-2) + var(--line-gap));
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff url('../public/logo.png') no-repeat center;
+            background-size: 300px; /* 적당한 크기로 조정, 필요시 contain이나 cover로 변경 가능 */
+            z-index: 1;
+        }
+
+        /* ─── 외곽선 ─── */
+        .grid-frame::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 1px;
+            background: var(--line);
+        }
+
+        .main-text {
+
+            width: 400px;
+            word-wrap: break-word;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="controls">
+        <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="menu-items" id="menu-items">
+            <button onclick="setPreset('main'); toggleMenu();" id="btn-main" class="active">MAIN</button>
+            <button onclick="setPreset('member'); toggleMenu();">MEMBER</button>
+            <button onclick="setPreset('workshop'); toggleMenu();">WORKSHOP</button>
+            <button onclick="setPreset('club'); toggleMenu();">CLUB</button>
+            <button onclick="setPreset('diary'); toggleMenu();">CALENDAR</button>
+        </div>
+        <div class="auth-item">
+            <button id="btn-login" onclick="alert('Login logic here')">LOGIN</button>
+        </div>
+    </nav>
+
+    <div class="grid-frame">
+        <!-- 메인 가로선 -->
+        <div class="h-line grid-row-1"></div>
+        <div class="h-line grid-row-2"></div>
+
+        <!-- 상단 가변 수직선 -->
+        <div class="top-v-1"></div>
+        <div class="top-v-2"></div>
+        <div class="top-v-3"></div>
+    </div>
+
+    <main class="stage">
+        <!-- 실제 콘텐츠가 들어갈 자리의 가이드 -->
+        <div class="cell-main">
+            <div class="main-text">
+                <p>가느다란 실이 손가락 사이를 자유롭게 오가듯, '이요'는 우연한 교차에 주목합니다.</p>
+                <p>팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.</p>
+                <p>하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const root = document.documentElement;
+
+        // 원본 웹사이트의 프리셋 좌표와 100% 동일한 수치
+        const presets = {
+            main: {
+                '--line-x-1': 'calc(100% - 21px)',
+                '--line-x-2': 'calc(100% - 14px)',
+                '--line-x-3': 'calc(100% - 7px)',
+                '--top-row-2': 'calc(var(--top-row-1) + 7px)'
+            },
+            member: {
+                '--line-x-1': '0px',
+                '--line-x-2': '7px',
+                '--line-x-3': '14px',
+                '--top-row-2': 'calc(100% - 7px)'
+            },
+            workshop: {
+                '--line-x-1': '0px',
+                '--line-x-2': '7px',
+                '--line-x-3': 'calc(100% - 7px)',
+                '--top-row-2': 'calc(100% - 7px)'
+            },
+            club: {
+                '--line-x-1': 'calc(100% - 21px)',
+                '--line-x-2': 'calc(100% - 14px)',
+                '--line-x-3': 'calc(100% - 7px)',
+                '--top-row-2': 'calc(100% - 7px)'
+            },
+            diary: {
+                '--line-x-1': '0px',
+                '--line-x-2': '7px',
+                '--line-x-3': '14px',
+                '--top-row-2': 'calc(100% - 7px)'
+            }
+        };
+
+        function setPreset(mode) {
+            const preset = presets[mode];
+            if (!preset) return;
+
+            for (const [key, value] of Object.entries(preset)) {
+                root.style.setProperty(key, value);
+            }
+
+            // 버튼 활성화 상태 표시
+            document.querySelectorAll('.controls .menu-items button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // 클릭된 버튼을 찾아서 active 클래스 추가
+            const buttons = document.querySelectorAll('.controls .menu-items button');
+            buttons.forEach(btn => {
+                if(btn.innerText.toLowerCase() === mode.toLowerCase() || (mode === 'diary' && btn.innerText === 'CALENDAR')) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function toggleMenu() {
+            if (window.innerWidth > 768) return;
+            const hamburger = document.getElementById('hamburger');
+            const menuItems = document.getElementById('menu-items');
+            hamburger.classList.toggle('active');
+            menuItems.classList.toggle('active');
+        }
+    </script>
+</body>
+
+</html>

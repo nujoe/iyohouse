@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo Pixel Network - IYOHOUSE</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --line: #000000;
+            --line-subtle: rgba(0, 0, 0, 0.08);
+            --intersect: #2563eb;
+            --nav-gap: 8px;
+            --main-gap: 20px;
+            --top-row-1: 40px;
+            --top-row-2: calc(var(--top-row-1) + 7px); 
+            --line-x-1: calc(100% - 21px);
+            --line-x-2: calc(100% - 14px);
+            --line-x-3: calc(100% - 7px);
+            --transition: 700ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ─── 컨트롤러 ─── */
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--top-row-1);
+            display: flex;
+            z-index: 12000;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .controls button {
+            flex: 1; border: none; border-right: 1px solid var(--line-subtle);
+            background: none; cursor: pointer; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; font-family: inherit;
+        }
+
+        .controls button.active { background: var(--line); color: white; }
+
+        /* ─── 격자 프레임 엔진 ─── */
+        .grid-frame { position: absolute; inset: 0; pointer-events: none; }
+        .h-line {
+            position: absolute; left: 0; width: 100%; height: var(--nav-gap);
+            background: var(--bg); z-index: 11000; transition: all var(--transition);
+        }
+        .h-line::before, .h-line::after {
+            content: ""; position: absolute; width: 100%; height: 1px; background: var(--line); left: 0;
+        }
+        .h-line::before { top: 0; } .h-line::after { bottom: 0; }
+        .grid-row-1 { top: var(--top-row-1); } .grid-row-2 { top: var(--top-row-2); }
+
+        .top-v-1, .top-v-2, .top-v-3 {
+            position: absolute; top: var(--top-row-1); width: var(--nav-gap);
+            height: calc(var(--top-row-2) - var(--top-row-1) + var(--nav-gap));
+            z-index: 11001; transition: left var(--transition), height var(--transition);
+            background: linear-gradient(to bottom, var(--intersect) var(--nav-gap), var(--bg) var(--nav-gap), var(--bg) calc(100% - var(--nav-gap)), var(--intersect) calc(100% - var(--nav-gap)));
+        }
+        .top-v-1::before, .top-v-1::after, .top-v-2::before, .top-v-2::after, .top-v-3::before, .top-v-3::after {
+            content: ""; position: absolute; background: var(--line); width: 1px; height: 100%; top: 0;
+        }
+        .top-v-1 { left: var(--line-x-1); } .top-v-2 { left: var(--line-x-2); } .top-v-3 { left: var(--line-x-3); }
+
+        /* ─── 메인 그리드 엔진 ─── */
+        .stage { position: relative; width: 100%; height: 100vh; }
+        .cell-main {
+            position: absolute; top: calc(var(--top-row-2) + var(--nav-gap));
+            left: 0; right: 0; bottom: 0; background: #fff; z-index: 1; overflow: auto;
+        }
+        .cell-main::before {
+            content: ""; position: absolute; inset: 0;
+            background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+            background-size: var(--main-gap) var(--main-gap); background-position: -1px -1px;
+            pointer-events: none; z-index: 100;
+        }
+
+        .master-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, var(--main-gap));
+            grid-auto-rows: var(--main-gap); width: 100%; min-height: 100%; position: relative;
+        }
+
+        .grid-zone {
+            z-index: 110;
+            grid-column: var(--col-start, -13) / span var(--col-span, 12);
+            grid-row: var(--row-start) / span var(--row-span, 3);
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit; font-weight: 700; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            cursor: pointer; transition: all 0.2s;
+        }
+
+        /* SIGN UP / SIGN IN 전용 스타일 */
+        .zone-signup, .zone-signin {
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 40px; /* 둥근 보더 */
+            color: #000000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .zone-signup:hover, .zone-signin:hover {
+            background: #f8f8f8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        
+        /* 픽셀 노드는 크기를 1x1로 고정 */
+        .guest-node {
+            grid-column: var(--col-start) / span 1 !important;
+            grid-row: var(--row-start) / span 1 !important;
+            font-size: 8px;
+        }
+
+        .guestbook-box {
+            position: fixed; left: var(--main-gap); bottom: var(--main-gap);
+            width: calc(var(--main-gap) * 30); height: calc(var(--main-gap) * 3);
+            background: var(--intersect); border: 1px solid var(--line); z-index: 1000;
+            display: flex; align-items: center; padding: 0 var(--main-gap);
+        }
+        .guestbook-box input {
+            width: 100%; height: 100%; border: none; background: none; outline: none;
+            font-family: inherit; font-size: 14px; color: #fff;
+        }
+        .guestbook-box::before {
+            content: "GUESTBOOK:"; font-size: 10px; font-weight: 700; margin-right: 10px; color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-text-wrapper {
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            display: contents;
+        }
+        
+        .main-text-wrapper p {
+            display: contents; /* 개별 글자가 그리드 아이템이 됨 */
+        }
+
+        .char-cell {
+            width: var(--main-gap); height: var(--main-gap);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #000; z-index: 110;
+            position: relative;
+            grid-column: span 1;
+            grid-row: var(--p-row); /* 문장별 행 고정 */
+        }
+        .char-cell.has-char { background: var(--bg); }
+    </style>
+</head>
+
+<body>
+    <nav class="controls">
+        <button onclick="setPreset('main')" class="active">MAIN</button>
+        <button onclick="setPreset('member')">MEMBER</button>
+        <button onclick="setPreset('workshop')">WORKSHOP</button>
+    </nav>
+
+    <div class="grid-frame">
+        <div class="h-line grid-row-1"></div><div class="h-line grid-row-2"></div>
+        <div class="top-v-1"></div><div class="top-v-2"></div><div class="top-v-3"></div>
+    </div>
+
+    <main class="stage">
+        <div class="cell-main">
+            <div class="master-grid">
+                <!-- 시스템적으로 칠해진 구역들 (복구) -->
+                <div class="grid-zone zone-signup" style="--row-start: 5; --col-start: -13;">SIGN UP</div>
+                <div class="grid-zone zone-signin" style="--row-start: 11; --col-start: -13;">SIGN IN</div>
+
+                <!-- 텍스트 래퍼 (3문장 복구) -->
+                <div class="main-text-wrapper">
+                    <p>가느다란 실이 손가락 사이를 자유롭게 오가듯, '이요'는 우연한 교차에 주목합니다.</p>
+                    <p>팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다.</p>
+                    <p>우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.</p>
+                </div>
+            </div>
+            <div class="guestbook-box">
+                <input type="text" placeholder="LEAVE YOUR MESSAGE...">
+            </div>
+        </div>
+    </main>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        const root = document.documentElement;
+        let guestbookData = [];
+        let logoPixels = []; // 분석된 로고 좌표들
+        const gap = 20;
+
+        // --- Logo Analyzer ---
+        async function analyzeLogo() {
+            const img = new Image();
+            img.src = '../public/logo.png'; // 로고 경로
+            await new Promise(res => img.onload = res);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 그리드 규격에 맞춰 리사이징 (약 30~40칸 너비)
+            const scale = 30 / img.width;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const pixels = [];
+
+            const gridW = Math.floor(window.innerWidth / gap);
+            const gridH = Math.floor(window.innerHeight / gap);
+            const offsetX = Math.floor((gridW - canvas.width) / 2);
+            const offsetY = Math.floor((gridH - canvas.height) / 2);
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const idx = (y * canvas.width + x) * 4;
+                    const alpha = imageData[idx + 3];
+                    if (alpha > 128) { // 투명하지 않은 픽셀만 추출
+                        pixels.push({
+                            tx: x + offsetX,
+                            ty: y + offsetY,
+                            color: `rgb(${imageData[idx]}, ${imageData[idx+1]}, ${imageData[idx+2]})`
+                        });
+                    }
+                }
+            }
+            // 셔플하여 랜덤하게 채워지도록 함
+            logoPixels = d3.shuffle(pixels);
+            console.log("Logo Analysis Complete. Pixels:", logoPixels.length);
+        }
+
+        class PixelNode {
+            constructor(text, target) {
+                this.text = text;
+                this.target = target;
+                this.size = 1;
+                
+                // 가장 가까운 모서리 계산
+                const corners = [
+                    [0, 0], [Math.floor(window.innerWidth/gap), 0],
+                    [0, Math.floor(window.innerHeight/gap)], 
+                    [Math.floor(window.innerWidth/gap), Math.floor(window.innerHeight/gap)]
+                ];
+                const start = corners.reduce((prev, curr) => {
+                    const d1 = Math.hypot(prev[0]-target.tx, prev[1]-target.ty);
+                    const d2 = Math.hypot(curr[0]-target.tx, curr[1]-target.ty);
+                    return d1 < d2 ? prev : curr;
+                });
+
+                this.cx = start[0];
+                this.cy = start[1];
+                this.el = this.createEl();
+                this.animate();
+            }
+
+            createEl() {
+                const grid = document.querySelector('.master-grid');
+                const el = document.createElement('div');
+                el.className = 'grid-zone guest-node'; // 전용 클래스 추가
+                el.style.backgroundColor = this.target.color;
+                el.title = this.text;
+                el.onclick = () => alert(this.text);
+                grid.appendChild(el);
+                return el;
+            }
+
+            animate() {
+                const step = () => {
+                    let moved = false;
+                    if (this.cx < this.target.tx) { this.cx++; moved = true; }
+                    else if (this.cx > this.target.tx) { this.cx--; moved = true; }
+                    
+                    if (this.cy < this.target.ty) { this.cy++; moved = true; }
+                    else if (this.cy > this.target.ty) { this.cy--; moved = true; }
+
+                    this.el.style.setProperty('--col-start', this.cx);
+                    this.el.style.setProperty('--row-start', this.cy);
+
+                    if (moved) {
+                        setTimeout(() => requestAnimationFrame(step), 30);
+                    } else {
+                        this.el.style.filter = "brightness(1.5)";
+                        setTimeout(() => this.el.style.filter = "none", 300);
+                    }
+                };
+                step();
+            }
+        }
+
+        function spawnNode(text) {
+            if (guestbookData.length >= logoPixels.length) return;
+            const target = logoPixels[guestbookData.length];
+            const node = new PixelNode(text, target);
+            guestbookData.push(node);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await analyzeLogo();
+
+            // 텍스트 분할 및 행 배정
+            const wrapper = document.querySelector('.main-text-wrapper');
+            const paragraphs = wrapper.querySelectorAll('p');
+            paragraphs.forEach((p, pIdx) => {
+                const text = p.textContent; 
+                p.textContent = ''; 
+                const startRow = 2 + (pIdx * 2); // 2, 4, 6행에 배정
+                
+                [...text].forEach((char, cIdx) => {
+                    const span = document.createElement('span');
+                    span.className = 'char-cell';
+                    if (char.trim() !== '') span.classList.add('has-char');
+                    span.textContent = char;
+                    
+                    // 각 글자에 행(row)과 열(column) 위치 고정
+                    span.style.setProperty('--p-row', startRow);
+                    span.style.gridColumnStart = cIdx + 2; // 2열부터 시작
+                    
+                    p.appendChild(span);
+                });
+            });
+
+            const input = document.querySelector('.guestbook-box input');
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && input.value.trim() !== '') {
+                    spawnNode(input.value);
+                    input.value = '';
+                }
+            });
+        });
+
+        function setPreset(mode) {
+            // 프리셋 로직 (생략 가능하나 유지)
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
