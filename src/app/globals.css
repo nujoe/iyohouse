@@ -472,7 +472,8 @@ body {
 
 .collage-track {
     position: relative;
-    width: 250%; /* 컨테이너 너비에 비례하게 설정하여 격자가 펼쳐질 때 함께 늘어나는 느낌 부여 */
+    width: 250%;
+    /* 컨테이너 너비에 비례하게 설정하여 격자가 펼쳐질 때 함께 늘어나는 느낌 부여 */
     height: 100%;
     display: flex;
     align-items: center;
@@ -615,318 +616,7 @@ body {
     z-index: -1;
 }
 
-/* ─── 네트워크 모델 ───────────────────── */
-#network-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: transparent;
-    /* z-index 제거: 하위 요소들이 독립적으로 글로벌 z-index를 갖도록 해제 */
-}
 
-#edgeCanvas {
-
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 400;
-    /* 텍스트 아래에 배치 */
-}
-
-#nodesContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1000;
-    /* 실(400)과 텍스트(500)보다 상단에 위치 */
-}
-
-.network-node {
-    position: absolute;
-    overflow: hidden;
-    cursor: grab;
-    user-select: none;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-radius 0.5s cubic-bezier(0.19, 1, 0.22, 1),
-        width 0.5s cubic-bezier(0.19, 1, 0.22, 1),
-        height 0.5s cubic-bezier(0.19, 1, 0.22, 1),
-        opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-    /* container-type: size; 제거 (내용물에 따른 높이 확장을 방해함) */
-}
-
-.network-node {
-    user-select: none;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* 블랙 오빗 호버 시 모든 노드 내부 도형 배경색 변경 */
-.network-node .shape-outline circle,
-.network-node .shape-outline rect,
-.network-node .shape-outline polygon {
-    fill: var(--bg);
-    transition: fill 0.3s ease;
-}
-
-.orbit-active .network-node .shape-outline circle,
-.orbit-active .network-node .shape-outline rect,
-.orbit-active .network-node .shape-outline polygon {
-    fill: var(--intersect) !important;
-
-
-}
-
-.network-node.guest-node {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    overflow: visible;
-    border: none;
-    background: transparent;
-    transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1),
-        z-index 0.3s ease;
-}
-
-/* SVG 보더 (도형 배경) */
-.shape-outline {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: -1;
-    stroke: #000;
-    stroke-width: 1px;
-    vector-effect: non-scaling-stroke;
-}
-
-/* 모든 도형의 내부를 격자 배경색(--bg)으로 강제 통일 */
-.shape-outline circle,
-.shape-outline rect,
-.shape-outline polygon,
-.shape-outline path {
-    fill: var(--bg) !important;
-}
-
-/* 내용물을 감싸는 핵심 래퍼 */
-.node-visual-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    /* 기본 상태에서는 부모 크기(80x80)를 유지 */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transform: scale(1);
-    opacity: 1;
-    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    animation: nodeSpawn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* 제목 스타일 */
-.msg-title {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    flex-direction: column;
-    padding: 2px 4px;
-    color: var(--line);
-    font-size: clamp(0.45rem, 5cqw, 0.9rem);
-    font-family: var(--font-noto-sans), sans-serif;
-    pointer-events: none;
-}
-
-.msg-title span {
-    display: block;
-    width: 95%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: all 0.3s ease;
-}
-
-/* 본문 숨김 상태 */
-.msg-content {
-    display: none;
-    width: 100%;
-    text-align: center;
-}
-
-.msg-text {
-    width: 100%;
-    text-align: center;
-    line-height: 1.6;
-    color: var(--line);
-    font-family: var(--font-noto-sans), sans-serif;
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-break: break-word;
-}
-
-/* 날짜 스타일 */
-.msg-date {
-    display: block;
-    font-size: 0.65rem;
-    opacity: 0.5;
-    margin-top: 2px;
-    /* 간격 축소 */
-    color: var(--line);
-    font-family: var(--font-noto-sans), sans-serif;
-}
-
-/* ─── HOVER 상태 (카드 확장) ──────────────── */
-
-.network-node.guest-node:hover {
-    z-index: 5000 !important;
-    width: 320px !important;
-    /* 부모 요소를 직접 확장 */
-    height: auto !important;
-    transform: translate(-50%, -50%) scale(1.05);
-}
-
-/* 호버 시 도형은 숨김 */
-.network-node.guest-node:hover .shape-outline {
-    display: none;
-}
-
-/* 호버 시 래퍼가 카드 본체가 됨 (높이 자동 계산) */
-.network-node.guest-node:hover .node-visual-wrapper {
-    width: 100%;
-    /* 부모 너비를 따라감 */
-    height: auto;
-    min-height: 140px;
-    padding: 24px 24px;
-    /* 상단 패딩 축박 */
-    justify-content: flex-start;
-    background: #ffffff;
-    border: 1px solid #000;
-    border-radius: 25px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-    margin: 0;
-}
-
-/* 호버 시 제목 처리 */
-.network-node.guest-node:hover .msg-title {
-    display: block;
-    padding: 0 0 8px;
-    /* 하단 패딩 축소 */
-    margin-bottom: 8px;
-    /* 하단 마진 축소 */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.network-node.guest-node:hover .msg-title span {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    font-size: 1.15rem;
-    font-weight: 900;
-    line-height: 1.4;
-    text-align: center;
-}
-
-/* 호버 시 본문 노출 */
-.network-node.guest-node:hover .msg-content {
-    display: block;
-    margin-bottom: 15px;
-}
-
-@keyframes nodeSpawn {
-    from {
-        transform: scale(0);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.network-node img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-}
-
-/* Guestbook Specific Nodes */
-/* 중복되었던 .network-node 커스텀 블록 정리 완료 */
-/* ─── 네트워크 노드 내부 텍스트/날짜 ──────────── */
-.msg-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: fit-content;
-    text-align: center;
-    line-height: 1.4;
-    font-size: clamp(0.6rem, 2.5cqw, 0.9rem);
-    color: var(--line);
-    font-family: var(--font-noto-sans), sans-serif;
-}
-
-.msg-date {
-    position: absolute;
-    bottom: 8px;
-    right: 10px;
-    font-size: 9px;
-    color: #888;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    pointer-events: none;
-    white-space: nowrap;
-
-}
-
-.network-node:hover .msg-date {
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
-    opacity: 1;
-    display: block;
-    width: 100%;
-    text-align: center;
-    /* 날짜 중앙 정렬 */
-    margin-top: 10px;
-}
-
-/* ─── 모바일 최적화 (Mobile Optimization) ─── */
-@media (max-width: 768px) {
-    .network-node.guest-node:hover {
-        width: 280px !important;
-        padding: 20px 15px !important;
-        min-height: 120px !important;
-    }
-
-    .network-node.guest-node:hover .msg-title span {
-        font-size: 1rem !important;
-    }
-
-    .network-node.guest-node:hover .msg-text {
-        font-size: 0.85rem !important;
-        line-height: 1.5;
-    }
-
-    .msg-date {
-        font-size: 0.6rem !important;
-    }
-}
 
 /* ─── 컨택트(Contact) 섹션 텍스트 ──────────────── */
 .contact-overlay-wrapper {
@@ -1002,14 +692,51 @@ body {
     opacity: 1;
 }
 
-.contact-content-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
+
+
+/* 공통 모달 레이아웃 (컨택트 폼 등에서 사용) */
+.modal-inner {
+    flex: 1;
     display: flex;
     flex-direction: column;
-
+    overflow: hidden;
+    padding: 20px;
 }
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 0.8;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.modal-body::-webkit-scrollbar {
+    display: none;
+}
+
 
 .contact-close-btn {
     position: absolute;
@@ -1040,25 +767,9 @@ body {
     display: none;
 }
 
+/* 컨택트 폼 상세 스타일 */
 .contact-form-wrapper {
-    max-width: 100%;
-}
-
-.contact-header-merged {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-    border-bottom: 2px solid var(--line);
-    padding-bottom: 2rem;
-}
-
-.contact-form-title {
-    font-size: 3rem;
-    font-weight: 900;
-    margin: 0;
-    line-height: 1;
+    width: 100%;
 }
 
 .contact-header-info {
@@ -1066,6 +777,7 @@ body {
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    margin-bottom: 30px;
 }
 
 .header-info-item {
@@ -1074,91 +786,15 @@ body {
     align-items: baseline;
 }
 
-/* 기존 스타일을 40% 공간에 맞게 조정 */
-.contact-form-classic {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.form-classic-row {
-    width: 100%;
-}
-
-.form-input-classic,
-.form-textarea-classic {
-    width: 100%;
-    padding: 1rem 0;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--line);
-    font-size: 1.1rem;
-    font-family: inherit;
-    outline: none;
-}
-
-.form-textarea-classic {
-    min-height: 150px;
-    resize: none;
-}
-
-.form-submit-btn-classic {
-    margin-top: 2rem;
-    width: 100%;
-    padding: 1.5rem;
-    background: var(--line);
-    color: var(--bg);
-    border: none;
-    font-size: 1.2rem;
+.info-label {
     font-weight: 800;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.form-submit-btn-classic:hover {
-    background: var(--intersect);
-}
-
-/* Mobile adjust */
-@media (max-width: 768px) {
-    .contact-slide-panel {
-        width: 85%;
-    }
-
-    .contact-form-title {
-        font-size: 2rem;
-    }
-}
-
-.contact-main {
-    width: 100%;
-    max-width: 800px;
-    /* Wider for merged look */
-    background: var(--bg);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-}
-
-.contact-form-wrapper {
-    width: 100%;
-
-}
-
-.contact-form-title {
-    font-size: 2.2rem;
-    font-weight: 900;
-    margin-bottom: 30px;
-    letter-spacing: -0.04em;
-    color: #000;
-    text-transform: uppercase;
+    font-size: 0.8rem;
 }
 
 .contact-form-classic {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    /* Tighter gap like in the image */
+    gap: 15px;
 }
 
 .form-classic-row {
@@ -1169,35 +805,48 @@ body {
 .form-textarea-classic {
     width: 100%;
     background: #fff;
-    border: 1px solid var(--accent-fixed);
+    border: 1px solid #ddd;
     padding: 15px 20px;
     font-size: 1rem;
     font-family: inherit;
     color: #000;
     border-radius: 0;
-}
-
-.form-input-classic::placeholder,
-.form-textarea-classic::placeholder {
-    color: #999;
-    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
 .form-input-classic:focus,
 .form-textarea-classic:focus {
-    outline: none;
-    border: 1px solid var(--intersect);
+    border-color: var(--intersect);
 }
 
 .form-textarea-classic {
-    min-height: 250px;
+    min-height: 200px;
     resize: none;
 }
 
 .form-submit-btn-classic {
     width: 100%;
-    background: var(--accent-fixed);
-    border: 1px solid var(--accent-fixed);
+    background: #000;
+    color: #fff;
+    padding: 18px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    margin-top: 10px;
+}
+
+.form-submit-btn-classic:hover {
+    opacity: 0.8;
+}
+
+.form-submit-btn-classic:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+
     color: #000;
     padding: 18px;
     font-size: 1.1rem;
@@ -1417,75 +1066,7 @@ body {
     border-top: 1px solid #000;
 }
 
-.guestbook-input-container {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    width: 600px;
-    max-width: 90%;
-}
 
-.guestbook-form {
-    display: flex;
-    gap: 0;
-    background: white;
-    padding: 2px;
-    border-radius: 40px;
-    border: 1.5px solid #000000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    align-items: center;
-}
-
-.guestbook-title-input {
-    width: 100px;
-    background: transparent;
-    border: none;
-    border-right: 1.5px solid #000000;
-    padding: 10px 15px;
-    color: #000000;
-    font-size: 14px;
-    font-weight: 800;
-    outline: none;
-}
-
-.guestbook-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 10px 20px;
-    color: #000000;
-    font-size: 15px;
-    outline: none;
-}
-
-.guestbook-input::placeholder {
-    color: rgba(0, 0, 0, 0.5);
-    /* 플레이스홀더도 검정색 반투명으로 변경 */
-}
-
-.guestbook-send-btn {
-    background: white;
-    border: 0.4px solid #000000;
-    color: rgb(0, 0, 0);
-    border: none;
-    padding: 0 25px;
-    border-radius: 30px;
-    cursor: pointer;
-    font-weight: 600;
-    font-family: inherit;
-    transition: transform 0.2s, filter 0.2s;
-}
-
-.guestbook-send-btn:hover {
-    transform: scale(1.05);
-    filter: brightness(1.2);
-}
-
-.guestbook-send-btn:active {
-    transform: scale(0.95);
-}
 
 @media (max-width: 1400px) {
     .workshop-grid {
@@ -1793,22 +1374,16 @@ body {
 
 /* ─── 메인 페이지 좌측 텍스트 ──────────────── */
 .main-left-text {
+
     position: absolute;
-    top: 25%;
-    left: 17%;
-    transform: translate(-50%, -50%);
-    width: 40%;
-    max-width: 600px;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #ffffff;
-    /* 흰색 글자에 difference를 적용하여 흰 배경에선 검정색으로 보이도록 설계 */
-    z-index: 2000;
-    /* edgeCanvas(400)보다 위에 배치 */
-    mix-blend-mode: difference;
-    pointer-events: none;
-    text-align: center;
+    top: 0%;
+    width: min(88vw, 1180px);
+    font-size: 3rem;
+    font-weight: 500;
+    line-height: 1.18;
+    padding: 20px;
     word-break: keep-all;
+    isolation: isolate;
 }
 
 .main-left-text p:first-of-type {
@@ -1817,6 +1392,44 @@ body {
 
 .main-left-text p {
     margin-bottom: 0.5rem;
+}
+
+.threads-overlay {
+    position: absolute;
+    top: 0;
+    left: -50vw;
+    width: 200vw;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    overflow: visible;
+}
+
+.text-content-wrapper {
+    position: relative;
+    z-index: 5;
+    max-width: 100%;
+}
+
+.threaded-char {
+    transform-origin: 50% 50%;
+    will-change: transform;
+    line-height: 1;
+    vertical-align: baseline;
+}
+
+.threaded-dot {
+    vertical-align: middle;
+}
+
+.threaded-dot::after {
+    content: none;
+}
+
+.threads-overlay path {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
 }
 
 
@@ -1992,40 +1605,164 @@ body {
     }
 }
 
-/* 우측 하단 주소 정보 */
-.address-footer {
-    position: absolute;
-    bottom: 20px;
-    right: 30px;
-    font-size: 10pt;
-    color: #888888;
-    z-index: 1000;
+/* 좌측 하단 버튼 그룹 */
+.footer-left-group {
+    position: fixed;
+    bottom: 7px; /* 그리드 간격에 맞춤 */
+    left: 7px;
+    z-index: 15000;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    pointer-events: auto;
+}
+
+/* IYO 버튼 V2 */
+.iyo-footer-v2 {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
 }
 
-.info-toggle {
+/* IYO & 방명록 버튼 공통 스타일 */
+.iyo-container-v2 {
+    position: relative;
+    width: 200px;
+    height: 50px;
+    background: white;
+    border: 1px solid #000;
+    overflow: hidden;
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 700;
-    color: #000;
-    pointer-events: auto;
-    user-select: none;
-    transition: color 0.2s;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.info-toggle:hover {
-    color: var(--intersect);
+.footer-left-group > div:first-child .iyo-container-v2 {
+    border-top-left-radius: 10px;
+}
+
+.footer-left-group > div:last-child .iyo-container-v2 {
+    border-top-right-radius: 10px;
+    border-left: none; /* 중앙 경계선 중복 방지 */
+}
+
+.iyo-container-v2:hover {
+    height: 120px;
+}
+
+.iyo-label-v2 {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+    background: white;
+    color: black;
+    border-top: 1px solid #000;
+    z-index: 2;
+    transition: all 0.3s;
+}
+
+.iyo-text-v2 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    padding: 15px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #666;
+    background: #fafafa;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.iyo-container-v2:hover .iyo-text-v2 {
+    opacity: 1;
+}
+
+.iyo-container-v2.active .iyo-label-v2 {
+    background: #000;
+    color: #fff;
+}
+
+/* 우측 하단 INFO 호버 박스 (기존 유지) */
+.address-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    z-index: 15000;
+    pointer-events: auto;
+}
+
+.info-container {
+    width: 300px;
+    height: 50px;
+    border-top-left-radius: 10px;
+    background: var(--intersect);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    transition: height 0.5s cubic-bezier(0.19, 1, 0.22, 1), background 0.3s ease;
+    cursor: pointer;
+}
+
+.info-container:hover {
+    height: 200px;
+    /* 내용에 맞춰 적절히 조절 */
+    background: #000000;
+}
+
+.info-label {
+    height: 50px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    background: inherit;
+    /* 부모 배경색 상속 */
 }
 
 .info-text {
-    text-align: right;
-    letter-spacing: 0.05em;
-    line-height: 1.4;
-    max-width: 600px;
-    word-break: keep-all;
+    padding: 25px 25px 10px 25px;
+    /* 하단 패딩 살짝 줄임 */
+    font-size: 11.5px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-align: left;
+    flex: 1;
+    /* 남은 공간 차지 */
+}
+
+.info-container:hover .info-text {
+    opacity: 1;
+}
+
+.info-text a:hover {
+    text-decoration: underline !important;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .address-footer {
+        right: 0;
+        width: 100%;
+    }
+
+    .info-container {
+        width: 100%;
+    }
 }
 
 /* Contact Section Details */
@@ -2364,6 +2101,21 @@ body {
 .outline-btn {
     background: #fff;
     border: 2px solid #000;
+}
+
+/* 순수 CSS 흔들림 효과 */
+.floating-dot {
+    animation: simple-float 3s ease-in-out infinite alternate;
+}
+
+@keyframes simple-float {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(3px, -3px) scale(1.05); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .fill-btn {
@@ -3003,140 +2755,7 @@ body {
     padding: 20px;
 }
 
-.grid-modal {
-    position: relative;
-    width: 100%;
-    max-width: 600px;
-    height: 80vh;
-    background: var(--bg);
-    /* 이중 테두리 구현 */
-    border: 1px solid #000;
-    outline: 8px solid var(--bg);
-    box-shadow: 0 0 0 9px #000;
-    margin: 10px;
-    display: flex;
-    flex-direction: column;
-}
 
-.modal-inner {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: 20px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 2px solid #000;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-}
-
-.modal-title {
-    font-size: 1.8rem;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    font-weight: 300;
-    cursor: pointer;
-    line-height: 0.8;
-}
-
-.modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 10px;
-}
-
-/* 스크롤바 미표시 */
-.modal-body::-webkit-scrollbar {
-    display: none;
-}
-
-.index-list {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-.index-row {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-}
-
-.idx-date {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #999;
-    padding-top: 4px;
-    min-width: 60px;
-}
-
-.idx-info {
-    flex: 1;
-}
-
-.idx-title {
-    font-size: 1.1rem;
-    font-weight: 800;
-    margin-bottom: 5px;
-}
-
-.idx-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: #444;
-}
-
-/* 교차점 컬러 포인트 */
-.corner {
-    position: absolute;
-    width: 9px;
-    height: 9px;
-    background: var(--intersect);
-    z-index: 10;
-}
-
-/* 9px 만큼 바깥으로 빼서 이중 테두리 교차점에 배치 */
-.pt-tl {
-    top: -9px;
-    left: -9px;
-}
-
-.pt-tr {
-    top: -9px;
-    right: -9px;
-}
-
-.pt-bl {
-    bottom: -9px;
-    left: -9px;
-}
-
-.pt-br {
-    bottom: -9px;
-    right: -9px;
-}
-
-@media (max-width: 768px) {
-    .grid-modal {
-        height: 90vh;
-        max-width: 100%;
-    }
-
-    .modal-title {
-        font-size: 1.4rem;
-    }
-}
 
 .schedule-option:hover {
     background: #f8f8f8;
@@ -3340,4 +2959,152 @@ body {
     .card-name {
         font-size: 2.2rem;
     }
+}
+
+/* ─── 방명록 입력창 (v1 복구) ──────────────── */
+.guestbook-input-container {
+    position: absolute;
+    bottom: 80px; /* 푸터 버튼들과 겹치지 않게 조금 올림 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: 600px;
+    max-width: 90%;
+}
+
+.guestbook-form {
+    display: flex;
+    gap: 0;
+    background: white;
+    padding: 2px;
+    border-radius: 40px;
+    border: 1.5px solid #000000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    align-items: center;
+}
+
+.guestbook-title-input {
+    width: 100px;
+    background: transparent;
+    border: none;
+    border-right: 1.5px solid #000000;
+    padding: 10px 15px;
+    color: #000000;
+    font-size: 14px;
+    font-weight: 800;
+    outline: none;
+}
+
+.guestbook-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 20px;
+    color: #000000;
+    font-size: 15px;
+    outline: none;
+}
+
+.guestbook-input::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.guestbook-send-btn {
+    background: white;
+    border: none;
+    color: rgb(0, 0, 0);
+    padding: 10px 25px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 800;
+    font-family: inherit;
+    transition: transform 0.2s, filter 0.2s;
+}
+
+.guestbook-send-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+}
+
+/* 방명록 메시지 팝업 (호버 카드 스타일) */
+.guestbook-message-popup {
+    position: fixed;
+    bottom: 80px;
+    right: 30px;
+    width: auto;
+    height: auto;
+    background: none;
+    backdrop-filter: none;
+    display: flex;
+    z-index: 20000;
+    pointer-events: none; /* 호버 방해 방지 */
+}
+
+.message-popup-inner {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid #000;
+    width: 320px;
+    position: relative;
+    box-shadow: 10px 10px 0 rgba(0,0,0,1); /* 인더스트리얼 스타일 그림자 */
+    animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.message-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.message-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.message-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    min-height: 100px;
+}
+
+.message-date {
+    font-size: 0.75rem;
+    color: #999;
+    text-align: right;
+    margin-top: 15px;
+}
+
+.threads-overlay {
+    position: absolute;
+    top: 0;
+    left: -50vw;
+    width: 200vw;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    overflow: visible;
+}
+
+.threaded-char {
+    display: inline-block;
+    position: relative;
+    will-change: transform;
+}
+
+.threaded-dot {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
