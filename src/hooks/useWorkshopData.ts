@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { client } from "@/sanity/client";
-import { createClient } from "@/lib/supabase/browser";
 
 export function useWorkshopData() {
-    const supabase = createClient();
     const [sanityWorkshops, setSanityWorkshops] = useState<any[]>([]);
     const [registrations, setRegistrations] = useState<any[]>([]);
+    const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
     const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -13,30 +11,34 @@ export function useWorkshopData() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                // 1. Sanity 워크숍 데이터 (최신 번호순) + 이미지 메타데이터
-                const wsQuery = `*[_type == "workshop"] | order(number desc) {
-                    ...,
-                    "posterMeta": poster.asset->metadata.dimensions
-                }`;
-                const wsData = await client.fetch(wsQuery);
-                setSanityWorkshops(wsData);
 
-                // 2. Sanity 달력 이벤트 데이터 (날짜순)
-                const evQuery = `*[_type == "event"] | order(date asc)`;
-                const evData = await client.fetch(evQuery);
-                setCalendarEvents(evData);
+                const dataResponse = await fetch('/api/workshops/data', {
+                    cache: 'no-store',
+                });
 
-                // 3. Supabase 확정된 신청자 목록 (V2 테이블 + status 컬럼)
-                const { data: regData, error: regError } = await supabase
-                    .from('workshop_registrations_v2')
-                    .select('*')
-                    .eq('status', 'confirmed');
-                
-                if (!regError && regData) {
-                    setRegistrations(regData);
+                if (dataResponse.ok) {
+                    const workshopData = await dataResponse.json();
+                    const counts = workshopData.counts || {};
+
+                    setSanityWorkshops(workshopData.workshops || []);
+                    setCalendarEvents(workshopData.events || []);
+                    setRegistrationCounts(counts);
+                    setRegistrations(
+                        Object.entries(counts).map(([workshop_id, count]) => ({
+                            workshop_id,
+                            count,
+                            status: 'confirmed',
+                        }))
+                    );
+                } else {
+                    throw new Error('Workshop data API request failed');
                 }
             } catch (error) {
                 console.error("Workshop 데이터 로딩 실패:", error);
+                setSanityWorkshops([]);
+                setCalendarEvents([]);
+                setRegistrationCounts({});
+                setRegistrations([]);
             } finally {
                 setLoading(false);
             }
@@ -50,12 +52,18 @@ export function useWorkshopData() {
         ...sanityWorkshops.map(ws => ({ ...ws, isSanity: true, sortNum: ws.number || 0 })),
         ...Array.from({ length: 24 }, (_, i) => 24 - i)
             .filter(id => !sanityWorkshops.find(sws => sws.number === id))
-            .map(id => ({ id, isSanity: false, sortNum: id }))
+            .map(id => ({
+                id,
+                isSanity: false,
+                sortNum: id,
+                supabase_workshop_id: null,
+            }))
     ].sort((a, b) => b.sortNum - a.sortNum);
 
     return {
         sanityWorkshops,
         registrations,
+        registrationCounts,
         calendarEvents,
         allWorkshops,
         loading

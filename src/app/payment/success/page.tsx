@@ -15,13 +15,13 @@ function SuccessContent() {
     const registrationId = searchParams.get("registration_id");
 
     useEffect(() => {
-        if (!paymentKey || !orderId || !amount || !registrationId) {
-            setStatus("error");
-            setMsg("결제 정보가 부족합니다.");
-            return;
-        }
-
         const confirmPayment = async () => {
+            if (!paymentKey || !orderId || !amount || !registrationId) {
+                setStatus("error");
+                setMsg("결제 정보가 부족합니다.");
+                return;
+            }
+
             try {
                 const response = await fetch('/api/payment/confirm', {
                     method: 'POST',

@@ -1,38 +1,56 @@
 "use client";
 
 import { urlFor } from "@/sanity/image";
+import Image from "next/image";
 import { CSSProperties } from "react";
+import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 
 interface WorkshopGridProps {
     workshops: any[];
-    registrations: any[];
+    registrationCounts?: Record<string, number>;
+    registrations?: any[];
     onSelectWorkshop: (workshop: any) => void;
     getTagColor: (tag: string) => string;
 }
 
 export default function WorkshopGrid({ 
     workshops, 
-    registrations, 
+    registrationCounts,
+    registrations = [],
     onSelectWorkshop, 
     getTagColor 
 }: WorkshopGridProps) {
+    const counts = registrationCounts || registrations.reduce<Record<string, number>>((acc, registration) => {
+        const workshopId = registration?.workshop_id;
+        if (typeof workshopId === 'string' || typeof workshopId === 'number') {
+            acc[String(workshopId)] = (acc[String(workshopId)] || 0) + (typeof registration.count === 'number' ? registration.count : 1);
+        }
+
+        return acc;
+    }, {});
     
     const renderWorkshopPreview = (ws: any) => {
         const isHardcoded = !ws.isSanity;
         const id = isHardcoded ? ws.id : ws._id;
         const title = isHardcoded ? `AI.zip ${ws.id} 그래픽` : ws.title;
         const tutor = isHardcoded ? "튜터 : 000 @asdf1234" : `튜터 : ${ws.tutor || '000'}`;
-        const isClosed = isHardcoded ? ws.id <= 11 : ws.isClosed;
+        const capacity = typeof ws.capacity === 'number' ? ws.capacity : 8;
+        const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
+        const isClosed = isHardcoded
+            ? ws.id <= 11 || registeredCount >= capacity
+            : ws.isClosed || registeredCount >= capacity;
 
-        // 이미지 비율 계산 (CSS 변수용)
-        let aspectRatio = "1080 / 1350";
+        const legacyPoster = isHardcoded ? getLegacyPosterMeta(Number(ws.id)) : null;
+        let posterWidth = legacyPoster?.width || 1080;
+        let posterHeight = legacyPoster?.height || 1350;
         if (!isHardcoded && ws.posterMeta) {
-            aspectRatio = `${ws.posterMeta.width} / ${ws.posterMeta.height}`;
+            posterWidth = ws.posterMeta.width;
+            posterHeight = ws.posterMeta.height;
         }
+        const aspectRatio = `${posterWidth} / ${posterHeight}`;
 
-        // Sanity URL 최적화: width 힌트만 주고 height는 원본 비율에 맡김
         const imgUrl = isHardcoded
-            ? (ws.id === 24 ? `/assets/24.jpg` : `/assets/${ws.id.toString().padStart(2, '0')}.png`)
+            ? legacyPoster?.src
             : (ws.poster ? urlFor(ws.poster).width(600).auto('format').url() : null);
 
         return (
@@ -57,17 +75,23 @@ export default function WorkshopGrid({
                     )}
                 </div>
                 <div
-                    className="blueprint-img-box"
+                    className={`blueprint-img-box ${!imgUrl ? 'is-empty' : ''}`}
                     style={{ "--aspect-ratio": aspectRatio } as CSSProperties}
                 >
                     {imgUrl && (
-                        <img 
-                            src={imgUrl} 
-                            loading="lazy" 
-                            decoding="async"
+                        <Image
+                            src={imgUrl}
                             alt={title}
+                            width={posterWidth}
+                            height={posterHeight}
+                            sizes="(max-width: 900px) 50vw, (max-width: 1400px) 25vw, 300px"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                objectFit: 'contain',
+                                objectPosition: 'center',
+                            }}
                             onLoad={(e) => {
-                                // 이미지 로드 완료 후 skeleton shimmer 해제
                                 const box = (e.target as HTMLImageElement).parentElement;
                                 if (box) box.classList.add('loaded');
                             }}

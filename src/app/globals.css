@@ -45,17 +45,14 @@
 html,
 body {
     margin: 0;
+    padding: 0;
     width: 100%;
     height: 100%;
-    background: var(--bg);
-    font-family: var(--font-noto-sans), sans-serif;
-    overflow-x: hidden;
-    /* Prevent horizontal spill */
-    overscroll-behavior: none;
-}
-
-body {
+    font-family: var(--font-noto-sans);
+    background-color: var(--bg);
+    color: var(--line);
     overflow: hidden;
+    overscroll-behavior: none;
 }
 
 /* ─── 헤더 ─────────────────────────── */
@@ -179,6 +176,14 @@ body {
     color: white;
 }
 
+.controls button.user-login-btn {
+    flex: none;
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .controls button.active,
 .controls button:active {
     background-color: var(--intersect);
@@ -186,6 +191,305 @@ body {
     color: #ffffff;
     transition: background-color 0.4s ease;
     /* 색상 변화가 부드럽게 이어지도록 추가 */
+}
+
+/* ─── 모바일 메뉴 관련 ─── */
+.nav-desktop-only {
+    display: block;
+}
+
+.mobile-menu-btn {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .nav-desktop-only {
+        display: none !important;
+    }
+
+
+
+    .hamburger-box {
+        width: 24px;
+        height: 14px;
+        position: relative;
+        display: block;
+    }
+
+    .hamburger-inner,
+    .hamburger-inner::before,
+    .hamburger-inner::after {
+        width: 24px;
+        height: 1.5px;
+        background-color: #000;
+        position: absolute;
+        left: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .hamburger-inner {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .hamburger-inner::before {
+        content: "";
+        top: -6px;
+    }
+
+    .hamburger-inner::after {
+        content: "";
+        bottom: -6px;
+    }
+
+    /* 상단 네비게이션: 로그인 & 햄버거만 노출, 영역 축소 */
+    .controls {
+        justify-content: flex-end !important;
+        gap: 0 !important;
+    }
+
+    .controls .user-login-btn,
+    .controls .mobile-menu-btn {
+        flex: none !important;
+        width: 60px !important;
+        /* 영역을 작게 고정 */
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #000;
+        padding: 0 !important;
+    }
+
+    /* 데스크탑 전용 버튼 (MEMBER, WORKSHOP, IYOCA 등) 숨김 */
+    .nav-desktop-only {
+        display: none !important;
+    }
+
+    .user-login-btn svg {
+        stroke-width: 2px;
+    }
+
+    .logo {
+        padding: 0 10px !important;
+    }
+
+    .logo-title {
+        font-size: 1rem !important;
+    }
+}
+
+/* ─── Contact Overlay Mobile Optimization ─── */
+@media (max-width: 900px) {
+    .contact-overlay {
+        width: 100vw !important;
+        right: 0 !important;
+        top: var(--top-row-1) !important;
+        height: calc(100vh - var(--top-row-1)) !important;
+    }
+
+    .contact-content {
+        padding: 20px !important;
+        width: 100% !important;
+    }
+
+    .contact-header h2 {
+        font-size: 2rem !important;
+    }
+
+    .contact-form input,
+    .contact-form textarea {
+        font-size: 14px !important;
+    }
+}
+
+/* 초소형 모바일 (iPhone SE 등) */
+@media (max-width: 360px) {
+    .controls button {
+        padding: 0 5px !important;
+        font-size: 11px !important;
+    }
+
+    .logo-title {
+        font-size: 0.9rem !important;
+    }
+}
+
+.mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 30000;
+    /* 다른 모든 것보다 위에 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.4s;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-menu-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: relative;
+    /* 격자 프레임 효과 추가 */
+}
+
+.mobile-menu-header {
+    height: var(--top-row-1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.menu-close-btn {
+    width: var(--top-row-1);
+    height: var(--top-row-1);
+    background: none;
+    border: none;
+    border-left: 1px solid var(--line);
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-icon {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+
+.close-icon::before,
+.close-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 1.5px;
+    background: #000;
+}
+
+.close-icon::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.close-icon::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.mobile-menu-content-frame {
+    flex: 1;
+    position: relative;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu-content-frame::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 10;
+}
+
+.mobile-menu-content-frame::after {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line));
+    background-size:
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap);
+    background-position:
+        top var(--t) left var(--t), top var(--t) right var(--t),
+        bottom var(--t) left var(--t), bottom var(--t) right var(--t),
+        top 0 left 0, top 0 right 0,
+        bottom 0 left 0, bottom 0 right 0;
+    background-repeat: no-repeat;
+    z-index: 11;
+    mix-blend-mode: darken;
+}
+
+.mobile-menu-list {
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    gap: 0;
+    position: relative;
+    z-index: 5;
+}
+
+.mobile-menu-item {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 25px 0;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 0.1px solid var(--line);
+    width: 100%;
+}
+
+.mobile-menu-item:first-child {
+    border-top: 0.1px solid var(--line);
+}
+
+.item-label {
+    font-size: clamp(1.5rem, 8vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #000;
+    text-transform: uppercase;
+}
+
+.mobile-menu-footer {
+    margin-top: auto;
+    padding: 40px 20px;
+    font-size: 0.65rem;
+    color: #999;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 /* ─── 버튼 간 구분선 (grid-row-1까지 연결) ─── */
@@ -462,90 +766,318 @@ body {
     z-index: 10;
 }
 
-/* Iyoca Collage Styles */
-.iyoca-collage-container {
-    width: 100%;
+/* Iyoca Grid Styles */
+/* Iyoca 4:6 Split Layout */
+.iyoca-view-container {
+    padding: 0;
+    overflow: hidden;
     height: 100%;
-    position: relative;
-    padding: 60px 0;
 }
 
-.collage-track {
-    position: relative;
-    width: 250%;
-    /* 컨테이너 너비에 비례하게 설정하여 격자가 펼쳐질 때 함께 늘어나는 느낌 부여 */
-    height: 100%;
+.iyoca-split-layout {
     display: flex;
-    align-items: center;
-}
-
-.collage-item {
-    position: absolute;
-    width: 320px;
-    height: 420px;
-    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), z-index 0.3s ease;
-}
-
-.collage-item:hover {
-    transform: scale(1.05) rotate(0deg) !important;
-    z-index: 100 !important;
-}
-
-.collage-card {
     width: 100%;
     height: 100%;
     background: #fff;
-    padding: 15px 15px 50px 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    position: relative;
-    display: flex;
-    flex-direction: column;
 }
 
-.collage-card img {
-    width: 100%;
+/* Left Pane (40%) */
+.iyoca-left-pane {
+    flex: 0 0 40%;
     height: 100%;
-    object-fit: cover;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+    padding: 60px 30px;
+    border-right: 1px solid #000;
+    scrollbar-width: none;
+
+}
+
+.iyoca-left-pane::-webkit-scrollbar {
+    display: none;
+}
+
+.iyoca-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    width: 100%;
+}
+
+.iyoca-poster-card {
+    aspect-ratio: 3.5 / 5;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #000;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.iyoca-poster-card:hover {
+    transform: translateY(-5px);
+    z-index: 5;
+}
+
+
+.iyoca-poster-card.selected .poster-inner img {
+    opacity: 0.8;
 }
 
 .card-tape {
     position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%) rotate(-3deg);
-    width: 110px;
-    height: 35px;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.collage-footer {
-    position: fixed;
-    bottom: 40px;
+    top: -10px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 11000;
+    width: 60px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #000;
+    z-index: 5;
 }
 
-.open-call-btn {
+.poster-inner {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid #000;
+}
+
+.poster-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Right Pane (60%) */
+.iyoca-right-pane {
+    flex: 0 0 60%;
+    height: 100%;
+
     background: #fff;
-    border: 1px dashed #cc0000;
-    padding: 12px 30px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    color: #cc0000;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    letter-spacing: 1px;
+    position: relative;
 }
 
-.open-call-btn:hover {
-    background: #cc0000;
+.iyoca-detail-display {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #000 transparent;
+}
+
+.detail-scroll-area {
+    max-width: 70%;
+    margin: 0 auto;
+    padding-top: 50px;
+}
+
+.detail-header {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 4px solid #000;
+}
+
+.detail-id {
+    font-size: 12px;
+    font-weight: 800;
+    color: #000;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.detail-title {
+    font-size: 38px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin: 0;
+}
+
+.detail-visual {
+    width: 100%;
+    margin-bottom: 40px;
+    border: 1px solid #000;
+}
+
+.detail-visual img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.detail-body {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #111;
+}
+
+.detail-description {
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.detail-extra-info {
+    margin-top: 60px;
+    padding: 30px;
+    background: #f5f5f5;
+    border: 1px solid #000;
+}
+
+.detail-extra-info h3 {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #000;
+    display: inline-block;
+}
+
+.detail-extra-info p {
+    font-size: 13px;
+    margin: 8px 0;
+    font-family: monospace;
+}
+
+.technical-grid {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.technical-grid span {
+    font-size: 9px;
+    font-weight: 900;
+    background: #000;
     color: #fff;
+    padding: 2px 6px;
+}
+
+.full-details-box {
+    margin-top: 40px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 50px;
+    padding: 20px;
+    border: 1px solid #eee;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item .label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #999;
+    margin-bottom: 4px;
+}
+
+.info-item .value {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.detail-section {
+    margin-bottom: 50px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 900;
+    margin-bottom: 25px;
+    text-align: center;
+    letter-spacing: 0.1em;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.schedule-row {
+    display: flex;
+    gap: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed #ddd;
+}
+
+.s-week {
+    flex: 0 0 60px;
+    font-size: 12px;
+    font-weight: 900;
+    background: #000;
+    color: #fff;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.s-info {
+    flex: 1;
+}
+
+.s-date,
+.s-time {
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 15px;
+    color: #666;
+}
+
+.s-content {
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.tutor-info {
+    padding: 25px;
+    background: #fff;
+    border: 1px solid #000;
+}
+
+.tutor-name {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.tutor-bio {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.detail-footer-meta {
+    margin-top: 50px;
+    font-size: 12px;
+    color: #888;
+}
+
+.detail-footer-meta p {
+    margin: 5px 0;
+}
+
+.credits {
+    margin-top: 20px;
+    font-weight: 700;
+    color: #ccc;
+}
+
+.iyoca-footer {
+    padding: 100px 0;
+    display: flex;
+    justify-content: center;
 }
 
 .cell-diary {
@@ -808,7 +1340,7 @@ body {
     border: 1px solid #ddd;
     padding: 15px 20px;
     font-size: 1rem;
-    font-family: inherit;
+
     color: #000;
     border-radius: 0;
     outline: none;
@@ -1072,6 +1604,12 @@ body {
     .workshop-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    /* 2열 레이아웃에서 가장 우측(2번째 열)의 세로선과 마름모 숨김 */
+    .workshop-item:nth-child(2n)::after,
+    .workshop-item:nth-child(2n) .intersection-diamond {
+        display: none !important;
+    }
 }
 
 @media (max-width: 800px) {
@@ -1086,18 +1624,12 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    font-family: inherit;
     font-size: 18px;
     color: var(--line);
     position: relative;
     padding-top: 20px;
     height: 100%;
     min-width: 0;
-}
-
-.workshop-item:nth-child(4n)::after,
-.workshop-item:nth-child(4n) .intersection-diamond {
-    display: none !important;
 }
 
 /* Vertical grid line */
@@ -1158,7 +1690,48 @@ body {
     display: block !important;
 }
 
-@media (max-width: 1400px) {}
+/* [1] 데스크탑: 4열 기준 */
+/* 우측 선/마름모 제거 (매 행의 4번째 아이템) */
+.workshop-item:nth-child(4n)::after,
+.workshop-item:nth-child(4n) .intersection-diamond {
+    display: none !important;
+}
+
+/* 최하단 행(Last Row)만 선택하여 하단 선/마름모 제거 */
+.workshop-item:nth-child(4n+1):nth-last-child(-n+4)~.workshop-item .intersection-diamond,
+.workshop-item:nth-child(4n+1):nth-last-child(-n+4)~.workshop-item::before,
+.workshop-item:nth-child(4n+1):nth-last-child(-n+4) .intersection-diamond,
+.workshop-item:nth-child(4n+1):nth-last-child(-n+4)::before {
+    display: none !important;
+}
+
+@media (max-width: 1400px) {
+
+    /* [2] 1400px 이하: 2열 기준 */
+    /* 기존 4열 규칙 초기화 */
+    .workshop-item:nth-child(4n)::after,
+    .workshop-item:nth-child(4n) .intersection-diamond,
+    .workshop-item:nth-child(4n+1):nth-last-child(-n+4)~.workshop-item .intersection-diamond,
+    .workshop-item:nth-child(4n+1):nth-last-child(-n+4)~.workshop-item::before,
+    .workshop-item:nth-child(4n+1):nth-last-child(-n+4) .intersection-diamond,
+    .workshop-item:nth-child(4n+1):nth-last-child(-n+4)::before {
+        display: block !important;
+    }
+
+    /* 2열 기준 우측 선/마름모 제거 */
+    .workshop-item:nth-child(2n)::after,
+    .workshop-item:nth-child(2n) .intersection-diamond {
+        display: none !important;
+    }
+
+    /* 2열 기준 최하단 행(Last Row)만 제거 */
+    .workshop-item:nth-child(2n+1):nth-last-child(-n+2)~.workshop-item .intersection-diamond,
+    .workshop-item:nth-child(2n+1):nth-last-child(-n+2)~.workshop-item::before,
+    .workshop-item:nth-child(2n+1):nth-last-child(-n+2) .intersection-diamond,
+    .workshop-item:nth-child(2n+1):nth-last-child(-n+2)::before {
+        display: none !important;
+    }
+}
 
 @media (max-width: 800px) {
     .workshop-item::after {
@@ -1191,6 +1764,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     /* 로딩 중 shimmer 효과 */
     animation: skeleton-shimmer 1.4s ease infinite;
 }
@@ -1198,6 +1772,11 @@ body {
 .blueprint-img-box.loaded {
     animation: none;
     background: transparent;
+}
+
+.blueprint-img-box.is-empty {
+    animation: none;
+    background: #f0f0f0;
 }
 
 @keyframes skeleton-shimmer {
@@ -1216,7 +1795,7 @@ body {
 
 .blueprint-img-box img {
     width: 100%;
-    height: 100%;
+    height: auto;
     display: block;
     /* object-fit: contain → 이미지 비율이 달라도 잘리지 않게 조정 */
     object-fit: contain;
@@ -1377,13 +1956,11 @@ body {
 
     position: absolute;
     top: 0%;
-    width: min(88vw, 1180px);
+
     font-size: 3rem;
     font-weight: 500;
-    line-height: 1.18;
     padding: 20px;
     word-break: keep-all;
-    isolation: isolate;
 }
 
 .main-left-text p:first-of-type {
@@ -1392,44 +1969,6 @@ body {
 
 .main-left-text p {
     margin-bottom: 0.5rem;
-}
-
-.threads-overlay {
-    position: absolute;
-    top: 0;
-    left: -50vw;
-    width: 200vw;
-    height: 100%;
-    pointer-events: none;
-    z-index: 10;
-    overflow: visible;
-}
-
-.text-content-wrapper {
-    position: relative;
-    z-index: 5;
-    max-width: 100%;
-}
-
-.threaded-char {
-    transform-origin: 50% 50%;
-    will-change: transform;
-    line-height: 1;
-    vertical-align: baseline;
-}
-
-.threaded-dot {
-    vertical-align: middle;
-}
-
-.threaded-dot::after {
-    content: none;
-}
-
-.threads-overlay path {
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
 }
 
 
@@ -1469,6 +2008,7 @@ body {
         /* Disable scrolling */
         height: 100%;
         align-items: center;
+
         /* Center-align buttons vertically */
     }
 
@@ -1481,8 +2021,8 @@ body {
         /* Distribute space proportionally */
         min-width: 0;
         /* Allow shrinking below content width */
-        padding: 0 2px;
-        font-size: 10px;
+
+        font-size: 16px;
         letter-spacing: -0.05em;
         white-space: nowrap;
         height: 100%;
@@ -1543,8 +2083,7 @@ body {
     }
 
     .blueprint-img-box {
-        aspect-ratio: auto !important;
-        /* Allow variable height to remove gaps */
+        aspect-ratio: var(--aspect-ratio, 1080 / 1350) !important;
     }
 
     .title-box {
@@ -1605,109 +2144,29 @@ body {
     }
 }
 
-/* 좌측 하단 버튼 그룹 */
-.footer-left-group {
-    position: fixed;
-    bottom: 7px; /* 그리드 간격에 맞춤 */
-    left: 7px;
-    z-index: 15000;
-    display: flex;
-    align-items: flex-end;
-    gap: 0;
-    pointer-events: auto;
-}
-
-/* IYO 버튼 V2 */
-.iyo-footer-v2 {
-    display: flex;
-    flex-direction: column;
-}
-
-/* IYO & 방명록 버튼 공통 스타일 */
-.iyo-container-v2 {
-    position: relative;
-    width: 200px;
-    height: 50px;
-    background: white;
-    border: 1px solid #000;
-    overflow: hidden;
-    cursor: pointer;
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.footer-left-group > div:first-child .iyo-container-v2 {
-    border-top-left-radius: 10px;
-}
-
-.footer-left-group > div:last-child .iyo-container-v2 {
-    border-top-right-radius: 10px;
-    border-left: none; /* 중앙 경계선 중복 방지 */
-}
-
-.iyo-container-v2:hover {
-    height: 120px;
-}
-
-.iyo-label-v2 {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 1.2rem;
-    background: white;
-    color: black;
-    border-top: 1px solid #000;
-    z-index: 2;
-    transition: all 0.3s;
-}
-
-.iyo-text-v2 {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 70px;
-    padding: 15px;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: #666;
-    background: #fafafa;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.iyo-container-v2:hover .iyo-text-v2 {
-    opacity: 1;
-}
-
-.iyo-container-v2.active .iyo-label-v2 {
-    background: #000;
-    color: #fff;
-}
-
-/* 우측 하단 INFO 호버 박스 (기존 유지) */
+/* 우측 하단 INFO 호버 박스 */
 .address-footer {
     position: fixed;
     bottom: 0;
     right: 0;
+    /* 우측 끝에 붙임 */
     z-index: 15000;
     pointer-events: auto;
+
 }
 
 .info-container {
     width: 300px;
+    /* 200px -> 300px 확장 */
     height: 50px;
     border-top-left-radius: 10px;
     background: var(--intersect);
     color: #ffffff;
     display: flex;
     flex-direction: column;
+    /* 순방향으로 변경 후 아래에서 정렬 조절 */
     justify-content: flex-end;
+    /* 아래쪽으로 밀착 */
     overflow: hidden;
     transition: height 0.5s cubic-bezier(0.19, 1, 0.22, 1), background 0.3s ease;
     cursor: pointer;
@@ -1753,17 +2212,180 @@ body {
     text-decoration: underline !important;
 }
 
+/* 좌측 세로 사이드바 (iyo, iyobot, info) */
+.left-sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    font-weight: 900;
+    pointer-events: auto;
+}
+
+.side-item-container {
+    width: 50px;
+    /* 기본 너비 */
+    flex: 1;
+    background: var(--bg);
+    color: #000000;
+    display: flex;
+    flex-direction: row;
+    /* 가로로 확장 */
+    overflow: hidden;
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1), background 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #000000;
+    /* 전체 테두리 설정 */
+    margin-top: -1px;
+    /* 위쪽 아이템의 테두리와 겹치게 하여 1px 유지 */
+}
+
+.side-item-container:hover {
+    width: 550px;
+    background: var(--intersect);
+    /* 전체 배경 파란색 */
+    color: white;
+}
+
+.side-label {
+    width: 50px;
+    min-width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    background: var(--bg);
+    /* 기본 흰색 배경 */
+    color: #000000;
+    writing-mode: vertical-lr;
+    text-transform: uppercase;
+    border-right: 1px solid #000000;
+    z-index: 10;
+}
+
+.side-item-container:hover .side-label {
+    background: #ffffff;
+    /* 호버 시 라벨 배경 강조 */
+    color: var(--intersect);
+}
+
+/* 사이드 컨텐츠 영역 */
+.side-content {
+    position: relative;
+    padding: 30px;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-align: left;
+    white-space: normal;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #ffffff;
+}
+
+.side-content>div {
+    position: relative;
+    z-index: 5;
+    overflow-y: auto;
+    scrollbar-width: none;
+    max-height: 100%;
+}
+
+.side-content>div::-webkit-scrollbar {
+    display: none;
+}
+
+/* 1. 프레임 바디 (상단 격자와 동일한 구조, 두께 0.1px로 조정) */
+.side-content::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 1;
+}
+
+/* 2. 모서리 Intersect (상단 격자와 동일한 교차점, 두께 0.1px 테두리 포함) */
+.side-content::after {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    /* 4개의 교차점에 대해 각각 테두리(검정)와 내부(파랑)를 그라데이션으로 구현 */
+    background-image:
+        /* 내부 파란색 사각형 (4개) */
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        /* 테두리 검은색 사각형 (4개) */
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line));
+    background-size:
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap);
+    background-position:
+        /* 파란색 내부 (border 두께만큼 오프셋) */
+        top var(--t) left var(--t), top var(--t) right var(--t),
+        bottom var(--t) left var(--t), bottom var(--t) right var(--t),
+        /* 검은색 테두리 (0 오프셋) */
+        top 0 left 0, top 0 right 0,
+        bottom 0 left 0, bottom 0 right 0;
+    background-repeat: no-repeat;
+    z-index: 2;
+    mix-blend-mode: darken;
+}
+
+/* 호버 시 프레임 및 컨텐츠 표시 */
+.side-item-container:hover .side-content {
+    opacity: 1;
+}
+
+.side-content::-webkit-scrollbar {
+    display: none;
+    /* 크롬/사파리 스크롤바 숨김 */
+}
+
+.side-item-container:hover .side-content {
+    opacity: 1;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
-    .address-footer {
-        right: 0;
-        width: 100%;
-    }
-
-    .info-container {
-        width: 100%;
+    .left-sidebar {
+        display: none;
+        /* 모바일에서는 사이드바 숨김 처리 (선택 사항) */
     }
 }
+
 
 /* Contact Section Details */
 .contact-info-section {
@@ -1782,7 +2404,7 @@ body {
 }
 
 .contact-key {
-    font-family: inherit;
+
     font-size: 0.7rem;
     font-weight: 700;
     color: #999;
@@ -1937,7 +2559,7 @@ body {
 }
 
 .detail-main-title {
-    font-size: 2.2rem;
+    font-size: 40px;
     font-weight: 800;
     line-height: 1.2;
 }
@@ -2026,7 +2648,7 @@ body {
 }
 
 .detail-description {
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.6;
     color: #333;
 }
@@ -2048,7 +2670,7 @@ body {
 
 .curr-week {
     margin-bottom: 15px;
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .detail-meta {
@@ -2060,7 +2682,7 @@ body {
     display: flex;
     justify-content: flex-start;
     gap: 20px;
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .detail-tutor-intro {
@@ -2068,6 +2690,72 @@ body {
     padding: 0px 0 0 0;
     /* 좌우 여백 제거 */
     margin-top: 0;
+}
+
+/* 튜터 섹션 */
+.detail-tutor-section {
+    border-top: 1px solid #eee;
+    padding-top: 30px;
+    margin-top: 20px;
+}
+
+.detail-tutor-name {
+    font-size: 25px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.detail-tutor-bio {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #555;
+}
+
+/* 커리큘럼 섹션 */
+.detail-curriculum-section {
+    border-top: 1px solid #eee;
+    padding-top: 60px;
+    margin-top: 20px;
+}
+
+.detail-section-label {
+    font-size: 25px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+}
+
+.curriculum-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.curriculum-week {
+    font-weight: 800;
+    font-size: 20px;
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
+.curriculum-content {
+    color: #444;
+    font-size: 16px;
+    white-space: pre-line;
+}
+
+/* 정원 */
+.detail-capacity {
+    font-size: 16px;
+    font-weight: 700;
+    color: #666;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
 }
 
 .detail-footer-actions {
@@ -2101,21 +2789,6 @@ body {
 .outline-btn {
     background: #fff;
     border: 2px solid #000;
-}
-
-/* 순수 CSS 흔들림 효과 */
-.floating-dot {
-    animation: simple-float 3s ease-in-out infinite alternate;
-}
-
-@keyframes simple-float {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(3px, -3px) scale(1.05); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 .fill-btn {
@@ -2174,6 +2847,246 @@ body {
         max-height: none !important;
         height: auto !important;
         width: 100% !important;
+    }
+}
+
+/* ==========================================================================
+   LOGIN MODAL (Black Orbit Grid Aesthetic)
+   ========================================================================== */
+
+.login-overlay-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-overlay-wrapper.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.login-dimmer {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.login-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    z-index: 10;
+    transform: translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 40px;
+}
+
+.login-overlay-wrapper.active .login-modal-card {
+    transform: translateY(0);
+}
+
+/* Grid Frame Styling for Modal */
+.login-modal-card::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 1;
+}
+
+.login-modal-card::after {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect));
+    background-size: calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t));
+    background-position: top var(--t) left var(--t), top var(--t) right var(--t), bottom var(--t) left var(--t), bottom var(--t) right var(--t);
+    background-repeat: no-repeat;
+    z-index: 2;
+    mix-blend-mode: darken;
+}
+
+.login-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 5;
+}
+
+.login-logo {
+    font-weight: 900;
+    font-size: 1.2rem;
+    letter-spacing: 0.2em;
+}
+
+.login-close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    color: #000;
+}
+
+.login-modal-body {
+    position: relative;
+    z-index: 5;
+}
+
+.login-intro {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.login-intro h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+}
+
+.login-intro p {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.social-login-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border: 1px solid #e5e5e5;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.social-btn:hover {
+    background: #f9f9f9;
+    border-color: #000;
+}
+
+.social-btn .btn-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-weight: 900;
+}
+
+.social-btn.kakao {
+    background: #fee500;
+    border-color: #fee500;
+    color: #000;
+}
+
+.social-btn.kakao:hover {
+    background: #fdd835;
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 25px;
+    color: #ccc;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #eee;
+}
+
+.login-divider span {
+    padding: 0 15px;
+}
+
+.email-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.login-input {
+    padding: 14px;
+    border: 1px solid #eee;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.login-input:focus {
+    border-color: #000;
+}
+
+.email-submit-btn {
+    padding: 14px;
+    background: #000;
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.email-submit-btn:hover {
+    opacity: 0.8;
+}
+
+.login-notice {
+    font-size: 0.75rem;
+    color: #999;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.login-notice a {
+    color: #666;
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    .login-modal-card {
+        max-width: 90%;
+        padding: 30px 20px;
     }
 }
 
@@ -2736,6 +3649,11 @@ body {
     border-bottom: 1px solid #eee;
     transition: all 0.2s ease;
     text-align: left;
+    background: #fff;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    font-family: inherit;
 }
 
 .schedule-option:last-child {
@@ -2788,7 +3706,7 @@ body {
     width: 100%;
     background: #fff;
     color: #000;
-    padding: 80px 20px;
+    padding: 40px 20px;
 }
 
 .member-layout-v2 {
@@ -2961,150 +3879,15 @@ body {
     }
 }
 
-/* ─── 방명록 입력창 (v1 복구) ──────────────── */
-.guestbook-input-container {
-    position: absolute;
-    bottom: 80px; /* 푸터 버튼들과 겹치지 않게 조금 올림 */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10000;
-    width: 600px;
-    max-width: 90%;
-}
+/* 모바일 컨택트 폼 전체 너비 및 격자 이동 */
+@media (max-width: 768px) {
+    :root {
+        --contact-line-pos: 100%;
+        --contact-line-pos-rev: 0%;
+    }
 
-.guestbook-form {
-    display: flex;
-    gap: 0;
-    background: white;
-    padding: 2px;
-    border-radius: 40px;
-    border: 1.5px solid #000000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    align-items: center;
-}
-
-.guestbook-title-input {
-    width: 100px;
-    background: transparent;
-    border: none;
-    border-right: 1.5px solid #000000;
-    padding: 10px 15px;
-    color: #000000;
-    font-size: 14px;
-    font-weight: 800;
-    outline: none;
-}
-
-.guestbook-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 10px 20px;
-    color: #000000;
-    font-size: 15px;
-    outline: none;
-}
-
-.guestbook-input::placeholder {
-    color: rgba(0, 0, 0, 0.5);
-}
-
-.guestbook-send-btn {
-    background: white;
-    border: none;
-    color: rgb(0, 0, 0);
-    padding: 10px 25px;
-    border-radius: 30px;
-    cursor: pointer;
-    font-weight: 800;
-    font-family: inherit;
-    transition: transform 0.2s, filter 0.2s;
-}
-
-.guestbook-send-btn:hover {
-    transform: scale(1.05);
-    filter: brightness(1.2);
-}
-
-/* 방명록 메시지 팝업 (호버 카드 스타일) */
-.guestbook-message-popup {
-    position: fixed;
-    bottom: 80px;
-    right: 30px;
-    width: auto;
-    height: auto;
-    background: none;
-    backdrop-filter: none;
-    display: flex;
-    z-index: 20000;
-    pointer-events: none; /* 호버 방해 방지 */
-}
-
-.message-popup-inner {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    border: 2px solid #000;
-    width: 320px;
-    position: relative;
-    box-shadow: 10px 10px 0 rgba(0,0,0,1); /* 인더스트리얼 스타일 그림자 */
-    animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes slideInUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.message-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.message-title {
-    font-size: 1.2rem;
-    font-weight: 800;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-}
-
-.message-text {
-    font-size: 1rem;
-    line-height: 1.6;
-    margin-bottom: 20px;
-    min-height: 100px;
-}
-
-.message-date {
-    font-size: 0.75rem;
-    color: #999;
-    text-align: right;
-    margin-top: 15px;
-}
-
-.threads-overlay {
-    position: absolute;
-    top: 0;
-    left: -50vw;
-    width: 200vw;
-    height: 100%;
-    pointer-events: none;
-    z-index: 10;
-    overflow: visible;
-}
-
-.threaded-char {
-    display: inline-block;
-    position: relative;
-    will-change: transform;
-}
-
-.threaded-dot {
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    .contact-overlay-wrapper.from-left .contact-slide-panel,
+    .contact-overlay-wrapper.from-right .contact-slide-panel {
+        width: 100% !important;
+    }
 }

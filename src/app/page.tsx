@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, CSSProperties, Suspense } from "react";
+import { useEffect, useState, useRef, CSSProperties, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
-import { useAuth } from "@/hooks/useAuth";
-import LoginModal from "@/components/LoginModal";
+import Image from "next/image";
 import { urlFor } from "@/sanity/image";
 import { useWorkshopData } from "@/hooks/useWorkshopData";
-import { useGuestbookData } from "@/hooks/useGuestbookData";
+import { useAuth } from "@/hooks/useAuth";
 import WorkshopGrid from "@/components/WorkshopGrid";
 import CalendarView from "@/components/CalendarView";
 import MemberView from "@/components/MemberView";
 import IyocaView from "@/components/IyocaView";
+import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import { loadTossPayments } from "@tosspayments/payment-sdk";
 
 const presets = {
@@ -73,20 +72,17 @@ const randomColor = () => {
     return `hsl(${h}, 90%, 50%)`;
 };
 
-type IyoThread = {
-    id: number;
-    y: number;
-    amplitude: number;
-    frequency: number;
-    phase: number;
-    speed: number;
-};
-
-const getThreadWave = (thread: IyoThread, time: number, x: number) =>
-    Math.sin(time * thread.speed + x * thread.frequency + thread.phase) * thread.amplitude;
-
-const getEasedThreadMorph = (current: number, target: number) =>
-    current + (target - current) * 0.085;
+const createLegacyWorkshop = (id: number) => ({
+    id,
+    isSanity: false,
+    sortNum: id,
+    title: `AI.zip ${id} 그래픽`,
+    tutor: "000 @asdf1234",
+    price: 150000,
+    capacity: 8,
+    tags: ["AI", "WORKSHOP", "GRAPHIC"],
+    isClosed: id <= 11,
+});
 
 function HomeContent() {
     const router = useRouter();
@@ -95,290 +91,28 @@ function HomeContent() {
 
     const {
         sanityWorkshops,
-        registrations,
+        registrationCounts,
         calendarEvents,
         allWorkshops,
     } = useWorkshopData();
-    const { guestMessages, refresh: refreshGuestbook } = useGuestbookData();
+
+    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase } = useAuth();
 
     const [activePreset, setActivePreset] = useState<string>("main");
-    const [showInfo, setShowInfo] = useState(false);
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
     const [dynamicColor, setDynamicColor] = useState("#2563eb");
-    const [scrollColor, setScrollColor] = useState<string | null>(null);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isContactOpen, setIsContactOpen] = useState(false);
-    const [isBooting, setIsBooting] = useState(true);
-    const [showIyo, setShowIyo] = useState(true); // IYO 버튼 상태 (기본값 true: 텍스트 모드 시작)
-    const mainTextRef = useRef<HTMLDivElement>(null);
-    const textContentRef = useRef<HTMLDivElement>(null);
-    const [splitText, setSplitText] = useState<any>(null);
-    const [inputTitle, setInputTitle] = useState('');
-    const [inputText, setInputText] = useState('');
-    const { user, loading: authLoading } = useAuth();
-    const supabase = createClient();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-    const [selectedMessage, setSelectedMessage] = useState<any | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isBooting, setIsBooting] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRafRef = useRef<number | null>(null);
 
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!inputText.trim()) return;
-
-        try {
-            const { error } = await supabase
-                .from('guestbook')
-                .insert([{ title: inputTitle, text: inputText }]);
-
-            if (error) throw error;
-            setInputTitle('');
-            setInputText('');
-            refreshGuestbook(); // 데이터 갱신
-        } catch (err) {
-            console.error('Error sending message:', err);
-        }
-    };
-
-    const splitInstanceRef = useRef<any>(null);
-
-    // 텍스트 분절 및 초기화
-    useEffect(() => {
-        if (textContentRef.current && activePreset === 'main') {
-            // 이전 인스턴스가 있다면 먼저 복구
-            if (splitInstanceRef.current) {
-                splitInstanceRef.current.revert();
-            }
-
-            import('split-type').then((mod: any) => {
-                const SplitType = mod['default'] || mod;
-                if (!SplitType || typeof SplitType !== 'function' || !textContentRef.current) return;
-
-                // lines와 chars를 모두 추적하도록 변경
-                const split = new SplitType(textContentRef.current, { types: 'lines,chars' });
-                splitInstanceRef.current = split;
-                setSplitText(split);
-
-                if (split.chars) {
-                    (split.chars as any[]).forEach((char: any) => {
-                        char.style.display = 'inline-block';
-                        char.style.position = 'relative';
-                        char.style.zIndex = '2';
-                        char.classList.add('threaded-char');
-                    });
-                }
-            }).catch(err => console.error("SplitType 로드 실패:", err));
-        }
-
-        // Cleanup: 컴포넌트가 사라지거나 프리셋이 바뀔 때 DOM 복구
-        return () => {
-            if (splitInstanceRef.current) {
-                try {
-                    splitInstanceRef.current.revert();
-                    splitInstanceRef.current = null;
-                } catch (e) {
-                    console.warn("SplitType revert 중 오류 발생 (무시 가능):", e);
-                }
-            }
-        };
-    }, [activePreset]);
-
-    // 애니메이션 제어 (Pure CSS/JS)
-    useEffect(() => {
-        if (!splitText || !splitText.chars) return;
-
-        const chars = splitText.chars;
-
-        if (showIyo) {
-            // 텍스트 모드
-            chars.forEach((char: any, i: number) => {
-                const textWidth = char.dataset.textWidth || `${Math.max(char.getBoundingClientRect().width, 4)}px`;
-                const textHeight = char.dataset.textHeight || `${Math.max(char.getBoundingClientRect().height, 12)}px`;
-                char.dataset.textWidth = textWidth;
-                char.dataset.textHeight = textHeight;
-                char.style.transition = `opacity 0.45s ease ${i * 0.002}s, width 0.52s cubic-bezier(0.22, 1, 0.36, 1), height 0.52s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.52s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.45s ease, color 0.35s ease`;
-                char.style.opacity = '1';
-                char.style.display = 'inline-flex';
-                char.style.alignItems = 'center';
-                char.style.justifyContent = 'center';
-                char.style.width = textWidth;
-                char.style.height = textHeight;
-                char.style.borderRadius = '0%';
-                char.style.backgroundColor = 'transparent';
-                char.style.color = 'inherit';
-                char.style.cursor = 'default';
-                char.style.boxShadow = 'none';
-                char.onclick = null;
-                char.onmouseenter = null;
-                char.onmouseleave = null;
-                char.classList.remove('threaded-dot');
-            });
-        } else {
-            // 방명록 모드: 컬러풀한 원 및 호버 팝업 (순환 구조)
-            const totalSlots = chars.length;
-
-            chars.forEach((char: any, i: number) => {
-                // 순환 인덱싱: 전체 슬롯보다 메시지가 많으면 (index % totalSlots) 자리에 덮어쓰기
-                // 최신 메시지부터 역순으로 찾아서 해당 슬롯(i)에 해당하는 가장 최신 메시지를 할당
-                const messageForThisSlot = [...guestMessages].reverse().find((_, revIdx) => {
-                    const originalIdx = guestMessages.length - 1 - revIdx;
-                    return originalIdx % totalSlots === i;
-                });
-                const hasMessage = !!messageForThisSlot;
-
-                // 각 점마다 고유한 색상 부여 (HSL 활용)
-                const hue = (i * 137.5) % 360;
-                const color = `hsl(${hue}, 80%, 65%)`;
-                const dimmedColor = `hsl(${hue}, 25%, 92%)`;
-
-                const rect = char.getBoundingClientRect();
-                if (!char.dataset.textWidth) char.dataset.textWidth = `${Math.max(rect.width, 4)}px`;
-                if (!char.dataset.textHeight) char.dataset.textHeight = `${Math.max(rect.height, 12)}px`;
-                const syllableSize = `${Math.max(
-                    parseFloat(char.dataset.textWidth),
-                    parseFloat(char.dataset.textHeight),
-                    12
-                )}px`;
-
-                char.style.transition = `opacity 0.35s ease ${i * 0.001}s, width 0.6s cubic-bezier(0.22, 1, 0.36, 1), height 0.6s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.6s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.45s ease, box-shadow 0.3s ease, color 0.28s ease`;
-                char.style.opacity = hasMessage ? '1' : '0.4';
-                char.style.display = 'inline-flex';
-                char.style.alignItems = 'center';
-                char.style.justifyContent = 'center';
-                char.style.width = syllableSize;
-                char.style.height = syllableSize;
-                char.style.borderRadius = '50%';
-                char.style.backgroundColor = hasMessage ? color : dimmedColor;
-                char.style.color = 'transparent';
-                char.style.boxShadow = hasMessage ? `0 0 0 2px #000, 0 0 0 5px ${color}` : '0 0 0 1px #000';
-                char.classList.add('threaded-dot');
-
-                if (hasMessage) {
-                    char.style.cursor = 'pointer';
-                    // 호버 시 메시지 표시
-                    char.onmouseenter = () => setSelectedMessage(messageForThisSlot);
-                    char.onmouseleave = () => setSelectedMessage(null);
-                    char.onclick = null; // 클릭 기능 제거
-                    char.classList.add('floating-dot');
-                } else {
-                    char.style.cursor = 'default';
-                    char.onmouseenter = null;
-                    char.onmouseleave = null;
-                    char.onclick = null;
-                }
-            });
-        }
-    }, [showIyo, splitText, guestMessages]);
-
-    const [threads, setThreads] = useState<IyoThread[]>([]);
-    const threadPathRefs = useRef<(SVGPathElement | null)[]>([]);
-    const requestRef = useRef<number | null>(null);
-    const timeRef = useRef<number>(0);
-    const threadMorphRef = useRef<number>(0);
-
-    // 실 위치 계산 및 애니메이션 루프
-    useEffect(() => {
-        if (!splitText || !splitText.lines || !splitText.chars || activePreset !== 'main') return;
-
-        let rafId: number | null = null;
-        let initialThreads: IyoThread[] = [];
-        let charBindings: { char: HTMLElement; lineIndex: number; phase: number }[] = [];
-
-        const setupThreads = () => {
-            const containerRect = mainTextRef.current?.getBoundingClientRect();
-            if (!containerRect || !splitText.lines) return;
-
-            // 모든 유효한 라인을 추출 (textContent가 있는 모든 요소)
-            const allLines = (splitText.lines as HTMLElement[]).filter(line => line.innerText.trim().length > 0);
-
-            initialThreads = allLines.map((line, idx) => {
-                const rect = line.getBoundingClientRect();
-                return {
-                    id: idx,
-                    y: rect.top - containerRect.top + rect.height / 2,
-                    amplitude: 4.5 + (idx % 3) * 1.5,
-                    frequency: 0.003 + idx * 0.0002,
-                    phase: idx * 1.5,
-                    speed: 1.0 + idx * 0.05,
-                };
-            });
-
-            charBindings = (splitText.chars as HTMLElement[]).map((char, idx) => {
-                const parentLine = allLines.find(line => line.contains(char));
-                const lineIndex = allLines.indexOf(parentLine as HTMLElement);
-                return {
-                    char,
-                    lineIndex: lineIndex !== -1 ? lineIndex : 0,
-                    phase: idx * 0.4,
-                };
-            });
-
-            setThreads(initialThreads);
-        };
-
-        // 초기 실행 전 약간의 지연을 주어 레이아웃이 확정된 후 계산
-        const timeoutId = setTimeout(setupThreads, 100);
-        window.addEventListener('resize', setupThreads);
-
-        // 애니메이션 루프
-        const animate = () => {
-            if (initialThreads.length === 0) {
-                rafId = requestAnimationFrame(animate);
-                return;
-            }
-
-            const containerRect = mainTextRef.current?.getBoundingClientRect();
-            if (!containerRect) {
-                rafId = requestAnimationFrame(animate);
-                return;
-            }
-
-            timeRef.current += 0.025;
-            const time = timeRef.current;
-            const width = window.innerWidth * 2;
-            const morphTarget = showIyo ? 0 : 1;
-            threadMorphRef.current = getEasedThreadMorph(threadMorphRef.current, morphTarget);
-            const morph = threadMorphRef.current;
-
-            // 1. 실 애니메이션
-            initialThreads.forEach((thread) => {
-                const path = threadPathRefs.current[thread.id];
-                if (path) {
-                    const points = [];
-                    for (let x = 0; x <= width; x += 15) {
-                        const wave = getThreadWave(thread, time, x) * (1 + morph * 0.4);
-                        points.push(`${x},${thread.y + wave}`);
-                    }
-                    path.setAttribute('d', `M ${points.join(' L ')}`);
-                }
-            });
-
-            // 2. 글자 애니메이션
-            charBindings.forEach(({ char, lineIndex, phase }) => {
-                const thread = initialThreads[lineIndex];
-                if (!thread) return;
-
-                const charRect = char.getBoundingClientRect();
-                const charXInSVG = charRect.left - containerRect.left + (window.innerWidth * 0.5) + (charRect.width / 2);
-                const wave = getThreadWave(thread, time, charXInSVG) * (1 + morph * 0.4);
-                
-                // 방명록 모드일 때만 추가되는 미세한 흔들림
-                const beadBob = Math.sin(time * 1.5 + phase) * 2 * morph;
-                const scale = 1 + Math.sin(time * 1.2 + phase) * 0.03 * morph;
-
-                char.style.transform = `translate3d(0, ${wave + beadBob}px, 0) scale(${scale})`;
-            });
-
-            rafId = requestAnimationFrame(animate);
-        };
-
-        rafId = requestAnimationFrame(animate);
-        return () => {
-            clearTimeout(timeoutId);
-            window.removeEventListener('resize', setupThreads);
-            if (rafId) cancelAnimationFrame(rafId);
-        };
-    }, [splitText, showIyo, activePreset]);
 
     useEffect(() => {
+        setIsMounted(true);
         const raf = requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 setIsBooting(false);
@@ -395,10 +129,8 @@ function HomeContent() {
     const [showSchedule, setShowSchedule] = useState(false);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
 
-    const inputContainerRef = useRef<HTMLDivElement>(null);
-
     useEffect(() => {
-        const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || "";
+        const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || "test_ck_ALnQvDd2VJl6vpNz1RRO8Mj7X41m";
         loadTossPayments(clientKey).then(setTossPayments);
     }, []);
 
@@ -407,17 +139,18 @@ function HomeContent() {
         const presetId = searchParams.get('preset');
 
         if (workshopId) {
-            let found = sanityWorkshops.find(w => (w._id || w.id)?.toString() === workshopId);
-            if (!found) {
-                const idNum = parseInt(workshopId);
-                if (!isNaN(idNum) && idNum > 0 && idNum <= 24) {
-                    found = { id: idNum, title: `AI.zip ${idNum} 그래픽`, price: 150000 };
-                }
-            }
+            const legacyId = Number(workshopId);
+            const found = sanityWorkshops.find(w => (w._id || w.id)?.toString() === workshopId)
+                || (Number.isInteger(legacyId) && legacyId > 0 && legacyId <= 24
+                    ? createLegacyWorkshop(legacyId)
+                    : null);
+
             if (found) {
                 setSelectedWorkshop(found);
                 setActivePreset('workshop');
                 setVisited(v => ({ ...v, workshop: true }));
+                setSelectedSession(null);
+                setShowSchedule(false);
                 return;
             }
         }
@@ -459,14 +192,53 @@ function HomeContent() {
         setSelectedSession(null);
         setShowSchedule(false);
         setIsContactOpen(false);
-        setDynamicColor(randomColor());
-        setScrollColor(null);
+        const newColor = randomColor();
+        setDynamicColor(newColor);
+        if (containerRef.current) {
+            containerRef.current.style.setProperty('--intersect', newColor);
+            containerRef.current.style.setProperty('--scroll-hue', '220');
+        }
     };
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (scrollRafRef.current) return;
+
         const target = e.currentTarget;
-        const h = Math.floor(target.scrollTop / 5) % 360;
-        setScrollColor(`hsl(${h}, 90%, 50%)`);
+        scrollRafRef.current = requestAnimationFrame(() => {
+            const h = Math.floor(target.scrollTop / 5) % 360;
+            const color = `hsl(${h}, 90%, 50%)`;
+            if (containerRef.current) {
+                containerRef.current.style.setProperty('--intersect', color);
+                containerRef.current.style.setProperty('--scroll-hue', h.toString());
+            }
+            scrollRafRef.current = null;
+        });
+    };
+
+    const handleGoogleLogin = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) {
+            console.error("Google Login Error:", error.message);
+            alert("로그인 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleKakaoLogin = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'kakao',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) {
+            console.error("Kakao Login Error:", error.message);
+            alert("로그인 중 오류가 발생했습니다.");
+        }
     };
 
 
@@ -495,54 +267,90 @@ function HomeContent() {
         } finally { setIsSending(false); }
     };
 
+    const getWorkshopCapacity = (workshop: any) =>
+        typeof workshop?.capacity === 'number' ? workshop.capacity : 8;
+
+    const getWorkshopPaidCount = (workshop: any) => {
+        const dbId = workshop?.supabase_workshop_id;
+        return dbId ? registrationCounts[dbId] || 0 : 0;
+    };
+
+    const getWorkshopSchedule = (workshop: any) =>
+        Array.isArray(workshop?.schedule)
+            ? workshop.schedule.filter((session: any) => session?.date || session?.time)
+            : [];
+
+    const hasSelectableSchedule = (workshop: any) => getWorkshopSchedule(workshop).length > 0;
+
+    const isWorkshopClosedForPayment = (workshop: any) => {
+        const isLegacyClosed = !workshop?.isSanity && Number(workshop?.id) <= 11;
+        return Boolean(
+            workshop?.isClosed ||
+            isLegacyClosed ||
+            getWorkshopPaidCount(workshop) >= getWorkshopCapacity(workshop)
+        );
+    };
+
     const handleWorkshopPayment = async (workshop: any) => {
         if (!user) {
             setIsLoginModalOpen(true);
             return;
         }
 
-        // Check profile
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('full_name, phone')
-            .eq('id', user.id)
-            .single();
-
-        if (profileError || !profile?.full_name || !profile?.phone) {
-            router.push('/onboarding');
+        if (!isProfileComplete) {
+            alert("워크숍 신청을 위해 프로필(이름, 전화번호)을 먼저 완성해 주세요.");
+            setIsLoginModalOpen(true);
             return;
         }
 
-        const currentRegs = registrations.filter(r => r.workshop_id === (workshop._id || workshop.id)).length;
-        if (currentRegs >= (workshop.capacity || 8)) {
-            alert("이미 마감된 워크숍입니다.");
+        const dbWorkshopId = workshop.supabase_workshop_id;
+        if (!dbWorkshopId) {
+            alert("이 워크숍은 아직 신청할 수 없습니다. (DB UUID 누락)");
+            return;
+        }
+
+        if (isWorkshopClosedForPayment(workshop)) {
+            alert("이미 마감된 워크샵입니다.");
+            return;
+        }
+
+        if (hasSelectableSchedule(workshop) && !selectedSession) {
+            alert("일정을 먼저 선택해 주세요.");
+            setShowSchedule(true);
+            return;
+        }
+
+        // 1. Initialize Toss Payments before pending registration
+        let payments = tossPayments;
+        if (!payments) {
+            const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || "test_ck_ALnQvDd2VJl6vpNz1RRO8Mj7X41m";
+            payments = await loadTossPayments(clientKey);
+            setTossPayments(payments);
+        }
+
+        if (!payments) {
+            alert("결제 시스템을 준비 중입니다. 잠시 후 다시 시도해 주세요.");
             return;
         }
 
         try {
-            // Create pending registration via RPC (p_user_id 불필요 - 서버에서 auth.uid() 사용)
-            const { data: regId, error: rpcError } = await supabase.rpc('create_pending_registration', {
-                p_workshop_id: workshop._id || workshop.id,
+            // 2. Create pending registration via RPC
+            const { data: regData, error: rpcError } = await supabase.rpc('create_pending_registration', {
+                p_workshop_id: dbWorkshopId,
             });
 
             if (rpcError) throw rpcError;
 
-            if (!tossPayments) {
-                alert("결제 시스템을 준비 중입니다. 잠시 후 다시 시도해 주세요.");
-                return;
-            }
+            // regData contains { registration_id, order_id, amount, workshop_title }
+            const { registration_id, order_id, amount, workshop_title } = regData;
 
-            const amount = workshop.price || 150000;
-            const safeWorkshopId = (workshop._id || workshop.id).toString().replace(/[^a-zA-Z0-9-_]/g, '');
-            const orderId = `order_${regId || safeWorkshopId}_${Date.now()}`;
-            const orderName = workshop.title || `워크숍 ${workshop.id}`;
-            
-            await tossPayments.requestPayment('카드', {
-                amount,
-                orderId,
-                orderName,
-                successUrl: `${window.location.origin}/payment/success?registration_id=${regId}`,
-                failUrl: `${window.location.origin}/payment/fail`,
+            // 3. Request Payment
+            await payments.requestPayment('카드', {
+                amount: amount,
+                orderId: order_id,
+                orderName: workshop_title || workshop.title || `워크숍 ${workshop.number || workshop.id}`,
+                successUrl: `${window.location.origin}/payment/success?registration_id=${registration_id}${selectedSession ? `&schedule=${encodeURIComponent(`${selectedSession.date || ''} ${selectedSession.time || ''}`.trim())}` : ''}`,
+                failUrl: `${window.location.origin}/payment/fail?registration_id=${registration_id}`,
             });
         } catch (error: any) {
             console.error("신청/결제 요청 에러:", error);
@@ -550,7 +358,7 @@ function HomeContent() {
         }
     };
 
-    const intersectColor = scrollColor || dynamicColor;
+    const intersectColor = dynamicColor;
     const currentPreset = presets[activePreset as keyof typeof presets] || presets.main;
 
     let line1 = currentPreset.line1;
@@ -560,13 +368,13 @@ function HomeContent() {
     if (isContactOpen) {
         const isRightPage = ['workshop', 'diary', 'main', 'member', 'club'].includes(activePreset);
         if (isRightPage) {
-            line1 = "40%";
-            line2 = "calc(40% + 7px)";
-            line3 = "calc(40% + 14px)";
+            line1 = "var(--contact-line-pos, 40%)";
+            line2 = "calc(var(--contact-line-pos, 40%) + 7px)";
+            line3 = "calc(var(--contact-line-pos, 40%) + 14px)";
         } else {
-            line1 = "calc(60% - 14px)";
-            line2 = "calc(60% - 7px)";
-            line3 = "60%";
+            line1 = "calc(var(--contact-line-pos-rev, 60%) - 14px)";
+            line2 = "calc(var(--contact-line-pos-rev, 60%) - 7px)";
+            line3 = "var(--contact-line-pos-rev, 60%)";
         }
     }
 
@@ -579,8 +387,8 @@ function HomeContent() {
     } as CSSProperties;
 
     return (
-        <div style={containerStyle} className={`app-container ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
-            <style>{`:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: ${scrollColor ? (parseInt(scrollColor.match(/\d+/)![0])) : 220}; }`}</style>
+        <div ref={containerRef} style={containerStyle} className={`app-container ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
+            <style>{`:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`}</style>
 
             <header className="header">
                 <div className="logo" onClick={() => handlePresetChange('main')} style={{ cursor: 'pointer' }}>
@@ -590,23 +398,26 @@ function HomeContent() {
                 </div>
                 <div className="btn-sep"></div>
                 <nav className="controls">
-                    <button className={activePreset === 'member' ? 'active' : ''} onClick={() => handlePresetChange('member')}>MEMBER</button>
-                    <div className="cat-bar"></div>
-                    <button className={activePreset === 'workshop' ? 'active' : ''} onClick={() => handlePresetChange('workshop')}>WORKSHOP</button>
-                    <button className={activePreset === 'club' ? 'active' : ''} onClick={() => handlePresetChange('club')}>IYOCA</button>
-                    <button className={activePreset === 'diary' ? 'active' : ''} onClick={() => handlePresetChange('diary')}>CALENDAR</button>
-                    <button className={isContactOpen ? 'active' : ''} onClick={() => handlePresetChange('contact')}>CONTACT</button>
-                    <div className="cat-bar"></div>
-                    {authLoading ? (
-                        <div className="font-mono text-[10px] animate-pulse">...</div>
-                    ) : user ? (
-                        <button onClick={() => {
-                            const { createClient } = require('@/lib/supabase/browser');
-                            createClient().auth.signOut().then(() => router.refresh());
-                        }} className="font-mono text-[10px] opacity-50 hover:opacity-100 uppercase">LOGOUT</button>
-                    ) : (
-                        <button onClick={() => setIsLoginModalOpen(true)} className="font-mono text-[10px] opacity-50 hover:opacity-100 uppercase">LOGIN</button>
-                    )}
+                    <button className={`nav-desktop-only ${activePreset === 'member' ? 'active' : ''}`} onClick={() => handlePresetChange('member')}>MEMBER</button>
+                    <div className="cat-bar nav-desktop-only"></div>
+                    <button className={`nav-desktop-only ${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => handlePresetChange('workshop')}>WORKSHOP</button>
+                    <button className={`nav-desktop-only ${activePreset === 'club' ? 'active' : ''}`} onClick={() => handlePresetChange('club')}>IYOCA</button>
+
+                    <button className={`nav-desktop-only ${activePreset === 'diary' ? 'active' : ''}`} onClick={() => handlePresetChange('diary')}>CALENDAR</button>
+                    <button className={`nav-desktop-only ${isContactOpen ? 'active' : ''}`} onClick={() => handlePresetChange('contact')}>CONTACT</button>
+
+                    <button className="user-login-btn" onClick={() => setIsLoginModalOpen(true)}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+
+                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
+                        <span className="hamburger-box">
+                            <span className="hamburger-inner"></span>
+                        </span>
+                    </button>
                 </nav>
             </header>
 
@@ -637,23 +448,35 @@ function HomeContent() {
                                                 <div className="detail-poster-wrapper">
                                                     {(() => {
                                                         const isSanity = !!selectedWorkshop._id;
-                                                        let aspectRatio = "1080 / 1350";
+                                                        const legacyPoster = !isSanity ? getLegacyPosterMeta(Number(selectedWorkshop.id)) : null;
+                                                        let posterWidth = legacyPoster?.width || 1080;
+                                                        let posterHeight = legacyPoster?.height || 1350;
                                                         if (isSanity && selectedWorkshop.posterMeta) {
-                                                            aspectRatio = `${selectedWorkshop.posterMeta.width} / ${selectedWorkshop.posterMeta.height}`;
+                                                            posterWidth = selectedWorkshop.posterMeta.width;
+                                                            posterHeight = selectedWorkshop.posterMeta.height;
                                                         }
+                                                        const aspectRatio = `${posterWidth} / ${posterHeight}`;
 
                                                         const imgUrl = isSanity
                                                             ? (selectedWorkshop.poster ? urlFor(selectedWorkshop.poster).width(1200).auto('format').url() : null)
-                                                            : (selectedWorkshop.id === 24 ? `/assets/24.jpg` : `/assets/${selectedWorkshop.id.toString().padStart(2, '0')}.png`);
+                                                            : legacyPoster?.src;
 
                                                         return imgUrl ? (
                                                             <div className="detail-poster-aspect-box" style={{ "--aspect-ratio": aspectRatio } as CSSProperties}>
-                                                                <img
+                                                                <Image
                                                                     src={imgUrl}
                                                                     className="detail-main-poster"
                                                                     alt="Poster"
+                                                                    width={posterWidth}
+                                                                    height={posterHeight}
+                                                                    sizes="(max-width: 1000px) 100vw, 45vw"
                                                                     loading="lazy"
-                                                                    decoding="async"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'contain',
+                                                                        objectPosition: 'center',
+                                                                    }}
                                                                 />
                                                             </div>
                                                         ) : null;
@@ -673,22 +496,85 @@ function HomeContent() {
                                                     <div className="detail-description">
                                                         {selectedWorkshop.description?.map((block: any, i: number) => (<p key={i}>{block.children?.map((c: any) => c.text).join('')}</p>))}
                                                     </div>
+
+                                                    {/* 튜터 정보 */}
+                                                    {(selectedWorkshop.tutor || selectedWorkshop.tutorBio) && (
+                                                        <div className="detail-tutor-section">
+                                                            {selectedWorkshop.tutor && (
+                                                                <div className="detail-tutor-name">튜터 : {selectedWorkshop.tutor}</div>
+                                                            )}
+                                                            {selectedWorkshop.tutorBio && (
+                                                                <div className="detail-tutor-bio">{selectedWorkshop.tutorBio}</div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* 커리큘럼 */}
+                                                    {selectedWorkshop.curriculum && selectedWorkshop.curriculum.length > 0 && (
+                                                        <div className="detail-curriculum-section">
+                                                            <div className="detail-section-label">커리큘럼</div>
+                                                            {selectedWorkshop.curriculum.map((week: any, i: number) => (
+                                                                <div key={week._key || i} className="curriculum-row">
+                                                                    <span className="curriculum-week">{week.weekLabel}</span>
+                                                                    <span className="curriculum-content">{week.content}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* 정원 */}
+                                                    {typeof selectedWorkshop.capacity === 'number' && (
+                                                        <div className="detail-capacity">
+                                                            정원 {selectedWorkshop.capacity}명
+                                                        </div>
+                                                    )}
                                                     <div className="detail-footer-actions">
                                                         <div className="price-tag">{selectedWorkshop.price?.toLocaleString()}원</div>
-                                                        <button className="action-btn outline-btn" onClick={() => setShowSchedule(!showSchedule)}>
-                                                            {selectedSession ? `${selectedSession.date} ${selectedSession.time}` : '일정 선택'}
+                                                        {hasSelectableSchedule(selectedWorkshop) && (
+                                                            <div className="schedule-selector-wrapper">
+                                                                <button
+                                                                    type="button"
+                                                                    className={`action-btn outline-btn ${selectedSession ? 'selected' : ''}`}
+                                                                    onClick={() => setShowSchedule(!showSchedule)}
+                                                                >
+                                                                    {selectedSession ? `${selectedSession.date || ''} ${selectedSession.time || ''}`.trim() : '일정 선택'}
+                                                                </button>
+                                                                {showSchedule && (
+                                                                    <div className="schedule-dropdown">
+                                                                        {getWorkshopSchedule(selectedWorkshop).map((session: any, index: number) => (
+                                                                            <button
+                                                                                type="button"
+                                                                                key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
+                                                                                className="schedule-option"
+                                                                                onClick={() => {
+                                                                                    setSelectedSession(session);
+                                                                                    setShowSchedule(false);
+                                                                                }}
+                                                                            >
+                                                                                {session.date && <span className="s-date">{session.date}</span>}
+                                                                                {session.time && <span className="s-time">{session.time}</span>}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <button
+                                                            className={`action-btn fill-btn ${hasSelectableSchedule(selectedWorkshop) && !selectedSession ? 'locked' : ''}`}
+                                                            disabled={isWorkshopClosedForPayment(selectedWorkshop)}
+                                                            onClick={() => handleWorkshopPayment(selectedWorkshop)}
+                                                        >
+                                                            {isWorkshopClosedForPayment(selectedWorkshop) ? '마감' : '워크숍 신청'}
                                                         </button>
-                                                        <button className="action-btn fill-btn" onClick={() => handleWorkshopPayment(selectedWorkshop)}>워크숍 신청</button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <WorkshopGrid workshops={allWorkshops} registrations={registrations} onSelectWorkshop={handleSelectWorkshop} getTagColor={getTagColor} />
+                                    <WorkshopGrid workshops={allWorkshops} registrationCounts={registrationCounts} onSelectWorkshop={handleSelectWorkshop} getTagColor={getTagColor} />
                                 )
                             )}
-
                         </div>
                     </div>
 
@@ -714,71 +600,52 @@ function HomeContent() {
                                 display: 'flex',
                                 justifyContent: 'center'
                             }}>
-                                {/* <img
+                                <Image
                                     src="/logo.png"
                                     alt="IYOHOUSE Logo"
+                                    width={214}
+                                    height={152}
+                                    priority
+                                    sizes="(max-width: 900px) 50vw, 600px"
                                     style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
-                                /> */}
+                                />
                             </div>
-                            <div className="main-content-area" style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div className="main-left-text" ref={mainTextRef} style={{ textAlign: 'left', position: 'relative' }}>
-                                    {/* 실(Threads) SVG 레이어 (텍스트 위에 배치하여 관통 느낌 극대화) */}
-                                    <svg className="threads-overlay">
-                                        {threads.map((thread) => (
-                                            <path
-                                                key={thread.id}
-                                                ref={(node) => {
-                                                    threadPathRefs.current[thread.id] = node;
-                                                }}
-                                                fill="none"
-                                                stroke="#000"
-                                                strokeWidth={showIyo ? "1.2" : "1.8"}
-                                                opacity={showIyo ? "0.95" : "1"}
-                                            />
-                                        ))}
-                                    </svg>
 
-                                    <div className="text-content-wrapper" ref={textContentRef}>
-                                        <p>가느다란 실이 손가락 사이를 자유롭게 오가듯, &apos;이요&apos;는 우연한 교차에 주목합니다.</p>
-                                        <p>팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.</p>
-                                        <p>하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.</p>
+                            <div className="left-sidebar">
+                                <div className="side-item-container">
+                                    <div className="side-label">About us</div>
+                                    <div className="side-content">
+                                        <div>
+                                            가느다란 실이 손가락 사이를 자유롭게 오가듯, &apos;이요&apos;는 우연한 교차에 주목합니다.<br /><br />
+                                            팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.<br /><br />
+                                            하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="side-item-container">
+                                    <div className="side-label">IYOBOT</div>
+                                    <div className="side-content">
+                                        <div>
+                                            <strong>지능형 연결 조력자</strong><br /><br />
+                                            IYOBOT은 당신의 창의적 영감을 아카이빙하고, 다른 창작자들의 생각과 연결해주는 스마트 가이드입니다. 복잡한 생각의 실타래를 함께 풀어나가는 파트너를 만나보세요.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="side-item-container">
+                                    <div className="side-label">INFO</div>
+                                    <div className="side-content">
+                                        <div>
+                                            <strong>주식회사 이요하우스</strong><br />
+                                            ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
+                                            BUSINESS LICENSE : 718-88-02112<br />
+                                            MALL-ORDER LICENSE : 2024-서울송파-2708<br />
+                                            EMAIL : goyangiyoram@gmail.com<br />
+                                            웹사이트 디자인 : 어준<a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
+
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* 텍스트가 모핑되어 원이 되었을 때(방명록 모드)만 입력창 노출 */}
-                            {activePreset === 'main' && !showIyo && (
-                                <div className="guestbook-input-container">
-                                    <form onSubmit={handleSendMessage} className="guestbook-form">
-                                        <input
-                                            type="text"
-                                            value={inputTitle}
-                                            onChange={(e) => setInputTitle(e.target.value)}
-                                            placeholder="제목"
-                                            className="guestbook-title-input"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={inputText}
-                                            onChange={(e) => setInputText(e.target.value)}
-                                            placeholder="방명록을 남겨주세요 ! "
-                                            className="guestbook-input"
-                                        />
-                                        <button type="submit" className="guestbook-send-btn">전송</button>
-                                    </form>
-                                </div>
-                            )}
-
-                            {/* 방명록 메시지 팝업 */}
-                            {selectedMessage && (
-                                <div className="guestbook-message-popup">
-                                    <div className="message-popup-inner">
-                                        <div className="message-title">{selectedMessage.title || 'Message'}</div>
-                                        <div className="message-text">{selectedMessage.text}</div>
-                                        <div className="message-date">{new Date(selectedMessage.created_at).toLocaleDateString()}</div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -814,51 +681,122 @@ function HomeContent() {
                     </div>
                 </div>
             </div>
-
-
-
-            {activePreset === 'main' && (
-                <>
-                    <div className="footer-left-group">
-                        <div className="iyo-footer-v2">
-                            <div className={`iyo-container-v2 ${showIyo ? 'active' : ''}`} onClick={() => setShowIyo(true)}>
-                                <div className="iyo-text-v2">
-                                    글자를 원래의 위치로<br />
-                                    모아줍니다.
-                                </div>
-                                <div className="iyo-label-v2">IYO</div>
-                            </div>
+            {/* Mobile Menu Overlay */}
+            <div className={`mobile-menu-overlay ${isMenuOpen ? 'active' : ''}`}>
+                <div className="mobile-menu-inner">
+                    <div className="mobile-menu-header">
+                        <div className="logo-text">
+                            <span className="logo-title">IYOHOUSE</span>
                         </div>
-                        <div className="guestbook-footer-v2">
-                            <div className={`iyo-container-v2 ${!showIyo ? 'active' : ''}`} onClick={() => setShowIyo(false)}>
-                                <div className="iyo-text-v2">
-                                    방명록을 작성하거나<br />
-                                    친구들의 메시지를 확인해보세요.
-                                </div>
-                                <div className="iyo-label-v2">방명록</div>
-                            </div>
-                        </div>
+                        <button className="menu-close-btn" onClick={() => setIsMenuOpen(false)}>
+                            <div className="close-icon"></div>
+                        </button>
                     </div>
 
-                    <div className="address-footer">
-                        <div className="info-container">
-                            <div className="info-text">
-                                주식회사 이요하우스<br />
+                    <div className="mobile-menu-content-frame">
+                        <div className="mobile-menu-list">
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('main'); setIsMenuOpen(false); }}>
+                                <span className="item-label">MAIN</span>
+                            </button>
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('member'); setIsMenuOpen(false); }}>
+                                <span className="item-label">MEMBER</span>
+                            </button>
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('workshop'); setIsMenuOpen(false); }}>
+                                <span className="item-label">WORKSHOP</span>
+                            </button>
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('club'); setIsMenuOpen(false); }}>
+                                <span className="item-label">IYOCA</span>
+                            </button>
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('diary'); setIsMenuOpen(false); }}>
+                                <span className="item-label">CALENDAR</span>
+                            </button>
+                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('contact'); setIsMenuOpen(false); }}>
+                                <span className="item-label">CONTACT</span>
+                            </button>
+                        </div>
+                        <div className="mobile-menu-footer">
+                            <div className="footer-line">  <strong>주식회사 이요하우스</strong><br />
                                 ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
                                 BUSINESS LICENSE : 718-88-02112<br />
                                 MALL-ORDER LICENSE : 2024-서울송파-2708<br />
                                 EMAIL : goyangiyoram@gmail.com<br />
-                                웹사이트 디자인 : 어준 / <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
+                                웹사이트 디자인 : 어 준 <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
                             </div>
-                            <div className="info-label">INFO</div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {isMounted && (
+                <>
+                    {/* Login Modal Overlay */}
+                    <div className={`login-overlay-wrapper ${isLoginModalOpen ? 'active' : ''}`}>
+                        <div className="login-dimmer" onClick={() => setIsLoginModalOpen(false)}></div>
+                        <div className="login-modal-card">
+                            <div className="login-modal-header">
+
+                                <button className="login-close-btn" onClick={() => setIsLoginModalOpen(false)}>&times;</button>
+                            </div>
+                            <div className="login-modal-body">
+                                {user ? (
+                                    /* 로그인 상태 */
+                                    <div className="login-intro">
+                                        <h3>IYOHOUSE</h3>
+                                        <div style={{ marginTop: '16px', fontSize: '14px', opacity: 0.8 }}>
+                                            {profile?.full_name || user.email}
+                                        </div>
+                                        {!isProfileComplete && (
+                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(255,200,0,0.15)', borderRadius: '6px', fontSize: '13px' }}>
+                                                프로필을 완성해 주세요 (이름, 전화번호)
+                                            </div>
+                                        )}
+                                        <button
+                                            className="email-submit-btn"
+                                            style={{ marginTop: '20px' }}
+                                            onClick={async () => { await signOut(); setIsLoginModalOpen(false); }}
+                                        >
+                                            로그아웃
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* 비로그인 상태 */
+                                    <>
+                                        <div className="login-intro">
+                                            <h3>IYOHOUSE</h3>
+                                        </div>
+
+                                        <div className="social-login-group">
+                                            <button className="social-btn kakao" onClick={handleKakaoLogin}>
+                                                <span className="btn-icon">K</span>
+                                                <span className="btn-text">카카오로 시작하기</span>
+                                            </button>
+                                            <button className="social-btn google" onClick={handleGoogleLogin}>
+                                                <span className="btn-icon">G</span>
+                                                <span className="btn-text">구글로 시작하기</span>
+                                            </button>
+                                        </div>
+
+                                        <div className="login-divider">
+                                            <span>OR</span>
+                                        </div>
+
+                                        <div className="email-login-form">
+                                            <input type="email" placeholder="이메일 주소" className="login-input" />
+                                            <button className="email-submit-btn">이메일로 계속하기</button>
+                                        </div>
+
+                                        <div className="login-notice">
+                                            로그인 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하게 됩니다.
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </>
             )}
-            <LoginModal 
-                isOpen={isLoginModalOpen} 
-                onClose={() => setIsLoginModalOpen(false)} 
-            />
+
         </div>
     );
 }

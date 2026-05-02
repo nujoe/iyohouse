@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/browser'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function OnboardingPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [submitting, setSubmitting] = useState(false)

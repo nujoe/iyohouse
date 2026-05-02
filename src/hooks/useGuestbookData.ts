@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export interface GuestMessage {
     id: string;
@@ -9,7 +9,7 @@ export interface GuestMessage {
 }
 
 export function useGuestbookData() {
-    const supabase = createClient();
+    const supabase = createSupabaseBrowserClient();
     const [guestMessages, setGuestMessages] = useState<GuestMessage[]>([]);
     const [loading, setLoading] = useState(true);
 

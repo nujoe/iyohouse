@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function FailContent() {
@@ -9,6 +9,17 @@ function FailContent() {
     
     const code = searchParams.get("code");
     const message = searchParams.get("message");
+    const registrationId = searchParams.get("registration_id");
+
+    useEffect(() => {
+        if (registrationId) {
+            fetch('/api/payment/fail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ registration_id: registrationId, code, message })
+            }).catch(console.error);
+        }
+    }, [registrationId, code, message]);
 
     return (
         <div style={{ 
