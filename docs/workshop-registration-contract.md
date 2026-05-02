@@ -21,7 +21,7 @@
 - **신청 식별 필드**: `workshop_registrations_v2`에는 결제 연결을 위한 `order_id` 필드를 포함해야 합니다. `order_id`는 테이블 내에서 UNIQUE 여야 합니다.
 - **Payments 테이블 구조**: 
   - 테이블명: `payments`
-  - 컬럼: `id`, `registration_id` (FK), `amount`, `payment_method`, `transaction_id` (UNIQUE), `payment_key` (UNIQUE), `status`, `created_at`
+  - 컬럼: `id`, `registration_id` (FK), `amount`, `payment_method`, `payment_key` (UNIQUE), `order_id` (UNIQUE), `status`, `created_at`
   - `payments.registration_id`는 `workshop_registrations_v2.id`를 참조해야 합니다.
   - `payments.amount`는 승인 시점의 실제 결제 금액을 저장해야 합니다.
 
@@ -37,7 +37,7 @@
 - **초기 상태**: 생성 시 상태는 항상 `pending`으로 설정됩니다.
 - **필수 검증**: `create_pending_registration`은 `auth.uid()`가 존재하지 않으면 실패해야 하며, `full_name`과 `phone`이 비어 있으면 실패해야 합니다.
 - **정원/중복 검사 책임**: 워크숍 수용 인원 초과 및 중복 신청 검사는 전적으로 DB RPC(`create_pending_registration`) 내부에서 안전하게 검증할 책임이 있습니다. 클라이언트 측 UI 검사에 의존하지 마십시오.
-- **결제 연결 값**: `create_pending_registration`이 생성한 신청 레코드는 결제 시작 전에 `order_id`와 연결되어야 하며, 이후 결제 승인 라우트는 `registration_id`와 `order_id`를 함께 검증해야 합니다.
+- **결제 연결 값**: `create_pending_registration`은 반환값으로 `JSONB` 객체를 반환하며, 반드시 `registration_id`, `order_id`, `amount` 세 가지 값을 포함해야 합니다. 클라이언트는 이 반환값만으로 결제 요청을 시작할 수 있어야 합니다.
 
 ## 6. 결제 계약 (Payment Contract)
 - **시크릿 키 관리**: 결제 API 호출 시 하드코딩된 시크릿 키는 절대 사용 불가하며, 반드시 환경변수 `process.env.TOSS_SECRET_KEY`를 통해서만 접근합니다.
@@ -48,7 +48,7 @@
   - 신청 상태가 `pending`이어야 합니다.
   - 요청의 `orderId`가 신청 레코드의 `order_id`와 일치해야 합니다.
   - 요청의 `amount`가 서버 기준 금액과 일치해야 합니다.
-- **상태 업데이트 강제**: 결제 완료 후 테이블 상태 변경은 테이블 직접 `update` 연산을 절대 금지하며, 오직 `confirm_payment_registration(p_registration_id, p_transaction_id, p_amount)` RPC를 통해서만 수행해야 합니다. DB 갱신 실패 시 토스 결제 취소 API를 호출하는 보상 처리(Compensation) 로직이 반드시 포함되어야 합니다.
+- **상태 업데이트 강제**: 결제 완료 후 테이블 상태 변경은 테이블 직접 `update` 연산을 절대 금지하며, 오직 `confirm_payment_registration(p_registration_id UUID, p_payment_key TEXT, p_order_id TEXT, p_amount INTEGER)` RPC를 통해서만 수행해야 합니다. 이 RPC는 서버 라우트에서 service role client로만 호출해야 합니다. DB 갱신 실패 시 토스 결제 취소 API를 호출하는 보상 처리(Compensation) 로직이 반드시 포함되어야 합니다.
 - **실패 처리 강제**: 결제 실패 또는 취소 후 상태 변경이 필요하면 반드시 서버 라우트 또는 RPC를 통해 `cancelled`로 전환해야 합니다. 클라이언트에서 직접 테이블을 갱신해서는 안 됩니다.
 - **[금지]** 클라이언트 사이드에서 직접 결제 상태를 업데이트하는 API 호출을 절대 금지합니다.
 
@@ -58,7 +58,7 @@
   - 관리자/워크숍 매니저: 자신에게 할당된 워크숍의 모든 신청 내역 조회 가능.
 - **RPC 실행 권한**: `create_pending_registration`, `confirm_payment_registration` 로직은 `SECURITY DEFINER`로 설정되어 프로시저 작성자 권한 하에 안전하게 내부 트랜잭션으로 동작해야 합니다.
 - **RPC 권한 제한**: 모든 RPC는 기본 `PUBLIC` 실행 권한을 제거해야 합니다. 필요한 역할에 대해서만 `GRANT EXECUTE`를 명시해야 합니다.
-- **승인 RPC 제한**: `confirm_payment_registration`은 호출자의 소유권 검증 또는 service-role 전용 실행 제한 중 하나를 반드시 구현해야 합니다. 임의 사용자가 타인의 신청을 확정할 수 없어야 합니다.
+- **승인 RPC 제한**: `confirm_payment_registration`은 `service_role` 전용으로 실행을 제한해야 합니다. `authenticated` 역할에는 이 RPC 실행 권한을 부여하지 않습니다. 사용자 소유권 검증은 `/api/payment/confirm` 서버 라우트에서 Toss 승인 전에 수행합니다.
 - **Service Role 사용**: 웹훅이나 스케줄러 등 관리자 권한이 필요한 경우에 한하여 `SUPABASE_SERVICE_ROLE_KEY`를 사용하며, 일반 API 라우트에서는 사용을 지양합니다.
 
 ## 8. 🚨 절대 금지 항목 (Banned Practices)
@@ -75,7 +75,7 @@
 
 ## 9. 통합 검증 기준 (Validation Standards)
 각 에이전트는 담당 작업 완료 시 아래의 기준을 모두 만족해야 합니다:
-1. **금지어 검사**: `rg "workshop_registrations[^_]|payment_status|'completed'|test_sk_" /Users/eojun/Desktop/IYOWEBSITE-TOTAL/iyohouse-total --glob '!docs/workshop-registration-contract.md' --glob '!.env.example'` 명령어를 통해 프로젝트 내 금지어가 하나도 발견되지 않아야 함.
+1. **금지어 검사**: `rg "workshop_registrations[^_]|payment_status|'completed'|test_sk_" /Users/eojun/Desktop/IYOWEBSITE-TOTAL/iyohouse-total --glob '!**/docs/workshop-registration-contract.md' --glob '!**/.env.example' --glob '!**/node_modules/**'` 명령어를 통해 프로젝트 내 금지어가 하나도 발견되지 않아야 함.
 2. **Lint 검증**: 단일 레포 루트에서 `npm run lint` 실행 시 구문 및 타입 에러가 0건이어야 함.
 3. **Build 검증**: 단일 레포 루트에서 `npm run build` 실행 시 성공해야 함.
 4. **DB Migration**: `supabase/migrations/` 폴더 내의 SQL 파일이 구문 오류 없이 데이터베이스에 적용 가능해야 함.
