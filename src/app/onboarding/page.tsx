@@ -26,7 +26,7 @@ export default function OnboardingPage() {
           .from('profiles')
           .select('full_name, phone')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         if (profile) {
           setFullName(profile.full_name || '')
@@ -55,6 +55,7 @@ export default function OnboardingPage() {
       .from('profiles')
       .upsert({
         id: user.id,
+        email: user.email,
         full_name: fullName,
         phone: phone,
         updated_at: new Date().toISOString(),

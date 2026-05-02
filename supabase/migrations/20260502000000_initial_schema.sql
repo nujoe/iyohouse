@@ -113,6 +113,9 @@ CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT U
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_super_admin = TRUE)
@@ -320,4 +323,3 @@ GRANT EXECUTE ON FUNCTION public.confirm_payment_registration(UUID, TEXT, TEXT, 
 
 REVOKE ALL ON FUNCTION public.expire_pending_registrations() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.expire_pending_registrations() TO service_role;
-

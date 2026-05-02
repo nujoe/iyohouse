@@ -9,7 +9,7 @@ type Profile = {
   email: string | null
   full_name: string | null
   phone: string | null
-  role: string
+  is_super_admin: boolean | null
 }
 
 type AuthState = {
@@ -34,9 +34,9 @@ export function useAuth() {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone, role')
+      .select('id, email, full_name, phone, is_super_admin')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Profile fetch error:', error)

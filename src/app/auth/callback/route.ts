@@ -19,7 +19,7 @@ export async function GET(request: Request) {
           .from('profiles')
           .select('full_name, phone')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         if (!profile || !profile.full_name || !profile.phone) {
           return NextResponse.redirect(`${origin}/onboarding`)
