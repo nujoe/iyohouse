@@ -15,40 +15,46 @@ import { loadTossPayments } from "@tosspayments/payment-sdk";
 
 const presets = {
     main: {
-        line1: "calc(100% - 21px)",
-        line2: "calc(100% - 14px)",
-        line3: "calc(100% - 7px)",
-        top2: "calc(var(--top-row-1) + 7px)"
+        line1: "calc(100% - (var(--unit) * 3))",
+        line2: "calc(100% - (var(--unit) * 2))",
+        line3: "calc(100% - var(--unit))",
+        line4: "32rem",
+        top2: "calc(5.2rem + var(--unit))"
     },
     member: {
         line1: "0px",
-        line2: "7px",
-        line3: "14px",
-        top2: "calc(100% - 7px)"
+        line2: "var(--unit)",
+        line3: "calc(var(--unit) * 2)",
+        line4: "40%",
+        top2: "calc(100% - var(--unit))"
     },
     contact: {
         line1: "0px",
-        line2: "calc(100% - 14px)",
-        line3: "calc(100% - 7px)",
-        top2: "calc(100% - 7px)"
+        line2: "calc(100% - (var(--unit) * 2))",
+        line3: "calc(100% - var(--unit))",
+        line4: "40%",
+        top2: "calc(100% - var(--unit))"
     },
     workshop: {
         line1: "0px",
-        line2: "7px",
-        line3: "calc(100% - 7px)",
-        top2: "calc(100% - 7px)"
+        line2: "calc(100% - (var(--unit) * 2))",
+        line3: "calc(100% - var(--unit))",
+        line4: "40%",
+        top2: "calc(100% - var(--unit))"
     },
     club: {
-        line1: "calc(100% - 21px)",
-        line2: "calc(100% - 14px)",
-        line3: "calc(100% - 7px)",
-        top2: "calc(100% - 7px)"
+        line1: "0px",
+        line2: "var(--unit)",
+        line3: "calc(100% - var(--unit))",
+        line4: "40%",
+        top2: "calc(100% - var(--unit))"
     },
     diary: {
         line1: "0px",
-        line2: "7px",
-        line3: "14px",
-        top2: "calc(100% - 7px)"
+        line2: "var(--unit)",
+        line3: "calc(var(--unit) * 2)",
+        line4: "40%",
+        top2: "calc(100% - var(--unit))"
     }
 };
 
@@ -96,29 +102,130 @@ function HomeContent() {
         allWorkshops,
     } = useWorkshopData();
 
-    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase } = useAuth();
+    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, updateProfile, supabase } = useAuth();
 
     const [activePreset, setActivePreset] = useState<string>("main");
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
     const [dynamicColor, setDynamicColor] = useState("#2563eb");
+    const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isContactOpen, setIsContactOpen] = useState(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isInfoExpanded, setIsInfoExpanded] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [displayedInfoText, setDisplayedInfoText] = useState("");
+    const fullInfoText = `가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다.\n 팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다. 하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.`;
+    const logoRef = useRef<HTMLDivElement>(null);
+    const [logoWidth, setLogoWidth] = useState("32rem");
+    const [logoHeight, setLogoHeight] = useState("5.2rem");
+    const [selectedIyoca, setSelectedIyoca] = useState<any | null>(null);
     const [isBooting, setIsBooting] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRafRef = useRef<number | null>(null);
+​
+    // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
+    useEffect(() => {
+        const scrollContainers = document.querySelectorAll('.scroll-container');
+        scrollContainers.forEach(container => {
+            container.scrollTop = 0;
+        });
+    }, [activePreset, selectedWorkshop, selectedIyoca]);
+
+    const [setupData, setSetupData] = useState({
+        full_name: '',
+        phone: '',
+        bio: ''
+    });
+
+    const handleProfileSetup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!setupData.full_name || !setupData.phone || !setupData.bio) {
+            alert("모든 정보를 입력해 주세요.");
+            return;
+        }
+        const { error } = await updateProfile(setupData);
+        if (error) {
+            alert("프로필 저장 중 오류가 발생했습니다: " + error);
+        } else {
+            alert("환영합니다! 회원가입이 완료되었습니다.");
+        }
+    };
 
 
     useEffect(() => {
+        if (profile) {
+            setSetupData({
+                full_name: profile.full_name || '',
+                phone: profile.phone || '',
+                bio: profile.bio || ''
+            });
+        }
+    }, [profile]);
+
+    // 인증 후 프로필 미완성 시 모달 자동 오픈
+    useEffect(() => {
+        if (!authLoading && user && !isProfileComplete) {
+            setIsLoginModalOpen(true);
+        }
+    }, [authLoading, user, isProfileComplete]);
+
+    // 로고 너비 동적 측정 (ResizeObserver 사용)
+    useEffect(() => {
+        if (!logoRef.current) return;
+
+        const observer = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                if (entry.target === logoRef.current) {
+                    const width = entry.borderBoxSize?.[0]?.inlineSize || entry.contentRect.width;
+                    const height = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
+                    setLogoWidth(`${width}px`);
+                    // 텍스트 아래로 넉넉하게 내려가도록 20px 오프셋 추가
+                    setLogoHeight(`${height + 20}px`);
+                }
+            }
+        });
+
+        observer.observe(logoRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    // 타이핑 효과 로직
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (isInfoExpanded) {
+            let i = 0;
+            setDisplayedInfoText("");
+            const type = () => {
+                if (i < fullInfoText.length) {
+                    setDisplayedInfoText(fullInfoText.substring(0, i + 1));
+                    i++;
+                    timer = setTimeout(type, 15 + Math.random() * 15); // 약간의 불규칙한 타이핑 속도
+                }
+            };
+            type();
+        } else {
+            setDisplayedInfoText("");
+        }
+        return () => clearTimeout(timer);
+    }, [isInfoExpanded, fullInfoText]);
+
+    useEffect(() => {
         setIsMounted(true);
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
         const raf = requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 setIsBooting(false);
             });
         });
-        return () => cancelAnimationFrame(raf);
+        return () => {
+            cancelAnimationFrame(raf);
+            window.removeEventListener('resize', checkMobile);
+        };
     }, []);
 
     const [visited, setVisited] = useState<Record<string, boolean>>({ main: true });
@@ -189,6 +296,7 @@ function HomeContent() {
         router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
         setActivePreset(preset);
         setSelectedWorkshop(null);
+        setSelectedIyoca(null);
         setSelectedSession(null);
         setShowSchedule(false);
         setIsContactOpen(false);
@@ -361,65 +469,91 @@ function HomeContent() {
     const intersectColor = dynamicColor;
     const currentPreset = presets[activePreset as keyof typeof presets] || presets.main;
 
-    let line1 = currentPreset.line1;
-    let line2 = currentPreset.line2;
-    let line3 = currentPreset.line3;
-
-    if (isContactOpen) {
-        const isRightPage = ['workshop', 'diary', 'main', 'member', 'club'].includes(activePreset);
-        if (isRightPage) {
-            line1 = "var(--contact-line-pos, 40%)";
-            line2 = "calc(var(--contact-line-pos, 40%) + 7px)";
-            line3 = "calc(var(--contact-line-pos, 40%) + 14px)";
-        } else {
-            line1 = "calc(var(--contact-line-pos-rev, 60%) - 14px)";
-            line2 = "calc(var(--contact-line-pos-rev, 60%) - 7px)";
-            line3 = "var(--contact-line-pos-rev, 60%)";
-        }
-    }
-
     const containerStyle = {
-        "--line-x-1": line1,
-        "--line-x-2": line2,
-        "--line-x-3": line3,
-        "--top-row-2": currentPreset.top2,
+        "--line-x-1": currentPreset.line1,
+        "--line-x-2": currentPreset.line2,
+        "--line-x-3": currentPreset.line3,
+        "--line-x-4": activePreset === 'main' ? logoWidth : currentPreset.line4,
+        "--top-row-1": logoHeight,
+        "--top-row-2": `calc(${logoHeight} + var(--unit))`,
         "--intersect": intersectColor,
     } as CSSProperties;
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`app-container ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
-            <style>{`:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`}</style>
+        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
+            <style>{`:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${activePreset === 'main' ? logoWidth : currentPreset.line4}; --top-row-1: ${logoHeight}; --top-row-2: calc(${logoHeight} + var(--unit)); --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`}</style>
 
-            <header className="header">
-                <div className="logo" onClick={() => handlePresetChange('main')} style={{ cursor: 'pointer' }}>
-                    <div className="logo-text">
-                        <span className={`logo-title ${activePreset === 'main' ? 'active' : ''}`}>IYOHOUSE</span>
-                    </div>
-                </div>
-                <div className="btn-sep"></div>
-                <nav className="controls">
-                    <button className={`nav-desktop-only ${activePreset === 'member' ? 'active' : ''}`} onClick={() => handlePresetChange('member')}>MEMBER</button>
-                    <div className="cat-bar nav-desktop-only"></div>
-                    <button className={`nav-desktop-only ${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => handlePresetChange('workshop')}>WORKSHOP</button>
-                    <button className={`nav-desktop-only ${activePreset === 'club' ? 'active' : ''}`} onClick={() => handlePresetChange('club')}>IYOCA</button>
-
-                    <button className={`nav-desktop-only ${activePreset === 'diary' ? 'active' : ''}`} onClick={() => handlePresetChange('diary')}>CALENDAR</button>
-                    <button className={`nav-desktop-only ${isContactOpen ? 'active' : ''}`} onClick={() => handlePresetChange('contact')}>CONTACT</button>
-
-                    <button className="user-login-btn" onClick={() => setIsLoginModalOpen(true)}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
+            <div className={`left-panel ${isSidebarExpanded || isContactOpen ? 'expanded' : ''}`} onClick={() => !isContactOpen && setIsSidebarExpanded(!isSidebarExpanded)}>
+                <div className="panel-icon" onClick={(e) => { if (isContactOpen) { e.stopPropagation(); setIsContactOpen(false); } }}></div>
+                
+                {isSidebarExpanded && !isContactOpen && (
+                    <button className="sidebar-close-btn" onClick={(e) => { e.stopPropagation(); setIsSidebarExpanded(false); }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </button>
+                )}
 
-                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
-                        <span className="hamburger-box">
-                            <span className="hamburger-inner"></span>
-                        </span>
+                {!isContactOpen ? (
+                    <nav className="sidebar-nav" onClick={(e) => e.stopPropagation()}>
+                        <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>MAIN</button>
+                        <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>MEMBER</button>
+                        <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>WORKSHOP</button>
+                        <button className={`${activePreset === 'club' ? 'active' : ''}`} onClick={() => { handlePresetChange('club'); setIsSidebarExpanded(false); }}>IYOCA</button>
+                        <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>CALENDAR</button>
+                        <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>CONTACT</button>
+
+                        <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </button>
+                    </nav>
+                ) : (
+                    <div className="contact-sidebar-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="contact-sidebar-header">
+                            <h2 className="modal-title">CONTACT US</h2>
+                            <button className="contact-back-btn" onClick={() => setIsContactOpen(false)}>← BACK</button>
+                        </div>
+                        <div className="contact-main-scroll">
+                            <div className="contact-form-wrapper">
+                                <div className="contact-header-info" style={{ marginBottom: '30px' }}>
+                                    <div className="header-info-item"><span className="info-label">INSTAGRAM</span><a href="https://www.instagram.com/iyohouse/" target="_blank" rel="noopener noreferrer" className="info-val">@iyohouse</a></div>
+                                    <div className="header-info-item"><span className="info-label">EMAIL</span><a href="mailto:goyangiyoram@gmail.com" className="info-val">goyangiyoram@gmail.com</a></div>
+                                </div>
+                                <form className="contact-form-classic" onSubmit={handleContactSubmit}>
+                                    <div className="form-classic-row"><input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required /></div>
+                                    <div className="form-classic-row"><input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} /></div>
+                                    <div className="form-classic-row"><textarea placeholder="내용" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea></div>
+                                    <div className="form-classic-row"><button type="submit" className="form-submit-btn-classic" disabled={isSending}>{isSending ? '전송 중...' : '전송'}</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <header className="header">
+                <div className="header-left" ref={logoRef} onClick={() => handlePresetChange('main')} style={{ cursor: 'pointer' }}>
+                    <div className="logo-main-text">iYOHOUSE</div>
+                </div>
+                <div className="btn-sep"></div>
+                <div className={`header-right ${isInfoExpanded ? 'expanded' : ''}`}>
+                    <div className="header-info-content">
+                        <div className="info-text-inner">
+                            {displayedInfoText}
+                            <span className="typewriter-cursor"></span>
+                        </div>
+                    </div>
+                    <button className="header-toggle-btn" onClick={() => setIsInfoExpanded(!isInfoExpanded)}>
+                        <div className="circle-marker"></div>
                     </button>
-                </nav>
+                </div>
             </header>
+
+            {/* Info overlay removed in favor of expandable header-right */}
 
             <main className="stage">
                 <div className="grid-frame">
@@ -432,8 +566,95 @@ function HomeContent() {
 
                     <div className={`cell cell-club ${activePreset === 'club' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
-                        <div className="cell-content">
-                            {visited.club && <IyocaView active={activePreset === 'club'} />}
+                        <div className="cell-content scroll-container" onScroll={handleScroll}>
+                            {visited.club && (
+                                selectedIyoca ? (
+                                    <div className="workshop-detail-container">
+                                        <div className="detail-layout">
+                                            <div className="detail-left">
+                                                <div className="detail-poster-wrapper">
+                                                    <div className="detail-poster-aspect-box" style={{ "--aspect-ratio": "1080 / 1350" } as CSSProperties}>
+                                                        <Image
+                                                            src={selectedIyoca.src}
+                                                            className="detail-main-poster"
+                                                            alt={selectedIyoca.title}
+                                                            width={1080}
+                                                            height={1350}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'contain',
+                                                                objectPosition: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="detail-right">
+                                                <div className="detail-info-inner">
+                                                    <div className="detail-info-header">
+                                                        <div className="detail-tags">
+                                                            <span className="pills pill-blue">IYOCA ARCHIVE</span>
+                                                            <span className="pills pill-gray">#{selectedIyoca.id}</span>
+                                                        </div>
+                                                        <div className="detail-title-wrapper">
+                                                            <div className="detail-main-title">{selectedIyoca.title}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="detail-description">
+                                                        <p>{selectedIyoca.description}</p>
+                                                        {selectedIyoca.fullDetails?.summary && (
+                                                            <p style={{ fontWeight: 700, marginTop: '10px' }}>{selectedIyoca.fullDetails.summary}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {selectedIyoca.fullDetails && (
+                                                        <>
+                                                            <div className="detail-meta">
+                                                                {selectedIyoca.fullDetails.info.map((info: any, idx: number) => (
+                                                                    <div key={idx} className="meta-row">
+                                                                        <span className="meta-label">{info.label}</span>
+                                                                        <span className="meta-value">{info.value}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {selectedIyoca.fullDetails.schedule && (
+                                                                <div className="detail-curriculum-section">
+                                                                    <div className="detail-section-label">진행 일정</div>
+                                                                    {selectedIyoca.fullDetails.schedule.map((s: any, idx: number) => (
+                                                                        <div key={idx} className="curriculum-row">
+                                                                            <span className="curriculum-week">{s.week}</span>
+                                                                            <span className="curriculum-content">
+                                                                                <strong>{s.date} {s.time}</strong><br />
+                                                                                {s.content}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {selectedIyoca.fullDetails.tutor && (
+                                                                <div className="detail-tutor-section">
+                                                                    <div className="detail-tutor-name">튜터 : {selectedIyoca.fullDetails.tutor.name}</div>
+                                                                    <div className="detail-tutor-bio">{selectedIyoca.fullDetails.tutor.bio}</div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="detail-footer-meta" style={{ marginTop: '40px', opacity: 0.6, fontSize: '12px' }}>
+                                                                <p>장소: {selectedIyoca.fullDetails.location}</p>
+                                                                <p>{selectedIyoca.fullDetails.credits}</p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <IyocaView active={activePreset === 'club'} onPosterClick={setSelectedIyoca} />
+                                )
+                            )}
                         </div>
                     </div>
 
@@ -587,100 +808,42 @@ function HomeContent() {
 
                     <div className={`cell cell-main ${activePreset === 'main' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
-                        <div className="cell-content" style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div className="main-logo-centered" style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '50%',
-                                maxWidth: '600px',
-                                opacity: 0.8,
-                                zIndex: 0,
-                                display: 'flex',
-                                justifyContent: 'center'
-                            }}>
-                                <Image
-                                    src="/logo.png"
-                                    alt="IYOHOUSE Logo"
-                                    width={214}
-                                    height={152}
-                                    priority
-                                    sizes="(max-width: 900px) 50vw, 600px"
-                                    style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
-                                />
+                        <div className="cell-content main-content-layout">
+                            <div className="question-mark-wrapper">
+                                <div className="question-mark-circle">
+                                    <span>?</span>
+                                </div>
+                                <div className="chatbot-overlay">
+                                    이요하우스 챗봇입니다.........
+                                </div>
                             </div>
-
-                            <div className="left-sidebar">
-                                <div className="side-item-container">
-                                    <div className="side-label">About us</div>
-                                    <div className="side-content">
-                                        <div>
-                                            가느다란 실이 손가락 사이를 자유롭게 오가듯, &apos;이요&apos;는 우연한 교차에 주목합니다.<br /><br />
-                                            팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.<br /><br />
-                                            하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="side-item-container">
-                                    <div className="side-label">IYOBOT</div>
-                                    <div className="side-content">
-                                        <div>
-                                            <strong>지능형 연결 조력자</strong><br /><br />
-                                            IYOBOT은 당신의 창의적 영감을 아카이빙하고, 다른 창작자들의 생각과 연결해주는 스마트 가이드입니다. 복잡한 생각의 실타래를 함께 풀어나가는 파트너를 만나보세요.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="side-item-container">
-                                    <div className="side-label">INFO</div>
-                                    <div className="side-content">
-                                        <div>
-                                            <strong>주식회사 이요하우스</strong><br />
-                                            ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
-                                            BUSINESS LICENSE : 718-88-02112<br />
-                                            MALL-ORDER LICENSE : 2024-서울송파-2708<br />
-                                            EMAIL : goyangiyoram@gmail.com<br />
-                                            웹사이트 디자인 : 어준<a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
-
-                                        </div>
-                                    </div>
+                            <div className="info-bottom-text-wrapper">
+                                <div className="info-bottom-text">info</div>
+                                <div className="business-info-overlay">
+                                    <strong>주식회사 이요하우스</strong><br />
+                                    ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
+                                    BUSINESS LICENSE : 718-88-02112<br />
+                                    MALL-ORDER LICENSE : 2024-서울송파-2708<br />
+                                    EMAIL : goyangiyoram@gmail.com<br />
+                                    WEBSITE :  <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer">@djwns1234</a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="h-line grid-row-1"></div><div className="h-line grid-row-2"></div>
-                    <div className="v-line top-v-1"></div><div className="v-line top-v-2"></div><div className="v-line top-v-3"></div>
+
+                    {/* 풀 사이즈 수직선 */}
+                    <div className="v-line" style={{ left: 'var(--line-x-1)' }}></div>
+                    <div className="v-line" style={{ left: 'var(--line-x-2)' }}></div>
+                    <div className="v-line" style={{ left: 'var(--line-x-3)' }}></div>
+
+                    {/* 교차점 마커 (색상 블록) */}
+                    <div className="top-v-1"></div><div className="top-v-2"></div><div className="top-v-3"></div>
                 </div>
             </main>
 
-            <div className={`contact-overlay-wrapper ${isContactOpen ? 'active' : ''} ${['workshop', 'diary', 'main', 'member', 'club'].includes(activePreset) ? 'from-left' : 'from-right'}`}>
-                <div className="contact-dimmer" onClick={() => setIsContactOpen(false)}></div>
-                <div className="contact-slide-panel">
-                    <div className="modal-inner">
-                        <div className="modal-header">
-                            <h2 className="modal-title">CONTACT US</h2>
-                            <button className="modal-close" onClick={() => setIsContactOpen(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="contact-main-scroll">
-                                <div className="contact-form-wrapper">
-                                    <div className="contact-header-info" style={{ marginBottom: '30px' }}>
-                                        <div className="header-info-item"><span className="info-label">INSTAGRAM</span><a href="https://www.instagram.com/iyohouse/" target="_blank" rel="noopener noreferrer" className="info-val">@iyohouse</a></div>
-                                        <div className="header-info-item"><span className="info-label">EMAIL</span><a href="mailto:goyangiyoram@gmail.com" className="info-val">goyangiyoram@gmail.com</a></div>
-                                    </div>
-                                    <form className="contact-form-classic" onSubmit={handleContactSubmit}>
-                                        <div className="form-classic-row"><input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required /></div>
-                                        <div className="form-classic-row"><input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} /></div>
-                                        <div className="form-classic-row"><textarea placeholder="내용" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea></div>
-                                        <div className="form-classic-row"><button type="submit" className="form-submit-btn-classic" disabled={isSending}>{isSending ? '전송 중...' : '전송'}</button></div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             {/* Mobile Menu Overlay */}
             <div className={`mobile-menu-overlay ${isMenuOpen ? 'active' : ''}`}>
                 <div className="mobile-menu-inner">
@@ -743,21 +906,77 @@ function HomeContent() {
                                     /* 로그인 상태 */
                                     <div className="login-intro">
                                         <h3>IYOHOUSE</h3>
-                                        <div style={{ marginTop: '16px', fontSize: '14px', opacity: 0.8 }}>
-                                            {profile?.full_name || user.email}
-                                        </div>
-                                        {!isProfileComplete && (
-                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(255,200,0,0.15)', borderRadius: '6px', fontSize: '13px' }}>
-                                                프로필을 완성해 주세요 (이름, 전화번호)
+
+                                        {!isProfileComplete ? (
+                                            /* 프로필 미완성: 회원가입 완성 폼 */
+                                            <div className="profile-setup-container" style={{ marginTop: '24px', textAlign: 'left' }}>
+                                                <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>인증이 완료되었습니다. 서비스를 이용하기 위해 추가 정보를 입력해 주세요.</p>
+                                                <form className="email-login-form" onSubmit={handleProfileSetup}>
+                                                    <div className="form-row">
+                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>이메일 (변경 불가)</label>
+                                                        <input type="email" value={user.email || ''} disabled style={{ background: '#f5f5f5', cursor: 'not-allowed' }} />
+                                                    </div>
+                                                    <div className="form-row">
+                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>이름 (실명)</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="실명을 입력하세요"
+                                                            value={setupData.full_name}
+                                                            onChange={(e) => setSetupData({ ...setupData, full_name: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="form-row">
+                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>전화번호</label>
+                                                        <input
+                                                            type="tel"
+                                                            placeholder="010-0000-0000"
+                                                            value={setupData.phone}
+                                                            onChange={(e) => setSetupData({ ...setupData, phone: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="form-row">
+                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>자기소개</label>
+                                                        <textarea
+                                                            placeholder="간단한 자기소개를 입력하세요"
+                                                            value={setupData.bio}
+                                                            onChange={(e) => setSetupData({ ...setupData, bio: e.target.value })}
+                                                            required
+                                                            style={{ width: '100%', minHeight: '80px', padding: '12px', border: '1px solid #ddd', fontSize: '14px', outline: 'none' }}
+                                                        />
+                                                    </div>
+                                                    <button type="submit" className="email-submit-btn" style={{ marginTop: '10px' }}>회원가입 완료</button>
+                                                    <button
+                                                        type="button"
+                                                        className="social-btn"
+                                                        style={{ marginTop: '10px', background: 'transparent', border: '1px solid #ddd', color: '#666' }}
+                                                        onClick={() => signOut()}
+                                                    >
+                                                        취소 및 로그아웃
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        ) : (
+                                            /* 프로필 완성: 일반 로그인 상태 */
+                                            <div className="profile-welcome-container" style={{ marginTop: '24px' }}>
+                                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{profile?.full_name}님, 안녕하세요!</div>
+                                                <div style={{ marginTop: '8px', fontSize: '14px', opacity: 0.6 }}>{user.email}</div>
+
+                                                <div className="profile-info-display" style={{ marginTop: '20px', textAlign: 'left', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
+                                                    <div style={{ fontSize: '12px', opacity: 0.5 }}>자기소개</div>
+                                                    <div style={{ marginTop: '5px', fontSize: '14px', lineHeight: '1.5' }}>{profile?.bio || '입력된 자기소개가 없습니다.'}</div>
+                                                </div>
+
+                                                <button
+                                                    className="email-submit-btn"
+                                                    style={{ marginTop: '30px' }}
+                                                    onClick={async () => { await signOut(); setIsLoginModalOpen(false); }}
+                                                >
+                                                    로그아웃
+                                                </button>
                                             </div>
                                         )}
-                                        <button
-                                            className="email-submit-btn"
-                                            style={{ marginTop: '20px' }}
-                                            onClick={async () => { await signOut(); setIsLoginModalOpen(false); }}
-                                        >
-                                            로그아웃
-                                        </button>
                                     </div>
                                 ) : (
                                     /* 비로그인 상태 */
@@ -797,6 +1016,20 @@ function HomeContent() {
                 </>
             )}
 
+            {/* 모바일 전용 인포 모달 */}
+            {isInfoExpanded && isMobile && (
+                <div className="mobile-info-overlay">
+                    <div className="mobile-info-modal">
+                        <button className="mobile-info-close" onClick={() => setIsInfoExpanded(false)}>✕</button>
+                        <div className="mobile-info-content">
+                            <div className="mobile-typewriter-text">
+                                {displayedInfoText}
+                                <span className="typewriter-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

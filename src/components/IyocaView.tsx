@@ -59,11 +59,8 @@ const iyocaPosters = [
     },
 ];
 
-export default function IyocaView({ active }: { active: boolean }) {
+export default function IyocaView({ active, onPosterClick }: { active: boolean, onPosterClick?: (poster: any) => void }) {
     const [hoveredPoster, setHoveredPoster] = useState<typeof iyocaPosters[0] | null>(null);
-    const [selectedPoster, setSelectedPoster] = useState<typeof iyocaPosters[0] | null>(iyocaPosters[0]);
-
-    const displayPoster = hoveredPoster || selectedPoster;
 
     return (
         <div className="iyoca-view-container">
@@ -73,11 +70,11 @@ export default function IyocaView({ active }: { active: boolean }) {
                         {iyocaPosters.map((img) => (
                             <div
                                 key={img.id}
-                                className={`iyoca-poster-card ${selectedPoster?.id === img.id ? 'selected' : ''}`}
+                                className="iyoca-poster-card"
                                 style={{ transform: `rotate(${img.rotation}deg)` } as React.CSSProperties}
                                 onMouseEnter={() => setHoveredPoster(img)}
                                 onMouseLeave={() => setHoveredPoster(null)}
-                                onClick={() => setSelectedPoster(img)}
+                                onClick={() => onPosterClick?.(img)}
                             >
                                 <div className="card-tape"></div>
                                 <div className="poster-inner">
@@ -86,79 +83,6 @@ export default function IyocaView({ active }: { active: boolean }) {
                             </div>
                         ))}
                     </div>
-                </div>
-
-                <div className="iyoca-right-pane">
-                    {displayPoster && (
-                        <div className="iyoca-detail-display">
-                            <div className="detail-scroll-area">
-                                <div className="detail-header">
-                                    <span className="detail-id"># {displayPoster.id.toString().padStart(2, '0')} ARCHIVE</span>
-                                    <h1 className="detail-title">{displayPoster.title}</h1>
-                                </div>
-
-                                <div className="detail-visual">
-                                    <img src={displayPoster.src} alt="Detail View" />
-                                </div>
-
-                                <div className="detail-body">
-                                    <p className="detail-description">{displayPoster.description}</p>
-
-                                    {displayPoster.fullDetails ? (
-                                        <div className="full-details-box">
-                                            <div className="info-grid">
-                                                {displayPoster.fullDetails.info.map((item, idx) => (
-                                                    <div key={idx} className="info-item">
-                                                        <span className="label">✻ {item.label}</span>
-                                                        <span className="value">{item.value}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <div className="detail-section">
-                                                <h3 className="section-title">𓇬 진행 안내 𓇬</h3>
-                                                <div className="schedule-list">
-                                                    {displayPoster.fullDetails.schedule.map((s, idx) => (
-                                                        <div key={idx} className="schedule-row">
-                                                            <div className="s-week">{s.week}</div>
-                                                            <div className="s-info">
-                                                                <span className="s-date">{s.date}</span>
-                                                                <span className="s-time">{s.time}</span>
-                                                                <p className="s-content">{s.content}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="detail-section">
-                                                <h3 className="section-title">𓇬 튜터 소개 𓇬</h3>
-                                                <div className="tutor-info">
-                                                    <p className="tutor-name">{displayPoster.fullDetails.tutor.name}</p>
-                                                    <p className="tutor-bio">{displayPoster.fullDetails.tutor.bio}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="detail-footer-meta">
-                                                <p className="location">✻ 장소: {displayPoster.fullDetails.location}</p>
-                                                <p className="credits">{displayPoster.fullDetails.credits}</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="detail-extra-info">
-                                            <h3>ARCHIVE METADATA</h3>
-                                            <p>Project Category: Visual Design</p>
-                                            <p>Curator: IYOHOUSE Lab</p>
-                                            <div className="technical-grid">
-                                                <span>SCALE: 1:1</span>
-                                                <span>TYPE: ARCHIVE_V1</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 

@@ -10,6 +10,7 @@ type Profile = {
   full_name: string | null
   phone: string | null
   is_super_admin: boolean | null
+  bio: string | null
 }
 
 type AuthState = {
@@ -20,6 +21,8 @@ type AuthState = {
   isProfileComplete: boolean
 }
 
+const supabase = createSupabaseBrowserClient()
+
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -29,12 +32,10 @@ export function useAuth() {
     isProfileComplete: false,
   })
 
-  const supabase = createSupabaseBrowserClient()
-
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone, is_super_admin')
+      .select('id, email, full_name, phone, is_super_admin, bio')
       .eq('id', userId)
       .maybeSingle()
 
@@ -44,7 +45,7 @@ export function useAuth() {
     }
 
     return data as Profile
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     // Initial session check
@@ -58,7 +59,7 @@ export function useAuth() {
           session,
           profile,
           isLoading: false,
-          isProfileComplete: Boolean(profile?.full_name && profile?.phone),
+          isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
         })
       } else {
         setAuthState(prev => ({ ...prev, isLoading: false }))
@@ -77,7 +78,7 @@ export function useAuth() {
             session,
             profile,
             isLoading: false,
-            isProfileComplete: Boolean(profile?.full_name && profile?.phone),
+            isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
           })
         } else {
           setAuthState({
@@ -92,11 +93,11 @@ export function useAuth() {
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase, fetchProfile])
+  }, [fetchProfile])
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
-  }, [supabase])
+  }, [])
 
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -109,7 +110,7 @@ export function useAuth() {
     if (error) {
       console.error('Google sign in error:', error)
     }
-  }, [supabase])
+  }, [])
 
   const signInWithKakao = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -122,9 +123,9 @@ export function useAuth() {
     if (error) {
       console.error('Kakao sign in error:', error)
     }
-  }, [supabase])
+  }, [])
 
-  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone'>>) => {
+  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => {
     if (!authState.user) return { error: 'Not authenticated' }
 
     const { error } = await supabase
@@ -137,12 +138,12 @@ export function useAuth() {
       setAuthState(prev => ({
         ...prev,
         profile,
-        isProfileComplete: Boolean(profile?.full_name && profile?.phone),
+        isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
       }))
     }
 
     return { error: error?.message || null }
-  }, [authState.user, supabase, fetchProfile])
+  }, [authState.user, fetchProfile])
 
   return {
     ...authState,
