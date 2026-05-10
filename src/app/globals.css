@@ -2,7 +2,7 @@
     --bg: #ffffff;
     --line: #000000;
     --accent: #c6ff00;
-    --intersect: #2563eb;
+    --intersect: #f8f01dff;
     --intro-bg: #FF3B30;
     /* Premium Red for Intro area */
 
@@ -72,7 +72,7 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: var(--panel-width);
+    width: var(--sidebar-width, var(--panel-width));
     height: 100%;
     background: var(--intersect);
 
@@ -85,7 +85,7 @@ body {
     overflow: hidden;
 
     box-sizing: border-box;
-    border-right: var(--line-thickness) solid var(--line);
+    border-right: 1px solid #000;
     margin-right: calc(var(--line-thickness) * -1);
 }
 
@@ -104,12 +104,43 @@ body {
 
 .panel-icon {
     width: 50px;
-    height: 50px;
-    background-image: url('/logo.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    margin-bottom: 20px;
+    height: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0 auto 30px auto;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.panel-icon:hover {
+    transform: scale(1.05);
+}
+
+.panel-icon span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    border-radius: 5px;
+    background-color: #000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: right;
+}
+
+.panel-icon:hover span:nth-child(1) {
+    width: 70%;
+}
+
+.panel-icon:hover span:nth-child(2) {
+    width: 100%;
+}
+
+.panel-icon:hover span:nth-child(3) {
+    width: 40%;
+}
+
 
 .sidebar-close-btn {
     position: absolute;
@@ -136,12 +167,29 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
+    height: 100%;
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--transition);
     align-items: flex-start;
-    gap: 10px;
-    /* 버튼 사이의 수직 간격 */
+}
+
+.sidebar-nav-top {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: fit-content;
+    margin-top: -40px;
+    /* Effectively pushes it to the top edge of the panel */
+}
+
+.sidebar-nav-bottom {
+    margin-top: auto;
+
+    display: flex;
+    gap: 20px;
+    flex-direction: column;
+
 }
 
 .left-panel.expanded .sidebar-nav {
@@ -170,15 +218,31 @@ body {
 
 
 
-.left-panel .user-login-btn {
-    margin-top: auto;
-    border-top: 1px solid var(--line);
-    width: 100% !important;
-    height: 60px !important;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
+.left-panel .user-login-btn,
+.left-panel .user-signup-btn {
+    width: auto;
+    height: auto;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 0.85;
+    /* 높이를 더 낮추기 위해 타이트하게 조정 */
+    color: var(--line);
+    text-align: left;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
 }
+
+.left-panel .user-login-btn:hover,
+.left-panel .user-signup-btn:hover {
+    color: var(--intersect) !important;
+}
+
 
 
 
@@ -204,128 +268,106 @@ body {
     width: auto !important;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
+    padding: 0px 0px 0px 100px;
 
     z-index: 13000;
     overflow: hidden;
     transition: background-color 0.4s ease, border-color 0.4s ease, width 0.5s ease;
+    font-size: inherit;
+    font-weight: 700;
+    color: rgb(88, 88, 88);
 }
 
-.header-right.expanded {
-    background: #ffffff;
 
+
+.header-nav-item:hover {
+
+    color: var(--line);
 }
 
-.header-info-content {
-    flex: 1;
+.header-nav-item.active {
+
+    color: var(--line);
+}
+
+.header-lang,
+.header-nav-item,
+.header-email {
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 1rem;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-    white-space: pre-line;
-    word-break: keep-all;
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: rgb(88, 88, 88);
+    letter-spacing: 0.01em;
+    cursor: pointer;
 }
 
-.header-right.expanded .header-info-content {
-    opacity: 1;
-    pointer-events: auto;
+.header-email {
+
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: rgb(88, 88, 88);
 }
 
-.info-text-inner {
-    font-size: 1.1rem;
-    line-height: 1.45;
-    font-weight: 600;
+.header-lang span {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.header-lang span:hover {
     color: #000;
-    word-break: keep-all;
-
-    transition: transform 0.5s ease 0.2s;
 }
 
-.header-right.expanded .info-text-inner {
-    transform: translateX(0);
+.header-lang .active {
+    color: #000;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
-.typewriter-cursor {
-    display: inline-block;
-    width: 2px;
-    height: 1.1em;
-    background: #000;
-    margin-left: 2px;
-    vertical-align: middle;
-    animation: blink 0.8s infinite;
-}
-
-@keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0;
-    }
-}
-
-.header-right:not(.expanded) .typewriter-cursor {
-    display: none;
-}
-
-.mobile-info-overlay {
-    display: none;
-}
-
-.header-toggle-btn {
-    width: 120px;
+.header-theme-btn {
+    width: 60px;
     height: 100%;
     background: var(--intersect);
-    /* Dynamic blue/scroll color */
     border: none;
-    border-left: var(--line-thickness) solid var(--line);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
-    transition: background-color 0.4s ease;
-    padding: 0;
+    border-left: 1px solid var(--line);
 }
 
-.header-right.expanded .header-toggle-btn {
-    background: #ffffff;
-}
-
-.circle-marker {
-    width: 42px;
-    height: 42px;
-    background: #ffffff;
+.theme-dot {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border: 1px solid #000;
     border-radius: 50%;
-    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s ease;
+    transition: transform 0.3s ease;
 }
 
-.header-right.expanded .circle-marker {
-    background: var(--intersect);
+.header-theme-btn:hover .theme-dot {
+    transform: scale(1.2);
 }
 
-.header-toggle-btn:hover .circle-marker {
-    transform: scale(1.15);
-}
-
-.header-right.expanded .circle-marker {
+.header-theme-btn:active .theme-dot {
     transform: scale(0.9);
 }
 
+
 .logo-main-text {
     color: var(--bg);
-    font-size: 6.5rem;
+    font-size: 1.5rem;
     font-weight: 900;
     letter-spacing: -0.05em;
-    padding-right: 30px;
+    padding-right: 20px;
     padding-left: 10px;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
     padding-top: 0;
     color: #000;
     text-transform: uppercase;
@@ -333,49 +375,7 @@ body {
     margin-top: 0;
 }
 
-.header-info-btn {
-    display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    outline: none;
-}
 
-.info-icon-circle {
-    width: 36px;
-    height: 36px;
-    border: 1.5px solid #000;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    font-weight: 900;
-    color: #000;
-}
-
-.mobile-info-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    z-index: 20000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 30px;
-    animation: fadeIn 0.3s ease;
-}
-
-.mobile-info-content {
-    background: #fff;
-    padding: 60px 40px;
-    position: relative;
-    max-width: 600px;
-    width: 100%;
-    border: 1.5px solid #000;
-}
 
 .mobile-info-content h3 {
     font-size: 1.5rem;
@@ -412,15 +412,7 @@ body {
     background: rgba(0, 0, 0, 0.516);
 }
 
-.left-panel .user-login-btn {
-    /* 하단 배치 */
-    border-top: 1px solid var(--line);
-    width: 100% !important;
-    height: 60px !important;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-}
+/* Redundant style removed to fix spacing */
 
 /* ─── 헤더 ─────────────────────────── */
 .header {
@@ -584,75 +576,84 @@ body {
     width: 100%;
     height: 100%;
     position: relative;
-    padding: 0;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+.main-text-column {
+    flex: 0 0 var(--line-x-center);
+    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
-}
-
-.question-mark-wrapper {
     position: relative;
-    cursor: pointer;
-    padding: 20px;
-    width: fit-content;
+    box-sizing: border-box;
 }
 
-.question-mark-circle {
-    width: 60px;
-    height: 60px;
-    border: 1.5px solid #000;
-    border-radius: 50%;
+.main-visual-column {
+    flex: 1;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.2rem;
-    font-weight: 400;
-    color: #000;
-    margin-top: 10px;
-    margin-left: 0;
-    transition: all 0.3s ease;
-}
-
-.chatbot-overlay {
-    position: absolute;
-    top: 0;
-    left: 80px;
-    /* 아이콘 우측에 배치 */
-    width: 250px;
-    padding: 15px;
+    position: relative;
+    padding: 60px;
     background: #fff;
-    border: 1px solid #000;
-    font-size: 13px;
-    font-weight: 500;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.main-intro-text {
+    position: relative;
+    padding: 20px 0px 0px 10px;
+    font-size: 1.1rem;
+    line-height: 1.8;
     color: #000;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    transform: translateX(-10px);
-    z-index: 100;
-}
-
-.question-mark-wrapper:hover .chatbot-overlay {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0);
-}
-
-.question-mark-wrapper:hover .question-mark-circle {
-    background: #000;
-    color: #fff;
+    word-break: keep-all;
+    font-weight: 300;
+    letter-spacing: -0.01em;
 }
 
 .info-bottom-text-wrapper {
-    position: relative;
-    padding: 20px;
+    margin-top: auto;
+    padding: 15px 15px;
     width: fit-content;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+}
+
+.main-intro-text {
+    position: absolute;
+
+
+
+    width: 100%;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #000;
+    word-break: keep-all;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+}
+
+@media (max-width: 900px) {
+    .main-intro-text {
+        position: relative;
+        left: 0;
+        top: 0;
+        transform: none;
+        width: 100%;
+        padding: 40px 20px;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
 }
 
 .info-bottom-text {
-    font-size: clamp(4rem, 12vw, 7rem);
-    font-weight: 900;
+    font-size: 1.5rem;
+    font-weight: 100;
     color: #000;
     text-transform: lowercase;
     letter-spacing: -0.05em;
@@ -663,20 +664,95 @@ body {
 
 .business-info-overlay {
     position: absolute;
-    bottom: 100%;
-    left: 0;
-    width: 300px;
-    padding: 20px;
+    bottom: calc(100% + 10px);
+    left: 20px;
+    width: 320px;
+    padding: 30px;
     background: #fff;
-    border: 1px solid #000;
     font-size: 11px;
     line-height: 1.6;
     color: #000;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s ease;
-    transform: translateY(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-20px);
     z-index: 100;
+}
+
+/* Grid Frame Styling for Info Overlay */
+.business-info-overlay::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 1;
+}
+
+.business-info-overlay::after {
+    --t: 1px;
+    --s: var(--line-gap);
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        /* Fills (centered inside 1px border) */
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        /* Borders (aligned with grid lines) */
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000);
+    background-size:
+        calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px),
+        var(--s) var(--s), var(--s) var(--s), var(--s) var(--s), var(--s) var(--s);
+    background-position:
+        top 1px left 1px, top 1px right 1px, bottom 1px left 1px, bottom 1px right 1px,
+        top 0 left 0, top 0 right 0, bottom 0 left 0, bottom 0 right 0;
+    background-repeat: no-repeat;
+    z-index: 2;
+}
+
+.business-info-overlay>* {
+    position: relative;
+    z-index: 5;
+}
+
+.main-visual-aside {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .main-content-layout {
+        flex-direction: column !important;
+    }
+
+    .main-text-column {
+        flex: none;
+        width: 100%;
+    }
+
+    .main-visual-column {
+        flex: none;
+        width: 100%;
+    }
+
+    .main-intro-text {
+        padding: 40px 20px;
+        font-size: 1rem;
+    }
+
+    .info-bottom-text-wrapper {
+        padding: 20px;
+    }
 }
 
 .business-info-overlay a {
@@ -696,20 +772,12 @@ body {
 }
 
 /* ─── End of File ─── */
-.nav-desktop-only {
-    display: block;
-}
 
 .mobile-menu-btn {
     display: none;
 }
 
 @media (max-width: 900px) {
-    .nav-desktop-only {
-        display: none !important;
-    }
-
-
 
     .hamburger-box {
         width: 24px;
@@ -1102,9 +1170,22 @@ body {
     pointer-events: none;
 }
 
-/* 메인 페이지에서는 바닥으로 뻗는 세로선 숨김 */
+.v-line-center {
+    /* 메인과 멤버 프리셋에서는 전체 높이 유지 */
+    height: calc(100% - var(--top-row-1));
+}
+
+.preset-workshop .v-line-center,
+.preset-club .v-line-center,
+.preset-diary .v-line-center,
+.preset-contact .v-line-center {
+    /* 그 외 프리셋에서는 헤더 밴드만큼 수축 */
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+}
+
+/* 메인 페이지에서도 세로선 표시 */
 .preset-main .v-line {
-    opacity: 0;
+    opacity: 1;
 }
 
 .v-line::before,
@@ -1198,22 +1279,96 @@ body {
     left: var(--line-x-3);
 }
 
+.top-v-center {
+    position: absolute;
+    width: var(--line-gap);
+    left: var(--line-x-center);
+    top: var(--top-row-1);
+    height: calc(100% - var(--top-row-1));
+    /* 항상 하단까지 확장 */
+    transition: all var(--transition);
+    z-index: 11001;
+    pointer-events: none;
+    opacity: 1;
+}
+
+.preset-workshop .top-v-center,
+.preset-club .top-v-center,
+.preset-diary .top-v-center,
+.preset-contact .top-v-center {
+    /* 멤버와 메인이 아닌 경우 헤더로 수축 */
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+}
+
+.top-v-center::before,
+.top-v-center::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--line-gap);
+    background: var(--intersect);
+    border: var(--line-thickness) solid var(--line);
+    box-sizing: border-box;
+}
+
+.top-v-center::before {
+    top: 0;
+}
+
+.top-v-center::after {
+    bottom: 0;
+}
+
+.v-line-center {
+    opacity: 1;
+    /* Always visible and part of interaction */
+}
+
 /* ─── 콘텐츠 셀 ──────────────────────── */
 .cell {
     position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition), opacity var(--transition);
-    z-index: 5;
     overflow: hidden;
-    pointer-events: none;
+    transition: all var(--transition);
     opacity: 0;
-    /* Handle interaction for cover blocks */
-    font-weight: 500;
-    font-size: 13px;
-    letter-spacing: 0.05em;
+    pointer-events: none;
 }
+
+.cell-main {
+    top: var(--top-row-1);
+}
+
+.preset-main .cell-main {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.cell-member {
+    position: absolute;
+    top: var(--top-row-2);
+    left: 0;
+    width: 100%;
+    height: calc(100% - var(--top-row-2));
+    background: var(--bg);
+    transition: all var(--transition);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.cell-member.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 20;
+}
+
+.cell-member .cell-content {
+    display: block;
+    /* Flex center 방해 제거 */
+}
+
+
+
 
 .cell.active {
     opacity: 1;
@@ -1222,6 +1377,7 @@ body {
 }
 
 /* ─── 프리뷰 가림막 (Cover) 및 내부 ──────────────────────── */
+
 .cell-content {
     position: relative;
     width: 100%;
@@ -1404,35 +1560,17 @@ body {
     bottom: 0;
 }
 
-.cell-member {
-    position: absolute;
-    top: calc(var(--top-row-1) + var(--line-gap));
-    bottom: 0;
-    /* 격자 선(line-x-3)에 위치를 바인딩하여 물리적으로 딸려 움직이는 느낌 구현 */
-    left: var(--line-x-3);
-    right: 0;
-    z-index: 5;
-    opacity: 0;
-    pointer-events: none;
-    transition: all var(--transition);
-}
-
-.cell-member.active {
-    opacity: 1;
-    pointer-events: auto;
-    z-index: 100;
-}
 
 .cell-main {
     position: absolute;
-    top: calc(var(--top-row-2) + var(--line-gap));
-    bottom: 0;
+    top: var(--top-row-1);
+    height: calc(var(--top-row-2) - var(--top-row-1));
     left: 0;
     right: 0;
     color: #000000;
     font-weight: 400;
     font-size: 2.25rem;
-    transition: top var(--transition);
+    transition: all var(--transition);
 }
 
 .cell-main.active {
@@ -1452,79 +1590,7 @@ body {
 
 
 
-/* ─── 컨택트(Contact) 섹션 텍스트 ──────────────── */
-.contact-overlay-wrapper {
-    position: absolute;
-    /* 고정된 top-row-1(40px) 기준으로 높이를 잡아 타 페이지에서도 항상 보이게 수정 */
-    top: calc(var(--top-row-1) + var(--line-gap));
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 9999;
-    pointer-events: none;
-    padding: 0;
-    align-items: stretch;
-}
 
-.contact-overlay-wrapper.active {
-    pointer-events: auto;
-}
-
-.contact-dimmer {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    transition: opacity var(--transition);
-    pointer-events: none;
-}
-
-.contact-overlay-wrapper.active .contact-dimmer {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.contact-slide-panel {
-    position: relative;
-    background: var(--bg);
-    height: 100%;
-    transition: transform var(--transition), opacity var(--transition);
-    opacity: 0;
-    display: flex;
-    flex-direction: column;
-    border: none;
-}
-
-.contact-overlay-wrapper.from-left .contact-slide-panel {
-    width: var(--line-x-1);
-    border: none;
-}
-
-.contact-overlay-wrapper.from-right .contact-slide-panel {
-    width: calc(100% - var(--line-x-3));
-    border: none;
-}
-
-.contact-overlay-wrapper.from-left {
-    justify-content: flex-start;
-}
-
-.contact-overlay-wrapper.from-left .contact-slide-panel {
-    transform: translateX(-150%);
-}
-
-.contact-overlay-wrapper.from-right {
-    justify-content: flex-end;
-}
-
-.contact-overlay-wrapper.from-right .contact-slide-panel {
-    transform: translateX(150%);
-}
-
-.contact-overlay-wrapper.active .contact-slide-panel {
-    transform: translateX(0);
-    opacity: 1;
-}
 
 
 
@@ -1655,7 +1721,7 @@ body {
 }
 
 .form-textarea-classic {
-    min-height: 200px;
+    min-height: 400px;
     resize: none;
 }
 
@@ -1679,21 +1745,6 @@ body {
 .form-submit-btn-classic:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-
-
-    color: #000;
-    padding: 18px;
-    font-size: 1.1rem;
-    font-weight: 800;
-    cursor: pointer;
-    text-align: center;
-    border-radius: 0;
-    transition: opacity 0.2s;
-    margin-top: 5px;
-}
-
-.form-submit-btn-classic:hover {
-    opacity: 0.8;
 }
 
 /* ─── 워크숍(Workshop) 그리드 ──────────────── */
@@ -2253,25 +2304,7 @@ body {
     color: var(--line);
 }
 
-/* ─── 메인 페이지 좌측 텍스트 ──────────────── */
-.main-left-text {
 
-    position: absolute;
-    top: 0%;
-
-    font-size: 3rem;
-    font-weight: 500;
-    padding: 20px;
-    word-break: keep-all;
-}
-
-.main-left-text p:first-of-type {
-    margin-top: 0;
-}
-
-.main-left-text p {
-    margin-bottom: 0.5rem;
-}
 
 
 
@@ -2294,7 +2327,7 @@ body {
     }
 
     .logo-main-text {
-        font-size: 3.5rem !important;
+        font-size: 1.2rem !important;
     }
 
     .header-right {
@@ -2302,6 +2335,7 @@ body {
         left: auto !important;
         right: auto !important;
         flex: 1;
+        font-size: 1rem;
         height: 100%;
         width: auto !important;
         transition: background-color 0.4s ease;
@@ -3143,20 +3177,30 @@ body {
 
 .login-modal-card::after {
     --t: 1px;
+    --s: var(--line-gap);
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     background-image:
+        /* Fills (centered inside 1px border) */
         linear-gradient(var(--intersect), var(--intersect)),
         linear-gradient(var(--intersect), var(--intersect)),
         linear-gradient(var(--intersect), var(--intersect)),
-        linear-gradient(var(--intersect), var(--intersect));
-    background-size: calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t));
-    background-position: top var(--t) left var(--t), top var(--t) right var(--t), bottom var(--t) left var(--t), bottom var(--t) right var(--t);
+        linear-gradient(var(--intersect), var(--intersect)),
+        /* Borders (aligned with grid lines) */
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000);
+    background-size:
+        calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px),
+        var(--s) var(--s), var(--s) var(--s), var(--s) var(--s), var(--s) var(--s);
+    background-position:
+        top 1px left 1px, top 1px right 1px, bottom 1px left 1px, bottom 1px right 1px,
+        top 0 left 0, top 0 right 0, bottom 0 left 0, bottom 0 right 0;
     background-repeat: no-repeat;
     z-index: 2;
-    mix-blend-mode: darken;
 }
 
 .login-modal-header {
@@ -3578,266 +3622,6 @@ body {
     }
 }
 
-/* ───────── Workshop Detail V2 (Test Layout) ───────── */
-.workshop-detail-v2 {
-    width: 100%;
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg);
-    color: #000;
-    font-family: inherit;
-}
-
-.detail-v2-header {
-    display: flex;
-    border-bottom: 1.5px solid #000;
-    height: 80px;
-}
-
-.detail-v2-title-box {
-    flex: 3;
-    border-right: 1.5px solid #000;
-    display: flex;
-    align-items: center;
-    padding: 0 30px;
-    font-size: 2.8rem;
-    font-weight: 800;
-}
-
-.detail-v2-tutor-box {
-    flex: 4;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30px;
-}
-
-.detail-v2-tutor-name {
-    font-size: 2.4rem;
-    font-weight: 700;
-}
-
-.detail-v2-tags {
-    display: flex;
-    gap: 8px;
-}
-
-.detail-v2-body {
-    display: flex;
-    flex: 1;
-}
-
-.detail-v2-left {
-    flex: 3;
-    border-right: 1.5px solid #000;
-    background: #f0f0f0;
-    padding: 60px 40px;
-    display: flex;
-    gap: 25px;
-    justify-content: center;
-    align-items: center;
-}
-
-.detail-v2-poster-card {
-    width: 45%;
-    max-width: 300px;
-    height: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    background: #fff;
-}
-
-.detail-v2-right {
-    flex: 4;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-}
-
-.detail-v2-desc {
-    font-size: 1.1rem;
-    line-height: 1.7;
-    white-space: pre-line;
-}
-
-.detail-v2-curriculum-section {
-    border: 1.5px solid #000;
-}
-
-.detail-v2-curriculum-header {
-    border-bottom: 1.5px solid #000;
-    padding: 15px 25px;
-    font-size: 2.2rem;
-    font-weight: 800;
-}
-
-.detail-v2-curriculum-content {
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.detail-v2-curr-item {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.detail-v2-curr-item strong {
-    font-size: 1.2rem;
-    font-weight: 800;
-}
-
-.detail-v2-curr-item p {
-    font-size: 1.1rem;
-    color: #333;
-}
-
-.detail-v2-footer {
-    margin-top: auto;
-    padding-top: 40px;
-    border-top: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.detail-v2-price {
-    font-size: 1.8rem;
-    font-weight: 900;
-}
-
-.detail-v2-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.v2-btn {
-    padding: 15px 40px;
-    font-size: 1.1rem;
-    font-weight: 800;
-    cursor: pointer;
-    border: 1.5px solid #000;
-}
-
-.v2-btn-fill {
-    background: #000;
-    color: #fff;
-}
-
-.v2-btn-outline {
-    background: transparent;
-    color: #000;
-}
-
-
-/* ───────── Workshop Detail V2 Refinement ───────── */
-.workshop-detail-v2 {
-    overflow-y: auto;
-    scrollbar-width: none;
-}
-
-.workshop-detail-v2::-webkit-scrollbar {
-    display: none;
-}
-
-.detail-v2-left {
-    min-width: 450px;
-    align-items: flex-start;
-    padding: 30px;
-}
-
-.detail-v2-poster-card {
-    width: 100%;
-    max-width: none;
-    aspect-ratio: 1 / 1.414;
-    /* Standard poster ratio */
-    object-fit: cover;
-}
-
-.detail-v2-right {
-    padding: 30px;
-    background: #fff;
-}
-
-.detail-v2-tutor-intro {
-    border: 1.5px solid #000;
-    margin-top: 30px;
-}
-
-.detail-v2-tutor-header {
-    border-bottom: 1.5px solid #000;
-    padding: 15px 20px;
-    font-size: 1.5rem;
-    font-weight: 800;
-    background: #f9f9f9;
-}
-
-.detail-v2-tutor-body {
-    padding: 20px;
-    font-size: 1rem;
-    line-height: 1.6;
-}
-
-.detail-v2-tutor-body strong {
-    font-size: 1.2rem;
-    display: block;
-    margin-bottom: 10px;
-}
-
-
-/* ───────── Workshop Detail V2 Grid Merging ───────── */
-.detail-v2-right {
-    padding: 0;
-    /* Remove right padding to let borders touch edges */
-}
-
-.detail-v2-desc {
-    padding: 30px;
-    border-bottom: 1.5px solid #000;
-    margin: 0;
-}
-
-.detail-v2-curriculum-section {
-    border: none;
-    border-bottom: 1.5px solid #000;
-    width: 100%;
-}
-
-.detail-v2-curriculum-header {
-    border-bottom: 1.5px solid #000;
-    padding: 15px 30px;
-}
-
-.detail-v2-curriculum-content {
-    padding: 30px;
-}
-
-.detail-v2-tutor-intro {
-    border: none;
-    border-bottom: 1.5px solid #000;
-    margin-top: 0;
-    width: 100%;
-}
-
-.detail-v2-tutor-header {
-    border-bottom: 1.5px solid #000;
-    padding: 15px 30px;
-}
-
-.detail-v2-tutor-body {
-    padding: 30px;
-}
-
-.detail-v2-footer {
-    padding: 30px;
-    border-top: none;
-    /* Already has a top border from the tutor section above */
-}
-
-
 /* ─── 일정 선택 드롭다운 ────────────── */
 .schedule-selector-wrapper {
     position: relative;
@@ -3938,75 +3722,94 @@ body {
 /* ─── 멤버 페이지 (Member View) v2 ──────────────── */
 .member-view-container {
     width: 100%;
+    height: calc(100vh - var(--top-row-1));
     background: #fff;
     color: #000;
-    padding: 40px 20px;
+    overflow: hidden;
 }
 
 .member-layout-v2 {
-    max-width: 1800px;
-    margin: 0 auto;
+    width: 100%;
+    height: 100%;
 }
-
-/* .member-header-v2 removed */
 
 .member-main-content {
     display: flex;
-    gap: 60px;
-    align-items: start;
+    width: 100%;
+    height: 100%;
 }
 
 .member-text-masonry {
-    flex: 2;
-    /* 텍스트 영역이 더 넓게 */
+    flex: 0 0 var(--line-x-center);
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    /* 스크롤은 여기서 */
+    background: #fff;
+
+}
+
+.masonry-inner {
     column-count: 2;
-    column-gap: 30px;
+    /* 다단 설정은 안쪽에서 */
+    column-gap: 40px;
+    height: auto;
+    /* 높이는 컨텐츠에 맞춰서 */
+    width: 100%;
 }
 
 .member-visual-aside {
-    flex: 2;
-    /* 사진 영역 비율 */
-    position: sticky;
-    top: 40px;
+    flex: 1;
+    height: 100%;
+    padding: 60px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: #fff;
 }
 
 
 /* 개별 멤버 카드 */
 .member-card {
     display: inline-block;
-    /* 메이슨리 흐름을 위해 inline-block 사용 */
     width: 100%;
+    margin-bottom: 40px;
     break-inside: avoid;
-    /* 카드 중간에 열이 바뀌지 않도록 방지 */
-    margin-bottom: 60px;
-    /* 카드 간 상하 간격 */
 }
 
-/* .card-divider removed from HTML */
+
 
 .card-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     width: 100%;
 }
 
 .card-name {
-    font-size: 1.6rem;
-    background: #000;
-    color: #ffffff;
-    padding: 2px 0px;
-    font-weight: 400;
-    margin: 0;
-    line-height: 1;
+    font-size: 26px;
+    background: var(--intersect);
+    color: black;
+    padding: 0;
     display: block;
     width: 100%;
+    box-sizing: border-box;
     letter-spacing: -0.02em;
+    font-weight: 500;
+    line-height: 1.1;
+    border: var(--line-thickness) solid black;
 }
 
-/* .card-red-dot removed */
+.link-row-v2:hover {
+    background-color: var(--intersect);
+}
+
+
+.card-role {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+}
 
 .card-body {
     position: relative;
@@ -4042,11 +3845,20 @@ body {
     transition: transform 0.2s ease;
 }
 
-.link-row-v2:hover {
-    transform: translateX(-5px);
+
+
+.link-sq {
+    width: 20px;
+    height: 100%;
+    min-height: 35px;
+    background: #000;
+    transition: background 0.2s ease;
 }
 
-
+.link-row-v2:hover .link-sq {
+    background: #f5f834;
+    font-weight: 900;
+}
 
 .link-label-box {
 
@@ -4087,31 +3899,7 @@ body {
     aspect-ratio: 1 / 1.3;
 }
 
-/* 반응형 */
-@media (max-width: 1400px) {
-    .member-content-grid {
-        grid-template-columns: 1fr;
-    }
 
-    .member-visual-v2 {
-        order: -1;
-        margin-bottom: 60px;
-    }
-}
-
-@media (max-width: 900px) {
-    .member-text-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .member-main-title {
-        font-size: 3.5rem;
-    }
-
-    .card-name {
-        font-size: 2.2rem;
-    }
-}
 
 /* ─── Sidebar Contact Styles ─── */
 .contact-sidebar-content {
@@ -4119,7 +3907,7 @@ body {
     flex-direction: column;
     width: 100%;
     height: calc(100% - 70px);
-    color: #fff;
+    color: #000000;
     animation: fadeIn 0.3s ease;
 }
 
@@ -4133,14 +3921,14 @@ body {
 .contact-sidebar-header .modal-title {
     margin: 0;
     font-size: 1.5rem;
-    color: #fff;
+    color: #000000;
     letter-spacing: 0.1em;
 }
 
 .contact-back-btn {
     background: transparent;
-    border: 1px solid #fff;
-    color: #fff;
+
+    color: #000000;
     padding: 5px 15px;
     cursor: pointer;
     font-weight: 700;
@@ -4149,53 +3937,29 @@ body {
 }
 
 .contact-back-btn:hover {
-    background: #fff;
+    background: #000000;
     color: var(--intersect);
-}
-
-.contact-sidebar-content .contact-header-info {
-    margin-bottom: 30px;
-}
-
-.contact-sidebar-content .header-info-item {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-}
-
-.contact-sidebar-content .info-label {
-    display: inline-block;
-    width: 100px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.contact-sidebar-content .info-val {
-    color: #fff;
-    font-size: 0.9rem;
-    text-decoration: none;
 }
 
 .contact-sidebar-content .form-input-classic,
 .contact-sidebar-content .form-textarea-classic {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    color: #000000;
 }
 
 .contact-sidebar-content .form-input-classic::placeholder,
 .contact-sidebar-content .form-textarea-classic::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(0, 0, 0, 0.5);
 }
 
 .contact-sidebar-content .form-input-classic:focus,
 .contact-sidebar-content .form-textarea-classic:focus {
-    border-color: #fff;
+    border-color: #000000;
 }
 
 .contact-sidebar-content .form-submit-btn-classic {
-    background: #fff;
+    background: #000000;
     color: var(--intersect);
     border: none;
 }
@@ -4248,5 +4012,9 @@ body {
 
     .left-panel.expanded {
         width: 90%;
+    }
+
+    .header-email {
+        display: none;
     }
 }

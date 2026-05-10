@@ -6,57 +6,15 @@ import Image from "next/image";
 import { urlFor } from "@/sanity/image";
 import { useWorkshopData } from "@/hooks/useWorkshopData";
 import { useAuth } from "@/hooks/useAuth";
+import { useGridLayout } from "@/hooks/useGridLayout";
+import GridLines from "@/components/GridLines";
 import WorkshopGrid from "@/components/WorkshopGrid";
 import CalendarView from "@/components/CalendarView";
 import MemberView from "@/components/MemberView";
 import IyocaView from "@/components/IyocaView";
+import MemberVisualStack from "@/components/MemberVisualStack";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import { loadTossPayments } from "@tosspayments/payment-sdk";
-
-const presets = {
-    main: {
-        line1: "calc(100% - (var(--unit) * 3))",
-        line2: "calc(100% - (var(--unit) * 2))",
-        line3: "calc(100% - var(--unit))",
-        line4: "32rem",
-        top2: "calc(5.2rem + var(--unit))"
-    },
-    member: {
-        line1: "0px",
-        line2: "var(--unit)",
-        line3: "calc(var(--unit) * 2)",
-        line4: "40%",
-        top2: "calc(100% - var(--unit))"
-    },
-    contact: {
-        line1: "0px",
-        line2: "calc(100% - (var(--unit) * 2))",
-        line3: "calc(100% - var(--unit))",
-        line4: "40%",
-        top2: "calc(100% - var(--unit))"
-    },
-    workshop: {
-        line1: "0px",
-        line2: "calc(100% - (var(--unit) * 2))",
-        line3: "calc(100% - var(--unit))",
-        line4: "40%",
-        top2: "calc(100% - var(--unit))"
-    },
-    club: {
-        line1: "0px",
-        line2: "var(--unit)",
-        line3: "calc(100% - var(--unit))",
-        line4: "40%",
-        top2: "calc(100% - var(--unit))"
-    },
-    diary: {
-        line1: "0px",
-        line2: "var(--unit)",
-        line3: "calc(var(--unit) * 2)",
-        line4: "40%",
-        top2: "calc(100% - var(--unit))"
-    }
-};
 
 const getTagColor = (tag: string) => {
     const t = tag.toUpperCase().trim();
@@ -106,16 +64,13 @@ function HomeContent() {
 
     const [activePreset, setActivePreset] = useState<string>("main");
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
-    const [dynamicColor, setDynamicColor] = useState("#2563eb");
+    const [dynamicColor, setDynamicColor] = useState("#f8f01dff");
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isContactOpen, setIsContactOpen] = useState(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isInfoExpanded, setIsInfoExpanded] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [displayedInfoText, setDisplayedInfoText] = useState("");
-    const fullInfoText = `가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다.\n 팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다. 하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.`;
     const logoRef = useRef<HTMLDivElement>(null);
     const [logoWidth, setLogoWidth] = useState("32rem");
     const [logoHeight, setLogoHeight] = useState("5.2rem");
@@ -124,7 +79,7 @@ function HomeContent() {
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRafRef = useRef<number | null>(null);
-​
+
     // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
     useEffect(() => {
         const scrollContainers = document.querySelectorAll('.scroll-container');
@@ -176,7 +131,7 @@ function HomeContent() {
         if (!logoRef.current) return;
 
         const observer = new ResizeObserver((entries) => {
-            for (let entry of entries) {
+            for (const entry of entries) {
                 if (entry.target === logoRef.current) {
                     const width = entry.borderBoxSize?.[0]?.inlineSize || entry.contentRect.width;
                     const height = entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height;
@@ -191,35 +146,12 @@ function HomeContent() {
         return () => observer.disconnect();
     }, []);
 
-    // 타이핑 효과 로직
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isInfoExpanded) {
-            let i = 0;
-            setDisplayedInfoText("");
-            const type = () => {
-                if (i < fullInfoText.length) {
-                    setDisplayedInfoText(fullInfoText.substring(0, i + 1));
-                    i++;
-                    timer = setTimeout(type, 15 + Math.random() * 15); // 약간의 불규칙한 타이핑 속도
-                }
-            };
-            type();
-        } else {
-            setDisplayedInfoText("");
-        }
-        return () => clearTimeout(timer);
-    }, [isInfoExpanded, fullInfoText]);
 
     useEffect(() => {
         setIsMounted(true);
         const checkMobile = () => {
             const mobile = window.innerWidth <= 768;
             setIsMobile(mobile);
-            // 웹사이트 첫 진입 시 자동으로 INFO(텍스트)가 펼쳐지도록 설정 (데스크탑 기준)
-            if (!mobile) {
-                setIsInfoExpanded(true);
-            }
         };
         checkMobile();
         window.addEventListener('resize', checkMobile);
@@ -307,27 +239,27 @@ function HomeContent() {
         setSelectedSession(null);
         setShowSchedule(false);
         setIsContactOpen(false);
-        const newColor = randomColor();
-        setDynamicColor(newColor);
-        if (containerRef.current) {
-            containerRef.current.style.setProperty('--intersect', newColor);
-            containerRef.current.style.setProperty('--scroll-hue', '220');
-        }
     };
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (scrollRafRef.current) return;
+        // Color transition disabled as per request to keep it yellow
+    };
 
-        const target = e.currentTarget;
-        scrollRafRef.current = requestAnimationFrame(() => {
-            const h = Math.floor(target.scrollTop / 5) % 360;
-            const color = `hsl(${h}, 90%, 50%)`;
-            if (containerRef.current) {
-                containerRef.current.style.setProperty('--intersect', color);
-                containerRef.current.style.setProperty('--scroll-hue', h.toString());
-            }
-            scrollRafRef.current = null;
-        });
+    const handleThemeChange = () => {
+        const colors = [
+            "#ff3838ff", // Yellow
+            "#ff00ff", // Magenta
+            "#00ffff", // Cyan
+            "#7cfc00", // Lawn Green
+            "#ff4500", // Orange Red
+            "#1e90ff", // Dodger Blue
+            "#f0f0f0ff"  // White
+        ];
+        const currentIndex = colors.indexOf(dynamicColor);
+        const nextIndex = (currentIndex + 1) % colors.length;
+        const nextColor = colors[nextIndex];
+
+        setDynamicColor(nextColor);
     };
 
     const handleGoogleLogin = async () => {
@@ -473,26 +405,30 @@ function HomeContent() {
         }
     };
 
-    const intersectColor = dynamicColor;
-    const currentPreset = presets[activePreset as keyof typeof presets] || presets.main;
-
-    const containerStyle = {
-        "--line-x-1": currentPreset.line1,
-        "--line-x-2": currentPreset.line2,
-        "--line-x-3": currentPreset.line3,
-        "--line-x-4": activePreset === 'main' ? logoWidth : currentPreset.line4,
-        "--top-row-1": logoHeight,
-        "--top-row-2": `calc(${logoHeight} + var(--unit))`,
-        "--intersect": intersectColor,
-    } as CSSProperties;
+    const { containerStyle, rootGridStyle } = useGridLayout({
+        activePreset,
+        logoWidth,
+        logoHeight,
+        isSidebarExpanded,
+        isContactOpen,
+        dynamicColor,
+    });
 
     return (
         <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
-            <style>{`:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${activePreset === 'main' ? logoWidth : currentPreset.line4}; --top-row-1: ${logoHeight}; --top-row-2: calc(${logoHeight} + var(--unit)); --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`}</style>
+            <style>{rootGridStyle}</style>
 
             <div className={`left-panel ${isSidebarExpanded || isContactOpen ? 'expanded' : ''}`} onClick={() => !isContactOpen && setIsSidebarExpanded(!isSidebarExpanded)}>
-                <div className="panel-icon" onClick={(e) => { if (isContactOpen) { e.stopPropagation(); setIsContactOpen(false); } }}></div>
-                
+                <div
+                    className="panel-icon"
+                    style={{ opacity: isSidebarExpanded || isContactOpen ? 0 : 1, pointerEvents: isSidebarExpanded || isContactOpen ? 'none' : 'auto' }}
+                    onClick={(e) => { if (isContactOpen) { e.stopPropagation(); setIsContactOpen(false); } }}
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
                 {isSidebarExpanded && !isContactOpen && (
                     <button className="sidebar-close-btn" onClick={(e) => { e.stopPropagation(); setIsSidebarExpanded(false); }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -504,39 +440,38 @@ function HomeContent() {
 
                 {!isContactOpen ? (
                     <nav className="sidebar-nav" onClick={(e) => e.stopPropagation()}>
-                        <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>MAIN</button>
-                        <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>MEMBER</button>
-                        <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>WORKSHOP</button>
-                        <button className={`${activePreset === 'club' ? 'active' : ''}`} onClick={() => { handlePresetChange('club'); setIsSidebarExpanded(false); }}>IYOCA</button>
-                        <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>CALENDAR</button>
-                        <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>CONTACT</button>
+                        <div className="sidebar-nav-top">
+                            <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>MAIN</button>
+                            <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>MEMBER</button>
+                            <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>WORKSHOP</button>
+                            <button className={`${activePreset === 'club' ? 'active' : ''}`} onClick={() => { handlePresetChange('club'); setIsSidebarExpanded(false); }}>IYOCA</button>
+                            <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>CALENDAR</button>
+                            <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>CONTACT</button>
+                        </div>
 
-                        <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                        </button>
+                        <div className="sidebar-nav-bottom">
+                            <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                로그인
+                            </button>
+                            <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                회원가입
+                            </button>
+                        </div>
                     </nav>
                 ) : (
                     <div className="contact-sidebar-content" onClick={(e) => e.stopPropagation()}>
                         <div className="contact-sidebar-header">
-                            <h2 className="modal-title">CONTACT US</h2>
+                            <h2 className="modal-title">이메일 전송</h2>
                             <button className="contact-back-btn" onClick={() => setIsContactOpen(false)}>← BACK</button>
                         </div>
+
                         <div className="contact-main-scroll">
-                            <div className="contact-form-wrapper">
-                                <div className="contact-header-info" style={{ marginBottom: '30px' }}>
-                                    <div className="header-info-item"><span className="info-label">INSTAGRAM</span><a href="https://www.instagram.com/iyohouse/" target="_blank" rel="noopener noreferrer" className="info-val">@iyohouse</a></div>
-                                    <div className="header-info-item"><span className="info-label">EMAIL</span><a href="mailto:goyangiyoram@gmail.com" className="info-val">goyangiyoram@gmail.com</a></div>
-                                </div>
-                                <form className="contact-form-classic" onSubmit={handleContactSubmit}>
-                                    <div className="form-classic-row"><input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required /></div>
-                                    <div className="form-classic-row"><input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} /></div>
-                                    <div className="form-classic-row"><textarea placeholder="내용" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea></div>
-                                    <div className="form-classic-row"><button type="submit" className="form-submit-btn-classic" disabled={isSending}>{isSending ? '전송 중...' : '전송'}</button></div>
-                                </form>
-                            </div>
+                            <form className="contact-form-classic" onSubmit={handleContactSubmit}>
+                                <div className="form-classic-row"><input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required /></div>
+                                <div className="form-classic-row"><input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} /></div>
+                                <div className="form-classic-row"><textarea placeholder="내용" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea></div>
+                                <div className="form-classic-row"><button type="submit" className="form-submit-btn-classic" disabled={isSending}>{isSending ? '전송 중...' : '전송'}</button></div>
+                            </form>
                         </div>
                     </div>
                 )}
@@ -547,15 +482,23 @@ function HomeContent() {
                     <div className="logo-main-text">iYOHOUSE</div>
                 </div>
                 <div className="btn-sep"></div>
-                <div className={`header-right ${isInfoExpanded ? 'expanded' : ''}`}>
-                    <div className="header-info-content">
-                        <div className="info-text-inner">
-                            {displayedInfoText}
-                            <span className="typewriter-cursor"></span>
-                        </div>
+                <div className="header-right">
+                    <button
+                        className={`header-nav-item ${activePreset === 'member' ? 'active' : ''}`}
+                        onClick={() => handlePresetChange('member')}
+                    >
+                        MEMBER
+                    </button>
+
+                    <div className="header-lang">
+                        <span className="active">KOR</span> / <span>ENG</span>
                     </div>
-                    <button className="header-toggle-btn" onClick={() => setIsInfoExpanded(!isInfoExpanded)}>
-                        <div className="circle-marker"></div>
+
+                    <div className="header-email">
+                        goyangiyoram@gmail.com
+                    </div>
+                    <button className="header-theme-btn" onClick={handleThemeChange} title="Change Theme Color">
+                        <div className="theme-dot"></div>
                     </button>
                 </div>
             </header>
@@ -564,13 +507,6 @@ function HomeContent() {
 
             <main className="stage">
                 <div className="grid-frame">
-                    <div className={`cell cell-member ${activePreset === 'member' ? 'active' : ''}`}>
-                        <div className="cell-cover"></div>
-                        <div className="cell-content scroll-container" onScroll={handleScroll}>
-                            {visited.member && <MemberView />}
-                        </div>
-                    </div>
-
                     <div className={`cell cell-club ${activePreset === 'club' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
                         <div className="cell-content scroll-container" onScroll={handleScroll}>
@@ -816,37 +752,42 @@ function HomeContent() {
                     <div className={`cell cell-main ${activePreset === 'main' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
                         <div className="cell-content main-content-layout">
-                            <div className="question-mark-wrapper">
-                                <div className="question-mark-circle">
-                                    <span>?</span>
+                            <div className="main-text-column">
+                                <div className="main-intro-text">
+                                    가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다.
+                                    팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다.
+                                    요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.
+                                    하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다.
+                                    창작자를 위한 공공공원은 이요하우스로 이어집니다.
                                 </div>
-                                <div className="chatbot-overlay">
-                                    이요하우스 챗봇입니다.........
+                                <div className="info-bottom-text-wrapper">
+                                    <div className="info-bottom-text">info</div>
+                                    <div className="business-info-overlay">
+                                        <strong>주식회사 이요하우스</strong><br />
+                                        ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
+                                        BUSINESS LICENSE : 718-88-02112<br />
+                                        MALL-ORDER LICENSE : 2024-서울송파-2708<br />
+                                        EMAIL : goyangiyoram@gmail.com<br />
+                                        WEBSITE :  <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer">@djwns1234</a>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="info-bottom-text-wrapper">
-                                <div className="info-bottom-text">info</div>
-                                <div className="business-info-overlay">
-                                    <strong>주식회사 이요하우스</strong><br />
-                                    ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
-                                    BUSINESS LICENSE : 718-88-02112<br />
-                                    MALL-ORDER LICENSE : 2024-서울송파-2708<br />
-                                    EMAIL : goyangiyoram@gmail.com<br />
-                                    WEBSITE :  <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer">@djwns1234</a>
+                            <div className="main-visual-column">
+                                <div className="main-visual-aside">
+                                    <MemberVisualStack />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-line grid-row-1"></div><div className="h-line grid-row-2"></div>
+                    <div className={`cell cell-member ${activePreset === 'member' ? 'active' : ''}`}>
+                        <div className="cell-cover"></div>
+                        <div className="cell-content">
+                            {visited.member && <MemberView />}
+                        </div>
+                    </div>
 
-                    {/* 풀 사이즈 수직선 */}
-                    <div className="v-line" style={{ left: 'var(--line-x-1)' }}></div>
-                    <div className="v-line" style={{ left: 'var(--line-x-2)' }}></div>
-                    <div className="v-line" style={{ left: 'var(--line-x-3)' }}></div>
-
-                    {/* 교차점 마커 (색상 블록) */}
-                    <div className="top-v-1"></div><div className="top-v-2"></div><div className="top-v-3"></div>
+                    <GridLines />
                 </div>
             </main>
 
@@ -1023,20 +964,6 @@ function HomeContent() {
                 </>
             )}
 
-            {/* 모바일 전용 인포 모달 */}
-            {isInfoExpanded && isMobile && (
-                <div className="mobile-info-overlay">
-                    <div className="mobile-info-modal">
-                        <button className="mobile-info-close" onClick={() => setIsInfoExpanded(false)}>✕</button>
-                        <div className="mobile-info-content">
-                            <div className="mobile-typewriter-text">
-                                {displayedInfoText}
-                                <span className="typewriter-cursor"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
