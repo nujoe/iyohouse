@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, CSSProperties, Suspense } from "react";
+import { useCallback, useEffect, useState, useRef, CSSProperties, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Image from "next/image";
 import { urlFor } from "@/sanity/image";
@@ -31,10 +31,17 @@ const getTagColor = (tag: string) => {
     return otherColors[Math.abs(hash) % otherColors.length];
 };
 
-const randomColor = () => {
-    const h = Math.floor(Math.random() * 360);
-    return `hsl(${h}, 90%, 50%)`;
-};
+const THEME_COLORS = [
+    "#ff3838ff",
+    "#ff00ff",
+    "#00ffff",
+    "#7cfc00",
+    "#ff4500",
+    "#1e90ff",
+    "#f0f0f0ff"
+];
+
+const noopScrollHandler = () => {};
 
 const createLegacyWorkshop = (id: number) => ({
     id,
@@ -47,6 +54,13 @@ const createLegacyWorkshop = (id: number) => ({
     tags: ["AI", "WORKSHOP", "GRAPHIC"],
     isClosed: id <= 11,
 });
+
+const HYDRATION_SAFE_CALENDAR_MONTH = new Date("2000-01-01T12:00:00.000Z");
+
+const getClientCurrentMonth = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+};
 
 function HomeContent() {
     const router = useRouter();
@@ -66,11 +80,10 @@ function HomeContent() {
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
     const [dynamicColor, setDynamicColor] = useState("#f8f01dff");
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(HYDRATION_SAFE_CALENDAR_MONTH);
     const [isContactOpen, setIsContactOpen] = useState(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const logoRef = useRef<HTMLDivElement>(null);
     const [logoWidth, setLogoWidth] = useState("32rem");
     const [logoHeight, setLogoHeight] = useState("5.2rem");
@@ -78,7 +91,6 @@ function HomeContent() {
     const [isBooting, setIsBooting] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const scrollRafRef = useRef<number | null>(null);
 
     // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
     useEffect(() => {
@@ -94,7 +106,11 @@ function HomeContent() {
         bio: ''
     });
 
-    const handleProfileSetup = async (e: React.FormEvent) => {
+    useEffect(() => {
+        setCurrentMonth(getClientCurrentMonth());
+    }, []);
+
+    const handleProfileSetup = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!setupData.full_name || !setupData.phone || !setupData.bio) {
             alert("모든 정보를 입력해 주세요.");
@@ -106,7 +122,7 @@ function HomeContent() {
         } else {
             alert("환영합니다! 회원가입이 완료되었습니다.");
         }
-    };
+    }, [setupData, updateProfile]);
 
 
     useEffect(() => {
@@ -149,12 +165,6 @@ function HomeContent() {
 
     useEffect(() => {
         setIsMounted(true);
-        const checkMobile = () => {
-            const mobile = window.innerWidth <= 768;
-            setIsMobile(mobile);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
 
         const raf = requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -163,7 +173,6 @@ function HomeContent() {
         });
         return () => {
             cancelAnimationFrame(raf);
-            window.removeEventListener('resize', checkMobile);
         };
     }, []);
 
@@ -211,21 +220,21 @@ function HomeContent() {
         }
     }, [searchParams, sanityWorkshops]);
 
-    const createQueryString = (name: string, value: string | null) => {
+    const createQueryString = useCallback((name: string, value: string | null) => {
         const params = new URLSearchParams(searchParams.toString());
         if (value) params.set(name, value);
         else params.delete(name);
         return params.toString();
-    };
+    }, [searchParams]);
 
-    const handleSelectWorkshop = (workshop: any) => {
+    const handleSelectWorkshop = useCallback((workshop: any) => {
         const id = workshop._id || workshop.id;
         router.push(`${pathname}?${createQueryString('workshop', id.toString())}`, { scroll: false });
-    };
+    }, [createQueryString, pathname, router]);
 
-    const handlePresetChange = (preset: string) => {
+    const handlePresetChange = useCallback((preset: string) => {
         if (preset === 'contact') {
-            setIsContactOpen(!isContactOpen);
+            setIsContactOpen(open => !open);
             return;
         }
         setIsContactOpen(false);
@@ -239,30 +248,19 @@ function HomeContent() {
         setSelectedSession(null);
         setShowSchedule(false);
         setIsContactOpen(false);
-    };
+    }, [createQueryString, pathname, router]);
 
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        // Color transition disabled as per request to keep it yellow
-    };
+    const handleScroll = noopScrollHandler;
 
-    const handleThemeChange = () => {
-        const colors = [
-            "#ff3838ff", // Yellow
-            "#ff00ff", // Magenta
-            "#00ffff", // Cyan
-            "#7cfc00", // Lawn Green
-            "#ff4500", // Orange Red
-            "#1e90ff", // Dodger Blue
-            "#f0f0f0ff"  // White
-        ];
-        const currentIndex = colors.indexOf(dynamicColor);
-        const nextIndex = (currentIndex + 1) % colors.length;
-        const nextColor = colors[nextIndex];
+    const handleThemeChange = useCallback(() => {
+        setDynamicColor(currentColor => {
+            const currentIndex = THEME_COLORS.indexOf(currentColor);
+            const nextIndex = (currentIndex + 1) % THEME_COLORS.length;
+            return THEME_COLORS[nextIndex];
+        });
+    }, []);
 
-        setDynamicColor(nextColor);
-    };
-
-    const handleGoogleLogin = async () => {
+    const handleGoogleLogin = useCallback(async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -273,9 +271,9 @@ function HomeContent() {
             console.error("Google Login Error:", error.message);
             alert("로그인 중 오류가 발생했습니다.");
         }
-    };
+    }, [supabase]);
 
-    const handleKakaoLogin = async () => {
+    const handleKakaoLogin = useCallback(async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
@@ -286,11 +284,11 @@ function HomeContent() {
             console.error("Kakao Login Error:", error.message);
             alert("로그인 중 오류가 발생했습니다.");
         }
-    };
+    }, [supabase]);
 
 
 
-    const handleContactSubmit = async (e: React.FormEvent) => {
+    const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!contactData.email || !contactData.message) {
             alert("이메일과 내용을 입력해 주세요.");
@@ -312,33 +310,33 @@ function HomeContent() {
             console.error('이메일 전송 실패:', error);
             alert("전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
         } finally { setIsSending(false); }
-    };
+    }, [contactData]);
 
-    const getWorkshopCapacity = (workshop: any) =>
-        typeof workshop?.capacity === 'number' ? workshop.capacity : 8;
+    const getWorkshopCapacity = useCallback((workshop: any) =>
+        typeof workshop?.capacity === 'number' ? workshop.capacity : 8, []);
 
-    const getWorkshopPaidCount = (workshop: any) => {
+    const getWorkshopPaidCount = useCallback((workshop: any) => {
         const dbId = workshop?.supabase_workshop_id;
         return dbId ? registrationCounts[dbId] || 0 : 0;
-    };
+    }, [registrationCounts]);
 
-    const getWorkshopSchedule = (workshop: any) =>
+    const getWorkshopSchedule = useCallback((workshop: any) =>
         Array.isArray(workshop?.schedule)
             ? workshop.schedule.filter((session: any) => session?.date || session?.time)
-            : [];
+            : [], []);
 
-    const hasSelectableSchedule = (workshop: any) => getWorkshopSchedule(workshop).length > 0;
+    const hasSelectableSchedule = useCallback((workshop: any) => getWorkshopSchedule(workshop).length > 0, [getWorkshopSchedule]);
 
-    const isWorkshopClosedForPayment = (workshop: any) => {
+    const isWorkshopClosedForPayment = useCallback((workshop: any) => {
         const isLegacyClosed = !workshop?.isSanity && Number(workshop?.id) <= 11;
         return Boolean(
             workshop?.isClosed ||
             isLegacyClosed ||
             getWorkshopPaidCount(workshop) >= getWorkshopCapacity(workshop)
         );
-    };
+    }, [getWorkshopCapacity, getWorkshopPaidCount]);
 
-    const handleWorkshopPayment = async (workshop: any) => {
+    const handleWorkshopPayment = useCallback(async (workshop: any) => {
         if (!user) {
             setIsLoginModalOpen(true);
             return;
@@ -403,7 +401,17 @@ function HomeContent() {
             console.error("신청/결제 요청 에러:", error);
             alert(`요청 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
         }
-    };
+    }, [
+        getWorkshopCapacity,
+        getWorkshopPaidCount,
+        hasSelectableSchedule,
+        isProfileComplete,
+        isWorkshopClosedForPayment,
+        selectedSession,
+        supabase,
+        tossPayments,
+        user,
+    ]);
 
     const { containerStyle, rootGridStyle } = useGridLayout({
         activePreset,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export function useWorkshopData() {
     const [sanityWorkshops, setSanityWorkshops] = useState<any[]>([]);
@@ -48,7 +48,7 @@ export function useWorkshopData() {
     }, []);
 
     // Sanity 데이터와 하드코딩 데이터를 통합하여 최신순으로 정렬된 리스트 반환
-    const allWorkshops = [
+    const allWorkshops = useMemo(() => [
         ...sanityWorkshops.map(ws => ({ ...ws, isSanity: true, sortNum: ws.number || 0 })),
         ...Array.from({ length: 24 }, (_, i) => 24 - i)
             .filter(id => !sanityWorkshops.find(sws => sws.number === id))
@@ -58,7 +58,7 @@ export function useWorkshopData() {
                 sortNum: id,
                 supabase_workshop_id: null,
             }))
-    ].sort((a, b) => b.sortNum - a.sortNum);
+    ].sort((a, b) => b.sortNum - a.sortNum), [sanityWorkshops]);
 
     return {
         sanityWorkshops,

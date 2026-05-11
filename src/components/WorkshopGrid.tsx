@@ -2,7 +2,7 @@
 
 import { urlFor } from "@/sanity/image";
 import Image from "next/image";
-import { CSSProperties } from "react";
+import { CSSProperties, memo } from "react";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 
 interface WorkshopGridProps {
@@ -13,12 +13,12 @@ interface WorkshopGridProps {
     getTagColor: (tag: string) => string;
 }
 
-export default function WorkshopGrid({ 
-    workshops, 
+function WorkshopGrid({
+    workshops,
     registrationCounts,
     registrations = [],
-    onSelectWorkshop, 
-    getTagColor 
+    onSelectWorkshop,
+    getTagColor
 }: WorkshopGridProps) {
     const counts = registrationCounts || registrations.reduce<Record<string, number>>((acc, registration) => {
         const workshopId = registration?.workshop_id;
@@ -116,3 +116,5 @@ export default function WorkshopGrid({
         </div>
     );
 }
+
+export default memo(WorkshopGrid);

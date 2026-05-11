@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { memo } from "react";
 import MemberVisualStack from "./MemberVisualStack";
 
 interface Member {
@@ -50,7 +50,7 @@ const members: Member[] = [
   }
 ];
 
-export default function MemberView() {
+function MemberView() {
   return (
     <div className="member-view-container">
       <div className="member-layout-v2">
@@ -87,3 +87,5 @@ export default function MemberView() {
     </div>
   );
 }
+
+export default memo(MemberView);

@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import { memo } from "react";
 
-export default function MemberVisualStack() {
+function MemberVisualStack() {
   return (
     <div className="visual-stack-v2">
       <div className="v-box-v2 large">
@@ -17,3 +17,5 @@ export default function MemberVisualStack() {
     </div>
   );
 }
+
+export default memo(MemberVisualStack);

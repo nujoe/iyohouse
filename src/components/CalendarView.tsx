@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 
 interface CalendarViewProps {
     currentMonth: Date;
@@ -8,10 +8,10 @@ interface CalendarViewProps {
     calendarEvents: any[];
 }
 
-export default function CalendarView({ 
-    currentMonth, 
-    onMonthChange, 
-    calendarEvents 
+function CalendarView({
+    currentMonth,
+    onMonthChange,
+    calendarEvents
 }: CalendarViewProps) {
     
     const calendarDays = useMemo(() => {
@@ -77,3 +77,5 @@ export default function CalendarView({
         </div>
     );
 }
+
+export default memo(CalendarView);

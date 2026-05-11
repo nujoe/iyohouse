@@ -1,4 +1,6 @@
-export default function GridLines() {
+import { memo } from "react";
+
+function GridLines() {
     return (
         <>
             <div className="h-line grid-row-1"></div><div className="h-line grid-row-2"></div>
@@ -15,3 +17,5 @@ export default function GridLines() {
         </>
     );
 }
+
+export default memo(GridLines);

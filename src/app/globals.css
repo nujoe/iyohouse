@@ -1284,20 +1284,12 @@ body {
     width: var(--line-gap);
     left: var(--line-x-center);
     top: var(--top-row-1);
-    height: calc(100% - var(--top-row-1));
-    /* 항상 하단까지 확장 */
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+    /* 가로선 grid-row-2 위치까지 확장하여 교차점 마커 표시 */
     transition: all var(--transition);
     z-index: 11001;
     pointer-events: none;
     opacity: 1;
-}
-
-.preset-workshop .top-v-center,
-.preset-club .top-v-center,
-.preset-diary .top-v-center,
-.preset-contact .top-v-center {
-    /* 멤버와 메인이 아닌 경우 헤더로 수축 */
-    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
 }
 
 .top-v-center::before,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 
 const iyocaPosters = [
     {
@@ -59,7 +59,7 @@ const iyocaPosters = [
     },
 ];
 
-export default function IyocaView({ active, onPosterClick }: { active: boolean, onPosterClick?: (poster: any) => void }) {
+function IyocaView({ active, onPosterClick }: { active: boolean, onPosterClick?: (poster: any) => void }) {
     const [hoveredPoster, setHoveredPoster] = useState<typeof iyocaPosters[0] | null>(null);
 
     return (
@@ -94,3 +94,5 @@ export default function IyocaView({ active, onPosterClick }: { active: boolean, 
         </div>
     );
 }
+
+export default memo(IyocaView);
