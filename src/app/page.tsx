@@ -14,6 +14,7 @@ import MemberView from "@/components/MemberView";
 import IyocaView from "@/components/IyocaView";
 import MemberVisualStack from "@/components/MemberVisualStack";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
+import ChatbotWidget from "@/features/iyohouse-chatbot/components/ChatbotWidget";
 import { loadTossPayments } from "@tosspayments/payment-sdk";
 
 const getTagColor = (tag: string) => {
@@ -964,6 +965,7 @@ function HomeContent() {
                 </>
             )}
 
+            <ChatbotWidget />
         </div>
     );
 }
