@@ -1,44 +1,61 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function getSafeNextPath(requestedNext: string | null) {
+  if (!requestedNext?.startsWith('/') || requestedNext.startsWith('//')) return '/'
+  if (requestedNext.startsWith('/auth') || requestedNext.startsWith('/complete-profile')) return '/'
+
+  return requestedNext
+}
+
+function getRedirectBase(request: Request, origin: string) {
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const isLocalEnv = process.env.NODE_ENV === 'development'
+
+  if (isLocalEnv) return origin
+  if (forwardedHost) return `https://${forwardedHost}`
+
+  return origin
+}
+
+function hasCompletedProfile(
+  profile: { full_name: string | null; phone: string | null; email: string | null } | null,
+  userEmail?: string | null
+) {
+  return Boolean(
+    profile?.full_name?.trim() &&
+    profile?.phone?.trim() &&
+    (profile?.email || userEmail)?.trim()
+  )
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // if "next" is in search params, use it as the redirection URL
-  const next = searchParams.get('next') ?? '/'
+  const next = getSafeNextPath(searchParams.get('next'))
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      const base = getRedirectBase(request, origin)
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (user) {
-        // Check if profile exists and is complete
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, phone')
+          .select('full_name, phone, email')
           .eq('id', user.id)
           .maybeSingle()
 
-        if (!profile || !profile.full_name || !profile.phone) {
-          return NextResponse.redirect(`${origin}/onboarding`)
+        if (!hasCompletedProfile(profile, user.email)) {
+          return NextResponse.redirect(`${base}/complete-profile?next=${encodeURIComponent(next)}`)
         }
       }
-      
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      if (isLocalEnv) {
-        // we can be sure that origin is localhost
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
+
+      return NextResponse.redirect(`${base}${next}`)
     }
   }
 
-  // return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }

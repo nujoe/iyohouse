@@ -11,24 +11,17 @@ import GridLines from "@/components/GridLines";
 import WorkshopGrid from "@/components/WorkshopGrid";
 import CalendarView from "@/components/CalendarView";
 import MemberView from "@/components/MemberView";
-import IyocaView from "@/components/IyocaView";
+
 import MemberVisualStack from "@/components/MemberVisualStack";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import { loadTossPayments } from "@tosspayments/payment-sdk";
 
 const getTagColor = (tag: string) => {
     const t = tag.toUpperCase().trim();
-    if (t === 'AI') return 'black';
     if (t === 'WORKSHOP') return 'yellow';
-    if (t === 'GRAPHIC') return 'green';
-    if (t === 'VFX') return 'blue';
-
-    const otherColors = ['orange', 'purple', 'pink', 'red'];
-    let hash = 0;
-    for (let i = 0; i < t.length; i++) {
-        hash = t.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return otherColors[Math.abs(hash) % otherColors.length];
+    if (t === 'TALK') return 'blue';
+    if (t === 'IYOCA') return 'green';
+    return 'gray';
 };
 
 const THEME_COLORS = [
@@ -41,7 +34,7 @@ const THEME_COLORS = [
     "#f0f0f0ff"
 ];
 
-const noopScrollHandler = () => {};
+const noopScrollHandler = () => { };
 
 const createLegacyWorkshop = (id: number) => ({
     id,
@@ -74,7 +67,7 @@ function HomeContent() {
         allWorkshops,
     } = useWorkshopData();
 
-    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, updateProfile, supabase } = useAuth();
+    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase, signInWithGoogle, signInWithKakao } = useAuth();
 
     const [activePreset, setActivePreset] = useState<string>("main");
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
@@ -87,7 +80,7 @@ function HomeContent() {
     const logoRef = useRef<HTMLDivElement>(null);
     const [logoWidth, setLogoWidth] = useState("32rem");
     const [logoHeight, setLogoHeight] = useState("5.2rem");
-    const [selectedIyoca, setSelectedIyoca] = useState<any | null>(null);
+
     const [isBooting, setIsBooting] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -98,49 +91,31 @@ function HomeContent() {
         scrollContainers.forEach(container => {
             container.scrollTop = 0;
         });
-    }, [activePreset, selectedWorkshop, selectedIyoca]);
-
-    const [setupData, setSetupData] = useState({
-        full_name: '',
-        phone: '',
-        bio: ''
-    });
+    }, [activePreset, selectedWorkshop]);
 
     useEffect(() => {
         setCurrentMonth(getClientCurrentMonth());
     }, []);
 
-    const handleProfileSetup = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!setupData.full_name || !setupData.phone || !setupData.bio) {
-            alert("모든 정보를 입력해 주세요.");
-            return;
-        }
-        const { error } = await updateProfile(setupData);
-        if (error) {
-            alert("프로필 저장 중 오류가 발생했습니다: " + error);
-        } else {
-            alert("환영합니다! 회원가입이 완료되었습니다.");
-        }
-    }, [setupData, updateProfile]);
+    const getCurrentNextPath = useCallback(() => {
+        const query = searchParams.toString();
+        return `${pathname}${query ? `?${query}` : ''}`;
+    }, [pathname, searchParams]);
 
+    const goToCompleteProfile = useCallback(() => {
+        const currentPath = getCurrentNextPath();
+        const nextPath = currentPath.startsWith('/complete-profile') ? '/' : currentPath;
+        router.push(`/complete-profile?next=${encodeURIComponent(nextPath)}`);
+    }, [getCurrentNextPath, router]);
 
-    useEffect(() => {
-        if (profile) {
-            setSetupData({
-                full_name: profile.full_name || '',
-                phone: profile.phone || '',
-                bio: profile.bio || ''
-            });
-        }
-    }, [profile]);
-
-    // 인증 후 프로필 미완성 시 모달 자동 오픈
+    // 인증 후 프로필 미완성 시 전용 가입 완료 페이지로 이동
     useEffect(() => {
         if (!authLoading && user && !isProfileComplete) {
-            setIsLoginModalOpen(true);
+            const currentPath = getCurrentNextPath();
+            const nextPath = currentPath.startsWith('/complete-profile') ? '/' : currentPath;
+            router.replace(`/complete-profile?next=${encodeURIComponent(nextPath)}`);
         }
-    }, [authLoading, user, isProfileComplete]);
+    }, [authLoading, getCurrentNextPath, isProfileComplete, router, user]);
 
     // 로고 너비 동적 측정 (ResizeObserver 사용)
     useEffect(() => {
@@ -244,7 +219,7 @@ function HomeContent() {
         router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
         setActivePreset(preset);
         setSelectedWorkshop(null);
-        setSelectedIyoca(null);
+
         setSelectedSession(null);
         setShowSchedule(false);
         setIsContactOpen(false);
@@ -259,32 +234,6 @@ function HomeContent() {
             return THEME_COLORS[nextIndex];
         });
     }, []);
-
-    const handleGoogleLogin = useCallback(async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
-        if (error) {
-            console.error("Google Login Error:", error.message);
-            alert("로그인 중 오류가 발생했습니다.");
-        }
-    }, [supabase]);
-
-    const handleKakaoLogin = useCallback(async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'kakao',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
-        if (error) {
-            console.error("Kakao Login Error:", error.message);
-            alert("로그인 중 오류가 발생했습니다.");
-        }
-    }, [supabase]);
 
 
 
@@ -343,8 +292,7 @@ function HomeContent() {
         }
 
         if (!isProfileComplete) {
-            alert("워크숍 신청을 위해 프로필(이름, 전화번호)을 먼저 완성해 주세요.");
-            setIsLoginModalOpen(true);
+            goToCompleteProfile();
             return;
         }
 
@@ -404,6 +352,7 @@ function HomeContent() {
     }, [
         getWorkshopCapacity,
         getWorkshopPaidCount,
+        goToCompleteProfile,
         hasSelectableSchedule,
         isProfileComplete,
         isWorkshopClosedForPayment,
@@ -426,7 +375,7 @@ function HomeContent() {
         <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
             <style>{rootGridStyle}</style>
 
-            <div className={`left-panel ${isSidebarExpanded || isContactOpen ? 'expanded' : ''}`} onClick={() => !isContactOpen && setIsSidebarExpanded(!isSidebarExpanded)}>
+            <div className={`left-panel ${isSidebarExpanded || isContactOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && setIsSidebarExpanded(!isSidebarExpanded)}>
                 <div
                     className="panel-icon"
                     style={{ opacity: isSidebarExpanded || isContactOpen ? 0 : 1, pointerEvents: isSidebarExpanded || isContactOpen ? 'none' : 'auto' }}
@@ -452,35 +401,67 @@ function HomeContent() {
                             <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>MAIN</button>
                             <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>MEMBER</button>
                             <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>WORKSHOP</button>
-                            <button className={`${activePreset === 'club' ? 'active' : ''}`} onClick={() => { handlePresetChange('club'); setIsSidebarExpanded(false); }}>IYOCA</button>
                             <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>CALENDAR</button>
                             <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>CONTACT</button>
                         </div>
 
                         <div className="sidebar-nav-bottom">
-                            <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                로그인
-                            </button>
-                            <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                회원가입
-                            </button>
+                            {!user ? (
+                                <>
+                                    <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                        LOGIN
+                                    </button>
+                                    <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                        JOIN
+                                    </button>
+                                </>
+                            ) : !isProfileComplete ? (
+                                <>
+                                    <button className="user-signup-btn" onClick={() => { goToCompleteProfile(); setIsSidebarExpanded(false); }}>
+                                        COMPLETE JOIN
+                                    </button>
+                                    <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
+                                        LOGOUT
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                        MY INFO
+                                    </button>
+                                    <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
+                                        LOGOUT
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </nav>
                 ) : (
                     <div className="contact-sidebar-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="contact-sidebar-header">
-                            <h2 className="modal-title">이메일 전송</h2>
-                            <button className="contact-back-btn" onClick={() => setIsContactOpen(false)}>← BACK</button>
-                        </div>
+                        <form className="contact-form-classic" onSubmit={handleContactSubmit}>
+                            <div className="contact-sidebar-header">
+                                <h2 className="modal-title">이요하우스와 </h2>
+                                <button type="button" className="contact-back-btn" onClick={() => setIsContactOpen(false)}>← BACK</button>
+                            </div>
 
-                        <div className="contact-main-scroll">
-                            <form className="contact-form-classic" onSubmit={handleContactSubmit}>
-                                <div className="form-classic-row"><input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required /></div>
-                                <div className="form-classic-row"><input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} /></div>
-                                <div className="form-classic-row"><textarea placeholder="내용" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea></div>
-                                <div className="form-classic-row"><button type="submit" className="form-submit-btn-classic" disabled={isSending}>{isSending ? '전송 중...' : '전송'}</button></div>
-                            </form>
-                        </div>
+                            <div className="contact-main-scroll">
+                                <div className="form-classic-row">
+                                    <input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required />
+                                </div>
+                                <div className="form-classic-row">
+                                    <input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} />
+                                </div>
+                                <div className="form-classic-row flex-textarea">
+                                    <textarea placeholder="내용을 입력해주세요" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea>
+                                </div>
+                            </div>
+
+                            <div className="form-submit-row">
+                                <button type="submit" className="form-submit-btn-classic" disabled={isSending}>
+                                    {isSending ? '전송 중...' : '전송!'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 )}
             </div>
@@ -515,99 +496,7 @@ function HomeContent() {
 
             <main className="stage">
                 <div className="grid-frame">
-                    <div className={`cell cell-club ${activePreset === 'club' ? 'active' : ''}`}>
-                        <div className="cell-cover"></div>
-                        <div className="cell-content scroll-container" onScroll={handleScroll}>
-                            {visited.club && (
-                                selectedIyoca ? (
-                                    <div className="workshop-detail-container">
-                                        <div className="detail-layout">
-                                            <div className="detail-left">
-                                                <div className="detail-poster-wrapper">
-                                                    <div className="detail-poster-aspect-box" style={{ "--aspect-ratio": "1080 / 1350" } as CSSProperties}>
-                                                        <Image
-                                                            src={selectedIyoca.src}
-                                                            className="detail-main-poster"
-                                                            alt={selectedIyoca.title}
-                                                            width={1080}
-                                                            height={1350}
-                                                            style={{
-                                                                width: '100%',
-                                                                height: '100%',
-                                                                objectFit: 'contain',
-                                                                objectPosition: 'center',
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="detail-right">
-                                                <div className="detail-info-inner">
-                                                    <div className="detail-info-header">
-                                                        <div className="detail-tags">
-                                                            <span className="pills pill-blue">IYOCA ARCHIVE</span>
-                                                            <span className="pills pill-gray">#{selectedIyoca.id}</span>
-                                                        </div>
-                                                        <div className="detail-title-wrapper">
-                                                            <div className="detail-main-title">{selectedIyoca.title}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="detail-description">
-                                                        <p>{selectedIyoca.description}</p>
-                                                        {selectedIyoca.fullDetails?.summary && (
-                                                            <p style={{ fontWeight: 700, marginTop: '10px' }}>{selectedIyoca.fullDetails.summary}</p>
-                                                        )}
-                                                    </div>
 
-                                                    {selectedIyoca.fullDetails && (
-                                                        <>
-                                                            <div className="detail-meta">
-                                                                {selectedIyoca.fullDetails.info.map((info: any, idx: number) => (
-                                                                    <div key={idx} className="meta-row">
-                                                                        <span className="meta-label">{info.label}</span>
-                                                                        <span className="meta-value">{info.value}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-
-                                                            {selectedIyoca.fullDetails.schedule && (
-                                                                <div className="detail-curriculum-section">
-                                                                    <div className="detail-section-label">진행 일정</div>
-                                                                    {selectedIyoca.fullDetails.schedule.map((s: any, idx: number) => (
-                                                                        <div key={idx} className="curriculum-row">
-                                                                            <span className="curriculum-week">{s.week}</span>
-                                                                            <span className="curriculum-content">
-                                                                                <strong>{s.date} {s.time}</strong><br />
-                                                                                {s.content}
-                                                                            </span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-
-                                                            {selectedIyoca.fullDetails.tutor && (
-                                                                <div className="detail-tutor-section">
-                                                                    <div className="detail-tutor-name">튜터 : {selectedIyoca.fullDetails.tutor.name}</div>
-                                                                    <div className="detail-tutor-bio">{selectedIyoca.fullDetails.tutor.bio}</div>
-                                                                </div>
-                                                            )}
-
-                                                            <div className="detail-footer-meta" style={{ marginTop: '40px', opacity: 0.6, fontSize: '12px' }}>
-                                                                <p>장소: {selectedIyoca.fullDetails.location}</p>
-                                                                <p>{selectedIyoca.fullDetails.credits}</p>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <IyocaView active={activePreset === 'club'} onPosterClick={setSelectedIyoca} />
-                                )
-                            )}
-                        </div>
-                    </div>
 
                     <div className={`cell cell-workshop ${activePreset === 'workshop' ? 'active' : ''}`}>
                         <div className="cell-cover"></div>
@@ -659,7 +548,7 @@ function HomeContent() {
                                                 <div className="detail-info-inner">
                                                     <div className="detail-info-header">
                                                         <div className="detail-tags">
-                                                            {selectedWorkshop.tags?.map((tag: string, i: number) => (<span key={i} className={`pills pill-${getTagColor(tag)}`}>{tag}</span>))}
+                                                            <span className="pills pill-yellow">WORKSHOP</span>
                                                         </div>
                                                         <div className="detail-title-wrapper">
                                                             <div className="detail-main-title">{selectedWorkshop.title}</div>
@@ -781,9 +670,7 @@ function HomeContent() {
                                 </div>
                             </div>
                             <div className="main-visual-column">
-                                <div className="main-visual-aside">
-                                    <MemberVisualStack />
-                                </div>
+                                <MemberVisualStack />
                             </div>
                         </div>
                     </div>
@@ -823,9 +710,6 @@ function HomeContent() {
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('workshop'); setIsMenuOpen(false); }}>
                                 <span className="item-label">WORKSHOP</span>
                             </button>
-                            <button className="mobile-menu-item" onClick={() => { handlePresetChange('club'); setIsMenuOpen(false); }}>
-                                <span className="item-label">IYOCA</span>
-                            </button>
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('diary'); setIsMenuOpen(false); }}>
                                 <span className="item-label">CALENDAR</span>
                             </button>
@@ -864,54 +748,27 @@ function HomeContent() {
                                         <h3>IYOHOUSE</h3>
 
                                         {!isProfileComplete ? (
-                                            /* 프로필 미완성: 회원가입 완성 폼 */
+                                            /* 프로필 미완성: 전용 가입 완료 페이지로 이동 */
                                             <div className="profile-setup-container" style={{ marginTop: '24px', textAlign: 'left' }}>
-                                                <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>인증이 완료되었습니다. 서비스를 이용하기 위해 추가 정보를 입력해 주세요.</p>
-                                                <form className="email-login-form" onSubmit={handleProfileSetup}>
-                                                    <div className="form-row">
-                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>이메일 (변경 불가)</label>
-                                                        <input type="email" value={user.email || ''} disabled style={{ background: '#f5f5f5', cursor: 'not-allowed' }} />
-                                                    </div>
-                                                    <div className="form-row">
-                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>이름 (실명)</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="실명을 입력하세요"
-                                                            value={setupData.full_name}
-                                                            onChange={(e) => setSetupData({ ...setupData, full_name: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="form-row">
-                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>전화번호</label>
-                                                        <input
-                                                            type="tel"
-                                                            placeholder="010-0000-0000"
-                                                            value={setupData.phone}
-                                                            onChange={(e) => setSetupData({ ...setupData, phone: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="form-row">
-                                                        <label style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>자기소개</label>
-                                                        <textarea
-                                                            placeholder="간단한 자기소개를 입력하세요"
-                                                            value={setupData.bio}
-                                                            onChange={(e) => setSetupData({ ...setupData, bio: e.target.value })}
-                                                            required
-                                                            style={{ width: '100%', minHeight: '80px', padding: '12px', border: '1px solid #ddd', fontSize: '14px', outline: 'none' }}
-                                                        />
-                                                    </div>
-                                                    <button type="submit" className="email-submit-btn" style={{ marginTop: '10px' }}>회원가입 완료</button>
-                                                    <button
-                                                        type="button"
-                                                        className="social-btn"
-                                                        style={{ marginTop: '10px', background: 'transparent', border: '1px solid #ddd', color: '#666' }}
-                                                        onClick={() => signOut()}
-                                                    >
-                                                        취소 및 로그아웃
-                                                    </button>
-                                                </form>
+                                                <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>
+                                                    인증이 완료되었습니다. 서비스를 이용하려면 회원가입을 완료해 주세요.
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    className="email-submit-btn"
+                                                    style={{ width: '100%' }}
+                                                    onClick={() => { setIsLoginModalOpen(false); goToCompleteProfile(); }}
+                                                >
+                                                    회원가입 완료하기
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="social-btn"
+                                                    style={{ marginTop: '10px', width: '100%', justifyContent: 'center', background: 'transparent', border: '1px solid #ddd', color: '#666' }}
+                                                    onClick={() => signOut()}
+                                                >
+                                                    로그아웃
+                                                </button>
                                             </div>
                                         ) : (
                                             /* 프로필 완성: 일반 로그인 상태 */
@@ -942,11 +799,11 @@ function HomeContent() {
                                         </div>
 
                                         <div className="social-login-group">
-                                            <button className="social-btn kakao" onClick={handleKakaoLogin}>
+                                            <button className="social-btn kakao" onClick={signInWithKakao}>
                                                 <span className="btn-icon">K</span>
                                                 <span className="btn-text">카카오로 시작하기</span>
                                             </button>
-                                            <button className="social-btn google" onClick={handleGoogleLogin}>
+                                            <button className="social-btn google" onClick={signInWithGoogle}>
                                                 <span className="btn-icon">G</span>
                                                 <span className="btn-text">구글로 시작하기</span>
                                             </button>

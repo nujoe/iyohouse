@@ -24,7 +24,6 @@ export async function GET() {
     return NextResponse.json({ success: true, counts })
   } catch (error) {
     console.error('Workshop availability API error:', error)
-
     return NextResponse.json({ success: false, counts: {} })
   }
 }

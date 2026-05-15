@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${gowunBatang.variable} ${notoSans.variable}`}>
+      <body className={`${gowunBatang.variable} ${notoSerif.variable} ${notoSans.variable}`}>
         {children}
       </body>
     </html>

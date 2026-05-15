@@ -62,17 +62,7 @@ function WorkshopGrid({
             >
                 <div className="intersection-diamond"></div>
                 <div className="color-dots">
-                    {isHardcoded ? (
-                        <>
-                            <span className="dot-black">AI</span>
-                            <span className="dot-yellow">WORKSHOP</span>
-                            <span className="dot-green">GRAPHIC</span>
-                        </>
-                    ) : (
-                        ws.tags?.map((tag: string, idx: number) => (
-                            <span key={idx} className={`dot-${getTagColor(tag)}`}>{tag}</span>
-                        ))
-                    )}
+                    <span className="dot-yellow">WORKSHOP</span>
                 </div>
                 <div
                     className={`blueprint-img-box ${!imgUrl ? 'is-empty' : ''}`}

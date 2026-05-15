@@ -12,6 +12,13 @@ const sanityServerClient = createClient({
   useCdn: true,
 })
 
+type WorkshopRuntimeData = {
+  id: string
+  price: number
+  capacity: number
+  status: string | null
+}
+
 async function getRegistrationCounts() {
   try {
     const supabase = getSupabaseServerClient()
@@ -35,9 +42,34 @@ async function getRegistrationCounts() {
   }
 }
 
+async function getWorkshopRuntimeData(workshopIds: string[]) {
+  if (workshopIds.length === 0) return {}
+
+  try {
+    const supabase = getSupabaseServerClient()
+    const { data, error } = await supabase
+      .from('workshops')
+      .select('id, price, capacity, status')
+      .in('id', workshopIds)
+
+    if (error) throw error
+
+    return (data || []).reduce<Record<string, WorkshopRuntimeData>>((acc, workshop) => {
+      if (typeof workshop.id === 'string') {
+        acc[workshop.id] = workshop as WorkshopRuntimeData
+      }
+
+      return acc
+    }, {})
+  } catch (error) {
+    console.error('Workshop runtime data fetch failed:', error)
+    return {}
+  }
+}
+
 export async function GET() {
   try {
-      const [workshops, events, counts] = await Promise.all([
+    const [workshops, events, counts] = await Promise.all([
       sanityServerClient.fetch(`*[_type == "workshop"] | order(number desc) {
         ...,
         supabase_workshop_id,
@@ -47,9 +79,28 @@ export async function GET() {
       getRegistrationCounts(),
     ])
 
+    const workshopIds = workshops
+      .map((workshop: any) => workshop.supabase_workshop_id)
+      .filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+
+    const runtimeData = await getWorkshopRuntimeData(workshopIds)
+    const mergedWorkshops = workshops.map((workshop: any) => {
+      const runtime = runtimeData[workshop.supabase_workshop_id]
+
+      if (!runtime) return workshop
+
+      return {
+        ...workshop,
+        price: runtime.price,
+        capacity: runtime.capacity,
+        isClosed: runtime.status !== 'active',
+        supabase_status: runtime.status,
+      }
+    })
+
     return NextResponse.json({
       success: true,
-      workshops,
+      workshops: mergedWorkshops,
       events,
       counts,
     })

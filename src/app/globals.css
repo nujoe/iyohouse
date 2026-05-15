@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
+
 :root {
     --bg: #ffffff;
     --line: #000000;
@@ -14,12 +16,16 @@
     --top-row-1: 5.2rem;
     --top-row-2: calc(var(--top-row-1) + var(--unit));
 
-    --line-x-1: calc(100% - (var(--unit) * 3));
-    --line-x-2: calc(100% - (var(--unit) * 2));
+    --line-x-1: calc(100% - (var(--unit) * 2));
     --line-x-3: calc(100% - var(--unit));
 
     --transition: 700ms cubic-bezier(0.22, 1, 0.36, 1);
     --panel-width: 6%;
+}
+
+::selection {
+    background: var(--intersect);
+    color: #000;
 }
 
 
@@ -55,7 +61,7 @@ body {
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: var(--font-noto-sans);
+    font-family: 'Gowun Batang', serif;
     background-color: var(--bg);
     color: var(--line);
     overflow: hidden;
@@ -87,6 +93,10 @@ body {
     box-sizing: border-box;
     border-right: 1px solid #000;
     margin-right: calc(var(--line-thickness) * -1);
+}
+
+.left-panel.contact-mode {
+    padding: 0;
 }
 
 
@@ -172,6 +182,7 @@ body {
     pointer-events: none;
     transition: opacity var(--transition);
     align-items: flex-start;
+    font-family: 'courier', serif;
 }
 
 .sidebar-nav-top {
@@ -180,6 +191,7 @@ body {
     gap: 20px;
     width: fit-content;
     margin-top: -40px;
+
     /* Effectively pushes it to the top edge of the panel */
 }
 
@@ -187,7 +199,7 @@ body {
     margin-top: auto;
 
     display: flex;
-    gap: 20px;
+    gap: 30px;
     flex-direction: column;
 
 }
@@ -202,15 +214,16 @@ body {
     height: auto;
     border: none;
     background: transparent;
+    font-family: 'courier', serif;
     padding: 0;
     margin: 0;
-    font-size: 2.2rem;
+    font-size: 3.3rem;
     font-weight: 900;
     line-height: 0.85;
     /* 높이를 더 낮추기 위해 타이트하게 조정 */
     color: var(--line);
     text-align: left;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.03em;
     text-transform: uppercase;
     cursor: pointer;
     transition: color 0.2s;
@@ -226,7 +239,7 @@ body {
     background: transparent;
     padding: 0;
     margin: 0;
-    font-size: 2.2rem;
+    font-size: 1rem;
     font-weight: 900;
     line-height: 0.85;
     /* 높이를 더 낮추기 위해 타이트하게 조정 */
@@ -274,7 +287,7 @@ body {
     z-index: 13000;
     overflow: hidden;
     transition: background-color 0.4s ease, border-color 0.4s ease, width 0.5s ease;
-    font-size: inherit;
+    font-size: 1.7rem;
     font-weight: 700;
     color: rgb(88, 88, 88);
 }
@@ -299,7 +312,9 @@ body {
     align-items: center;
     background: transparent;
     border: none;
-    font-size: 1.2rem;
+    height: 100%;
+    font-family: 'courier', serif;
+    font-size: 1.5rem;
     font-weight: 700;
     color: rgb(88, 88, 88);
     letter-spacing: 0.01em;
@@ -362,14 +377,16 @@ body {
 
 .logo-main-text {
     color: var(--bg);
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     font-weight: 900;
     letter-spacing: -0.05em;
     padding-right: 20px;
     padding-left: 10px;
     padding-bottom: 5px;
     padding-top: 0;
+    padding-bottom: 0;
     color: #000;
+    font-family: 'courier', serif;
     text-transform: uppercase;
     line-height: 0.8;
     margin-top: 0;
@@ -435,10 +452,7 @@ body {
 /* ─── 프리셋별 레이아웃 변화 (Desktop Only) ─────────────────── */
 @media (min-width: 769px) {
 
-    /* Workshop, Member, Iyoca(club), Diary(calendar) 메뉴 선택 시에도 헤더 유지 */
-    .app-container:not(.preset-main) {
-        /* --top-row-1: 0px; 제거됨 */
-    }
+
 
     .app-container:not(.preset-main) .header {
         transform: none;
@@ -595,18 +609,17 @@ body {
     flex: 1;
     height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     position: relative;
-    padding: 60px;
     background: #fff;
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow: hidden;
+    /* 내부 MemberVisualStack에서 스크롤 처리 */
 }
 
 .main-intro-text {
     position: relative;
-    padding: 20px 0px 0px 10px;
+    padding: 20px 10px 0px 10px;
     font-size: 1.1rem;
     line-height: 1.8;
     color: #000;
@@ -1394,16 +1407,16 @@ body {
     position: absolute;
     top: calc(var(--top-row-1) + var(--line-gap));
     bottom: 0;
-    /* line1 ~ line2 사이를 워크숍 구역으로 지정 */
+    /* line1 ~ line3 사이를 워크숍 구역으로 지정 */
     left: var(--line-x-1);
-    width: calc(var(--line-x-2) - var(--line-x-1));
+    width: calc(var(--line-x-3) - var(--line-x-1));
     color: #2563eb;
     background: transparent;
     transition: all var(--transition), opacity var(--transition);
 }
 
 .cell-workshop.active {
-    /* 기본값인 line1~line2를 그대로 유지하며 우선순위만 높임 */
+    /* 기본값인 line1~line3를 그대로 유지하며 우선순위만 높임 */
     z-index: 10;
 }
 
@@ -1419,117 +1432,12 @@ body {
     top: var(--top-row-1);
     height: calc(var(--top-row-2) - var(--top-row-1));
     left: var(--line-x-1);
-    width: calc(var(--line-x-2) - var(--line-x-1));
+    width: calc(var(--line-x-3) - var(--line-x-1));
     color: #dc2626;
     background: transparent;
 }
 
-.cell-club {
-    position: absolute;
-    top: calc(var(--top-row-1) + var(--line-gap));
-    bottom: 0;
-    /* line2 ~ line3 사이를 이요카 구역으로 지정 */
-    left: var(--line-x-2);
-    width: calc(var(--line-x-3) - var(--line-x-2));
-    color: #16a34a;
-    background: transparent;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    transition: all var(--transition), opacity var(--transition);
-}
 
-.cell-club.active {
-    z-index: 10;
-}
-
-/* Iyoca Grid Styles */
-/* Iyoca 4:6 Split Layout */
-.iyoca-view-container {
-    padding: 0;
-    overflow: hidden;
-    height: 100%;
-}
-
-.iyoca-split-layout {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    background: #fff;
-}
-
-/* Left Pane (Full Width) */
-.iyoca-left-pane {
-    flex: 1;
-    height: 100%;
-    overflow-y: auto;
-    padding: 60px 30px;
-    scrollbar-width: none;
-}
-
-.iyoca-left-pane::-webkit-scrollbar {
-    display: none;
-}
-
-.iyoca-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 30px;
-    width: 100%;
-}
-
-.iyoca-poster-card {
-    aspect-ratio: 3.5 / 5;
-    background: #fff;
-    padding: 10px;
-    border: 1px solid #000;
-    position: relative;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.iyoca-poster-card:hover {
-    transform: translateY(-5px);
-    z-index: 5;
-}
-
-
-.iyoca-poster-card.selected .poster-inner img {
-    opacity: 0.8;
-}
-
-.card-tape {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid #000;
-    z-index: 5;
-}
-
-.poster-inner {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    border: 1px solid #000;
-}
-
-.poster-inner img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-
-
-.iyoca-footer {
-    padding: 100px 0;
-    display: flex;
-    justify-content: center;
-}
 
 .cell-diary {
     position: absolute;
@@ -1896,7 +1804,11 @@ body {
 }
 
 .calendar-cell.out-month .date-marker {
-    opacity: 0.3;
+    opacity: 0.1;
+}
+
+.calendar-cell.is-today {
+    background: var(--intersect) !important;
 }
 
 .date-marker {
@@ -1905,19 +1817,23 @@ body {
     right: 5px;
     width: 30px;
     height: 30px;
-    border: var(--line-thickness) solid #000;
+    border: none;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    background: white;
+    background: transparent;
+    color: #000;
     z-index: 10;
+    transition: all 0.2s;
 }
 
+.calendar-cell.is-today .date-marker,
 .date-marker.has-events {
     background: black;
     color: white;
+    border: var(--line-thickness) solid #000;
 }
 
 .event-box {
@@ -2310,13 +2226,6 @@ body {
 
     }
 
-    .grid-row-1 {
-        /* JS 연동 유지 */
-    }
-
-    .grid-row-2 {
-        /* JS 연동 유지 */
-    }
 
     .logo-main-text {
         font-size: 1.2rem !important;
@@ -2333,9 +2242,7 @@ body {
         transition: background-color 0.4s ease;
     }
 
-    .header-right.expanded {
-        /* 모바일 헤더 자체는 확장하지 않음 */
-    }
+
 
     .header-info-content {
         display: none !important;
@@ -3353,6 +3260,51 @@ body {
     text-decoration: underline;
 }
 
+.complete-profile-page {
+    min-height: 100vh;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.complete-profile-card {
+    transform: none;
+}
+
+.complete-profile-card .login-input:disabled {
+    background: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.complete-profile-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.complete-profile-error {
+    margin: 0;
+    color: #c80000;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.complete-profile-logout {
+    justify-content: center;
+    margin-top: 2px;
+    color: #666;
+}
+
+.complete-profile-loading {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
 @media (max-width: 600px) {
     .login-modal-card {
         max-width: 90%;
@@ -3754,9 +3706,9 @@ body {
 .member-visual-aside {
     flex: 1;
     height: 100%;
-    padding: 60px;
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow: hidden;
+    /* 내부 MemberVisualStack에서 스크롤 처리 */
     background: #fff;
 }
 
@@ -3785,7 +3737,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     letter-spacing: -0.02em;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 1.1;
     border: var(--line-thickness) solid black;
 }
@@ -3871,24 +3823,25 @@ body {
     display: flex;
     flex-direction: column;
     gap: 40px;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.visual-stack-v2::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .v-box-v2 {
-    background: #000;
     width: 100%;
+    flex-shrink: 0; /* 부모 컨테이너 크기에 맞춰 수축되지 않도록 설정 */
     border: 1px solid #000;
-}
-
-.v-box-v2.large {
-    aspect-ratio: 16 / 11;
-}
-
-.v-box-v2.medium {
-    aspect-ratio: 1 / 1.1;
-}
-
-.v-box-v2.small {
-    aspect-ratio: 1 / 1.3;
+    position: relative;
+    overflow: hidden;
+    background: transparent;
 }
 
 
@@ -3898,66 +3851,119 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: calc(100% - 70px);
+    height: 100%;
     color: #000000;
-    animation: fadeIn 0.3s ease;
+    background: #fff;
+    position: relative;
+}
+
+.contact-form-classic {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .contact-sidebar-header {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    padding: 25px 20px;
+    background: var(--intersect);
+    border-bottom: var(--line-thickness) solid #000;
 }
 
 .contact-sidebar-header .modal-title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 900;
     color: #000000;
-    letter-spacing: 0.1em;
+    letter-spacing: -0.02em;
 }
 
 .contact-back-btn {
     background: transparent;
-
+    border: var(--line-thickness) solid #000;
     color: #000000;
-    padding: 5px 15px;
+    padding: 6px 12px;
     cursor: pointer;
     font-weight: 700;
-    transition: all 0.3s;
-    font-size: 0.8rem;
+    font-family: 'courier', serif;
+    font-size: 0.9rem;
 }
 
 .contact-back-btn:hover {
-    background: #000000;
+    background: #000;
     color: var(--intersect);
+}
+
+.contact-main-scroll {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.contact-sidebar-content .form-classic-row {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.contact-sidebar-content .form-classic-row.flex-textarea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .contact-sidebar-content .form-input-classic,
 .contact-sidebar-content .form-textarea-classic {
-    background: transparent;
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    color: #000000;
+    width: 100%;
+    background: #fff;
+    border: none;
+    border-bottom: var(--line-thickness) solid #000;
+    padding: 20px;
+    font-size: 1.3rem;
+    font-family: inherit;
+    color: #000;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.contact-sidebar-content .form-textarea-classic {
+    flex: 1;
+    min-height: 200px;
+    resize: none;
+    border-bottom: none;
 }
 
 .contact-sidebar-content .form-input-classic::placeholder,
 .contact-sidebar-content .form-textarea-classic::placeholder {
-    color: rgba(0, 0, 0, 0.5);
+    color: var(--intersect);
+    filter: brightness(0.9);
 }
 
-.contact-sidebar-content .form-input-classic:focus,
-.contact-sidebar-content .form-textarea-classic:focus {
-    border-color: #000000;
+.form-submit-row {
+    flex-shrink: 0;
+    margin-top: auto;
 }
 
 .contact-sidebar-content .form-submit-btn-classic {
-    background: #000000;
-    color: var(--intersect);
+    width: 100%;
+    background: var(--intersect);
     border: none;
+    border-top: var(--line-thickness) solid #000;
+    color: #000;
+    padding: 20px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .contact-sidebar-content .form-submit-btn-classic:hover {
-    background: #e0e0e0;
+    background: #000;
+    color: var(--intersect);
 }
 
 @keyframes fadeIn {

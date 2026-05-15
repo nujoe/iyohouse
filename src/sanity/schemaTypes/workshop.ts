@@ -30,8 +30,8 @@ export const workshopType = defineType({
         slugify: (input) =>
           input
             .toLowerCase()
-            .replace(/\s+/g, '-') // 공백을 -로 변경
-            .replace(/[^\wㄱ-ㅎㅏ-ㅣ가-힣-]/g, '') // 한글, 영문, 숫자, - 제외하고 제거
+            .replace(/\s+/g, '-')
+            .replace(/[^\wㄱ-ㅎㅏ-ㅣ가-힣-]/g, '')
             .slice(0, 96),
       },
       validation: (Rule) => Rule.required(),
@@ -41,7 +41,7 @@ export const workshopType = defineType({
       title: 'DB 워크숍 UUID',
       type: 'string',
       description: 'Supabase DB의 workshops 테이블에 있는 해당 워크숍의 UUID를 입력하세요. 결제 연동에 필수입니다.',
-      validation: (Rule) => Rule.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { name: 'uuid', invert: false }),
+      validation: (Rule) => Rule.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { name: 'uuid', invert: false }),
     }),
     defineField({
       name: 'isClosed',
@@ -125,12 +125,14 @@ export const workshopType = defineType({
       name: 'capacity',
       title: '정원 (명)',
       type: 'number',
+      validation: (Rule) => Rule.required().integer().min(1),
     }),
     defineField({
       name: 'price',
       title: '가격 (원)',
       type: 'number',
       description: '예: 150000',
+      validation: (Rule) => Rule.required().integer().min(0),
     }),
     defineField({
       name: 'schedule',
@@ -159,11 +161,6 @@ export const workshopType = defineType({
         }),
       ],
     }),
-    // defineField({
-    //   name: 'applyUrl',
-    //   title: '신청 링크 URL',
-    //   type: 'url',
-    // }),
   ],
   orderings: [
     {

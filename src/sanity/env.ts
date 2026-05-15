@@ -13,11 +13,11 @@ export const projectId = assertValue(
 
 function assertValue<T>(v: T | undefined, errorMessage: string): T {
   if (v === undefined || v === '') {
-    // 빌드 타임이나 로컬 환경에서 변수가 없을 경우 안내 메시지만 출력하고 앱 실행은 유지함
     if (process.env.NODE_ENV === 'development') {
-      console.warn(`[Sanity Configuration] ${errorMessage}. Using placeholder value.`);
+      console.warn(`[Sanity Configuration] ${errorMessage}. Using placeholder value.`)
     }
-    return 'placeholder' as any
+    return 'placeholder' as T
   }
+
   return v
 }

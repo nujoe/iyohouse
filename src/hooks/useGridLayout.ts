@@ -26,7 +26,6 @@ export function useGridLayout({
 
         const containerStyle = {
             "--line-x-1": currentPreset.line1,
-            "--line-x-2": currentPreset.line2,
             "--line-x-3": currentPreset.line3,
             "--line-x-4": lineX4,
             "--sidebar-width": sidebarWidth,
@@ -36,7 +35,7 @@ export function useGridLayout({
             "--intersect": intersectColor,
         } as CSSProperties;
 
-        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-2: ${currentPreset.line2}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc((100% - var(--sidebar-width)) / 2 + var(--sidebar-width)); --top-row-1: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
+        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc((100% - var(--sidebar-width)) / 2 + var(--sidebar-width)); --top-row-1: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
 
         return {
             currentPreset,

@@ -1,60 +1,59 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function FailContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    
-    const code = searchParams.get("code");
-    const message = searchParams.get("message");
-    const registrationId = searchParams.get("registration_id");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const code = searchParams.get("code");
+  const message = searchParams.get("message");
+  const registrationId = searchParams.get("registration_id");
 
-    useEffect(() => {
-        if (registrationId) {
-            fetch('/api/payment/fail', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ registration_id: registrationId, code, message })
-            }).catch(console.error);
-        }
-    }, [registrationId, code, message]);
+  useEffect(() => {
+    if (!registrationId) return;
 
-    return (
-        <div style={{ 
-            height: '100vh', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            fontFamily: 'sans-serif'
-        }}>
-            <h1 style={{ color: '#dc2626' }}>결제에 실패했습니다.</h1>
-            <p>에러 코드: {code}</p>
-            <p>메시지: {message}</p>
-            <button 
-                onClick={() => router.push('/')}
-                style={{
-                    marginTop: '20px',
-                    padding: '10px 20px',
-                    background: '#000',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer'
-                }}
-            >
-                홈으로 돌아가기
-            </button>
-        </div>
-    );
+    fetch("/api/payment/fail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration_id: registrationId, code, message }),
+    }).catch(console.error);
+  }, [registrationId, code, message]);
+
+  return (
+    <div style={{
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "sans-serif",
+    }}>
+      <h1 style={{ color: "#dc2626" }}>결제에 실패했습니다.</h1>
+      <p>에러 코드: {code}</p>
+      <p>메시지: {message}</p>
+      <button
+        onClick={() => router.push("/")}
+        style={{
+          marginTop: "20px",
+          padding: "10px 20px",
+          background: "#000",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        홈으로 돌아가기
+      </button>
+    </div>
+  );
 }
 
 export default function PaymentFailPage() {
-    return (
-        <Suspense fallback={<div>로딩 중...</div>}>
-            <FailContent />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={<div>로딩 중...</div>}>
+      <FailContent />
+    </Suspense>
+  );
 }

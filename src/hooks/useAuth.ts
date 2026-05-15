@@ -23,6 +23,14 @@ type AuthState = {
 
 const supabase = createSupabaseBrowserClient()
 
+function hasCompletedProfile(profile: Profile | null, user: User | null) {
+  return Boolean(
+    profile?.full_name?.trim() &&
+    profile?.phone?.trim() &&
+    (profile?.email || user?.email)?.trim()
+  )
+}
+
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -59,7 +67,7 @@ export function useAuth() {
           session,
           profile,
           isLoading: false,
-          isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
+          isProfileComplete: hasCompletedProfile(profile, session.user),
         })
       } else {
         setAuthState(prev => ({ ...prev, isLoading: false }))
@@ -78,7 +86,7 @@ export function useAuth() {
             session,
             profile,
             isLoading: false,
-            isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
+            isProfileComplete: hasCompletedProfile(profile, session.user),
           })
         } else {
           setAuthState({
@@ -99,46 +107,53 @@ export function useAuth() {
     await supabase.auth.signOut()
   }, [])
 
+  const getAuthRedirectUrl = useCallback(() => {
+    const nextPath = `${window.location.pathname}${window.location.search}`
+
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath || '/')}`
+  }, [])
+
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthRedirectUrl(),
       },
     })
 
     if (error) {
       console.error('Google sign in error:', error)
     }
-  }, [])
+  }, [getAuthRedirectUrl])
 
   const signInWithKakao = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthRedirectUrl(),
       },
     })
 
     if (error) {
       console.error('Kakao sign in error:', error)
     }
-  }, [])
+  }, [getAuthRedirectUrl])
 
   const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => {
     if (!authState.user) return { error: 'Not authenticated' }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', authState.user.id)
+    const { error } = await supabase.rpc('complete_profile', {
+      p_full_name: updates.full_name || '',
+      p_phone: updates.phone || '',
+      p_bio: updates.bio || null,
+    })
 
     if (!error) {
       const profile = await fetchProfile(authState.user.id)
       setAuthState(prev => ({
         ...prev,
         profile,
-        isProfileComplete: Boolean(profile?.full_name && profile?.phone && profile?.bio),
+        isProfileComplete: hasCompletedProfile(profile, authState.user),
       }))
     }
 

@@ -46,19 +46,13 @@ export async function POST(request: Request) {
   try {
     const clientKey = getClientKey(request)
     if (isRateLimited(clientKey)) {
-      return NextResponse.json(
-        { success: false, error: 'Too many requests' },
-        { status: 429 }
-      )
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
     }
 
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) {
       console.warn('RESEND_API_KEY is not defined')
-      return NextResponse.json(
-        { success: false, error: 'Email service not configured' },
-        { status: 500 }
-      )
+      return NextResponse.json({ success: false, error: 'Email service not configured' }, { status: 500 })
     }
 
     const body = await request.json().catch(() => null)
@@ -67,10 +61,7 @@ export async function POST(request: Request) {
     const message = readString((body as Record<string, unknown> | null)?.message)
 
     if (!isValidEmail(email) || message.length < 1 || message.length > 3000 || subject.length > 200) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid contact request' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'Invalid contact request' }, { status: 400 })
     }
 
     const resend = new Resend(apiKey)
@@ -93,19 +84,12 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Resend error:', error)
-      return NextResponse.json(
-        { success: false, error: 'Email delivery failed' },
-        { status: 502 }
-      )
+      return NextResponse.json({ success: false, error: 'Email delivery failed' }, { status: 502 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('Contact API error:', error)
-
-    return NextResponse.json(
-      { success: false, error: 'Unable to send email' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Unable to send email' }, { status: 500 })
   }
 }

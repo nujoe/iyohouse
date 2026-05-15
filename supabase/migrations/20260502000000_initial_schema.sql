@@ -126,7 +126,7 @@ DROP POLICY IF EXISTS "Everyone can view workshops" ON public.workshops;
 CREATE POLICY "Everyone can view workshops" ON public.workshops FOR SELECT USING (TRUE);
 
 DROP POLICY IF EXISTS "Admins can manage workshops" ON public.workshops;
-CREATE POLICY "Admins can manage workshops" ON public.workshops ALL USING (
+CREATE POLICY "Admins can manage workshops" ON public.workshops FOR ALL USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_super_admin = TRUE)
 );
 
