@@ -289,7 +289,7 @@ body {
     transition: background-color 0.4s ease, border-color 0.4s ease, width 0.5s ease;
     font-size: 1.7rem;
     font-weight: 700;
-    color: rgb(88, 88, 88);
+    color: rgb(148, 148, 148);
 }
 
 
@@ -314,9 +314,9 @@ body {
     border: none;
     height: 100%;
     font-family: 'courier', serif;
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    color: rgb(88, 88, 88);
+    color: rgb(197, 197, 197);
     letter-spacing: 0.01em;
     cursor: pointer;
 }
