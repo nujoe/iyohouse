@@ -41,7 +41,7 @@ export const workshopType = defineType({
       title: 'DB 워크숍 UUID',
       type: 'string',
       description: 'Supabase DB의 workshops 테이블에 있는 해당 워크숍의 UUID를 입력하세요. 결제 연동에 필수입니다.',
-      validation: (Rule) => Rule.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { name: 'uuid', invert: false }),
+      validation: (Rule) => Rule.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { name: 'uuid', invert: false }),
     }),
     defineField({
       name: 'isClosed',
