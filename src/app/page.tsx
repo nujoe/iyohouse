@@ -160,6 +160,7 @@ function HomeContent() {
     const [tossPayments, setTossPayments] = useState<any>(null);
     const [showSchedule, setShowSchedule] = useState(false);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
+    const [showRefundPolicy, setShowRefundPolicy] = useState(false);
 
     useEffect(() => {
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
@@ -187,6 +188,7 @@ function HomeContent() {
                 setVisited(v => v.workshop ? v : { ...v, workshop: true });
                 setSelectedSession(null);
                 setShowSchedule(false);
+                setShowRefundPolicy(false);
                 return;
             }
         }
@@ -195,9 +197,11 @@ function HomeContent() {
             setActivePreset(presetId);
             setVisited(v => v[presetId] ? v : { ...v, [presetId]: true });
             setSelectedWorkshop(null);
+            setShowRefundPolicy(false);
         } else {
             setSelectedWorkshop(null);
             setActivePreset('main');
+            setShowRefundPolicy(false);
         }
     }, [searchParams, sanityWorkshops]);
 
@@ -228,6 +232,7 @@ function HomeContent() {
 
         setSelectedSession(null);
         setShowSchedule(false);
+        setShowRefundPolicy(false);
         setIsContactOpen(false);
     }, [createQueryString, pathname, router]);
 
@@ -599,6 +604,80 @@ function HomeContent() {
                                                             정원 {selectedWorkshop.capacity}명
                                                         </div>
                                                     )}
+
+                                                    {/* 취소 및 환불 정책 아코디언 */}
+                                                    <div className="detail-refund-accordion">
+                                                        <button 
+                                                            type="button" 
+                                                            className="refund-accordion-trigger"
+                                                            onClick={() => setShowRefundPolicy(!showRefundPolicy)}
+                                                        >
+                                                            <span>취소 및 환불 정책</span>
+                                                            <span className={`accordion-icon ${showRefundPolicy ? 'open' : ''}`}></span>
+                                                        </button>
+                                                        <div className={`refund-accordion-content ${showRefundPolicy ? 'open' : ''}`}>
+                                                            <div className="refund-content-inner">
+                                                                <p className="refund-intro">
+                                                                    본 정책은 이요하우스에서 진행하는 유료 워크숍, 클래스, 모임형 프로그램에 적용됩니다. 
+                                                                    관련 법령 또는 소비자분쟁해결기준이 본 정책보다 참가자에게 유리한 경우, 해당 기준을 우선 적용합니다. 
+                                                                    환불 신청 시점은 이요하우스가 이메일, 신청폼, 채널톡 등 공식 접수 경로를 통해 취소 의사를 확인한 시각을 기준으로 합니다.
+                                                                </p>
+                                                                
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">참가자 사정으로 취소하는 경우</h5>
+                                                                    <ul>
+                                                                        <li><strong>워크숍 시작 전:</strong> 참가비 전액 환불</li>
+                                                                        <li><strong>워크숍 시작 후 총 진행 시간의 1/3 경과 전:</strong> 참가비의 2/3 환불</li>
+                                                                        <li><strong>워크숍 시작 후 총 진행 시간의 1/2 경과 전:</strong> 참가비의 1/2 환불</li>
+                                                                        <li><strong>총 진행 시간의 1/2 경과 후 또는 무단 불참:</strong> 환불 불가</li>
+                                                                        <li>다회차 워크숍의 경우, 취소가 접수된 회차가 속한 기간의 환불 가능 금액과 아직 시작하지 않은 잔여 회차 금액을 합산해 환불합니다.</li>
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">재료비·키트·교재가 있는 경우</h5>
+                                                                    <ul>
+                                                                        <li>워크숍 시작 전 취소 시, 미사용·미수령 상태의 재료비는 환불합니다.</li>
+                                                                        <li>이미 발송된 키트나 교재는 미개봉 상태로 반환 확인 후 환불할 수 있으며, 반송비는 참가자 부담입니다.</li>
+                                                                        <li>개별 제작, 식재료, 생화, 맞춤 인쇄물 등 재판매가 어려운 재료는 신청 페이지에 사전 고지한 경우 실비를 제외하고 환불할 수 있습니다.</li>
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">이요하우스 사정으로 취소 또는 변경되는 경우</h5>
+                                                                    <ul>
+                                                                        <li>모집 인원 미달, 진행자 사정, 장소 문제 등 이요하우스 사정으로 워크숍이 취소되면 참가비 전액을 환불합니다.</li>
+                                                                        <li>일정이 변경되는 경우, 참가자는 변경 일정 참여 또는 전액 환불 중 선택할 수 있습니다.</li>
+                                                                        <li>단, 참가자의 교통비·숙박비 등 외부 비용은 이요하우스가 별도로 보장하기로 고지한 경우를 제외하고 보상하지 않습니다.</li>
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">양도 및 일정 변경</h5>
+                                                                    <ul>
+                                                                        <li>워크숍 시작 전까지 이요하우스에 사전 연락하면 참가권을 다른 사람에게 양도할 수 있습니다.</li>
+                                                                        <li>동일 워크숍의 다른 일정으로 변경이 가능한 경우 1회에 한해 변경을 도와드립니다. 단, 잔여석이 없거나 재료 준비가 완료된 경우 변경이 어려울 수 있습니다.</li>
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">환불 처리 방법</h5>
+                                                                    <ul>
+                                                                        <li>카드 결제는 원 결제수단 취소를 원칙으로 합니다.</li>
+                                                                        <li>계좌이체 결제는 환불받을 계좌 정보를 확인한 뒤 처리합니다.</li>
+                                                                        <li>환불은 접수일로부터 영업일 3~7일 이내 처리하며, 카드사·PG사 사정에 따라 실제 입금 또는 승인 취소 반영일은 달라질 수 있습니다.</li>
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="refund-section">
+                                                                    <h5 className="refund-section-title">문의 및 접수</h5>
+                                                                    <p>환불 또는 변경 신청은 아래 공식 경로로 접수해 주세요.</p>
+                                                                    <p className="refund-contact">이메일: <a href="mailto:goyangiyoram@gmail.com">goyangiyoram@gmail.com</a></p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div className="detail-footer-actions">
                                                         <div className="price-tag">{selectedWorkshop.price?.toLocaleString()}원</div>
                                                         {hasSelectableSchedule(selectedWorkshop) && (
