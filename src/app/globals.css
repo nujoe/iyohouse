@@ -4031,11 +4031,16 @@ body {
     background: transparent;
     border: var(--line-thickness) solid #000;
     color: #000000;
-    padding: 6px 12px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     font-weight: 700;
-    font-family: 'courier', serif;
     font-size: 0.9rem;
+    line-height: 1;
+    transition: all 0.2s ease;
 }
 
 .contact-back-btn:hover {

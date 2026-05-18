@@ -424,28 +424,28 @@ function HomeContent() {
                             {!user ? (
                                 <>
                                     <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        LOGIN
+                                        로그인
                                     </button>
                                     <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        JOIN
+                                        회원가입
                                     </button>
                                 </>
                             ) : !isProfileComplete ? (
                                 <>
                                     <button className="user-signup-btn" onClick={() => { goToCompleteProfile(); setIsSidebarExpanded(false); }}>
-                                        COMPLETE JOIN
+                                        회원정보 수정
                                     </button>
                                     <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
-                                        LOGOUT
+                                        로그아웃
                                     </button>
                                 </>
                             ) : (
                                 <>
                                     <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        MY INFO
+                                        회원정보 수정
                                     </button>
                                     <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
-                                        LOGOUT
+                                        로그아웃
                                     </button>
                                 </>
                             )}
@@ -455,8 +455,8 @@ function HomeContent() {
                     <div className="contact-sidebar-content" onClick={(e) => e.stopPropagation()}>
                         <form className="contact-form-classic" onSubmit={handleContactSubmit}>
                             <div className="contact-sidebar-header">
-                                <h2 className="modal-title">이요하우스와 </h2>
-                                <button type="button" className="contact-back-btn" onClick={() => setIsContactOpen(false)}>← BACK</button>
+                                <h2 className="modal-title">이요하우스는 새로운 연결을 기다립니다  </h2>
+                                <button type="button" className="contact-back-btn" onClick={() => setIsContactOpen(false)}>✕</button>
                             </div>
 
                             <div className="contact-main-scroll">
@@ -607,8 +607,8 @@ function HomeContent() {
 
                                                     {/* 취소 및 환불 정책 아코디언 */}
                                                     <div className="detail-refund-accordion">
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             className="refund-accordion-trigger"
                                                             onClick={() => setShowRefundPolicy(!showRefundPolicy)}
                                                         >
@@ -618,11 +618,11 @@ function HomeContent() {
                                                         <div className={`refund-accordion-content ${showRefundPolicy ? 'open' : ''}`}>
                                                             <div className="refund-content-inner">
                                                                 <p className="refund-intro">
-                                                                    본 정책은 이요하우스에서 진행하는 유료 워크숍, 클래스, 모임형 프로그램에 적용됩니다. 
-                                                                    관련 법령 또는 소비자분쟁해결기준이 본 정책보다 참가자에게 유리한 경우, 해당 기준을 우선 적용합니다. 
+                                                                    본 정책은 이요하우스에서 진행하는 유료 워크숍, 클래스, 모임형 프로그램에 적용됩니다.
+                                                                    관련 법령 또는 소비자분쟁해결기준이 본 정책보다 참가자에게 유리한 경우, 해당 기준을 우선 적용합니다.
                                                                     환불 신청 시점은 이요하우스가 이메일, 신청폼, 채널톡 등 공식 접수 경로를 통해 취소 의사를 확인한 시각을 기준으로 합니다.
                                                                 </p>
-                                                                
+
                                                                 <div className="refund-section">
                                                                     <h5 className="refund-section-title">참가자 사정으로 취소하는 경우</h5>
                                                                     <ul>
