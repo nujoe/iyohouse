@@ -507,9 +507,9 @@ function HomeContent() {
                         <span className="active">KOR</span> / <span>ENG</span>
                     </div>
 
-                    <div className="header-email">
+                    <button className="header-email" onClick={() => handlePresetChange('contact')}>
                         goyangiyoram@gmail.com
-                    </div>
+                    </button>
                     <button className="header-theme-btn" onClick={handleThemeChange} title="Change Theme Color">
                         <div className="theme-dot"></div>
                     </button>
