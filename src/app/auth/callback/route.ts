@@ -19,14 +19,9 @@ function getRedirectBase(request: Request, origin: string) {
 }
 
 function hasCompletedProfile(
-  profile: { full_name: string | null; phone: string | null; email: string | null } | null,
-  userEmail?: string | null
+  profile: { completed_at: string | null } | null
 ) {
-  return Boolean(
-    profile?.full_name?.trim() &&
-    profile?.phone?.trim() &&
-    (profile?.email || userEmail)?.trim()
-  )
+  return Boolean(profile?.completed_at)
 }
 
 export async function GET(request: Request) {
@@ -44,11 +39,11 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, phone, email')
+          .select('completed_at')
           .eq('id', user.id)
           .maybeSingle()
 
-        if (!hasCompletedProfile(profile, user.email)) {
+        if (!hasCompletedProfile(profile)) {
           return NextResponse.redirect(`${base}/complete-profile?next=${encodeURIComponent(next)}`)
         }
       }

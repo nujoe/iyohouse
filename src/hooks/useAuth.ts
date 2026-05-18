@@ -11,6 +11,7 @@ type Profile = {
   phone: string | null
   is_super_admin: boolean | null
   bio: string | null
+  completed_at: string | null
 }
 
 type AuthState = {
@@ -23,12 +24,8 @@ type AuthState = {
 
 const supabase = createSupabaseBrowserClient()
 
-function hasCompletedProfile(profile: Profile | null, user: User | null) {
-  return Boolean(
-    profile?.full_name?.trim() &&
-    profile?.phone?.trim() &&
-    (profile?.email || user?.email)?.trim()
-  )
+function hasCompletedProfile(profile: Profile | null) {
+  return Boolean(profile?.completed_at)
 }
 
 export function useAuth() {
@@ -43,7 +40,7 @@ export function useAuth() {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone, is_super_admin, bio')
+      .select('id, email, full_name, phone, is_super_admin, bio, completed_at')
       .eq('id', userId)
       .maybeSingle()
 
@@ -67,7 +64,7 @@ export function useAuth() {
           session,
           profile,
           isLoading: false,
-          isProfileComplete: hasCompletedProfile(profile, session.user),
+          isProfileComplete: hasCompletedProfile(profile),
         })
       } else {
         setAuthState(prev => ({ ...prev, isLoading: false }))
@@ -86,7 +83,7 @@ export function useAuth() {
             session,
             profile,
             isLoading: false,
-            isProfileComplete: hasCompletedProfile(profile, session.user),
+            isProfileComplete: hasCompletedProfile(profile),
           })
         } else {
           setAuthState({
@@ -153,7 +150,7 @@ export function useAuth() {
       setAuthState(prev => ({
         ...prev,
         profile,
-        isProfileComplete: hasCompletedProfile(profile, authState.user),
+        isProfileComplete: hasCompletedProfile(profile),
       }))
     }
 
