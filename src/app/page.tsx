@@ -401,9 +401,19 @@ function HomeContent() {
                     <span></span>
                 </div>
 
-                {isSidebarExpanded && !isContactOpen && (
-                    <button className="sidebar-close-btn" onClick={(e) => { e.stopPropagation(); setIsSidebarExpanded(false); }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {(isSidebarExpanded || isContactOpen) && (
+                    <button 
+                        className="sidebar-close-btn" 
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (isContactOpen) {
+                                setIsContactOpen(false);
+                            } else {
+                                setIsSidebarExpanded(false);
+                            }
+                        }}
+                    >
+                        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
@@ -456,7 +466,6 @@ function HomeContent() {
                         <form className="contact-form-classic" onSubmit={handleContactSubmit}>
                             <div className="contact-sidebar-header">
                                 <h2 className="modal-title">이요하우스는 새로운 연결을 기다립니다  </h2>
-                                <button type="button" className="contact-back-btn" onClick={() => setIsContactOpen(false)}>✕</button>
                             </div>
 
                             <div className="contact-main-scroll">
