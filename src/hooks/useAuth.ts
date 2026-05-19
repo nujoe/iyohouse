@@ -136,6 +136,18 @@ export function useAuth() {
     }
   }, [getAuthRedirectUrl])
 
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) console.error('Email sign in error:', error)
+    return { data, error }
+  }, [])
+
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) console.error('Email sign up error:', error)
+    return { data, error }
+  }, [])
+
   const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => {
     if (!authState.user) return { error: 'Not authenticated' }
 
@@ -161,6 +173,8 @@ export function useAuth() {
     ...authState,
     signInWithGoogle,
     signInWithKakao,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     updateProfile,
     supabase,

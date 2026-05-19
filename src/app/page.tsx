@@ -67,7 +67,7 @@ function HomeContent() {
         allWorkshops,
     } = useWorkshopData();
 
-    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase, signInWithGoogle, signInWithKakao } = useAuth();
+    const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase, signInWithGoogle, signInWithKakao, signInWithEmail, signUpWithEmail } = useAuth();
 
     const [activePreset, setActivePreset] = useState<string>("main");
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
@@ -84,6 +84,64 @@ function HomeContent() {
     const [isBooting, setIsBooting] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Email login/signup states
+    const [loginEmail, setLoginEmail] = useState("");
+    const [loginPassword, setLoginPassword] = useState("");
+    const [isSignUpMode, setIsSignUpMode] = useState(false);
+    const [loginError, setLoginError] = useState<string | null>(null);
+    const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (!isLoginModalOpen) {
+            setLoginEmail("");
+            setLoginPassword("");
+            setIsSignUpMode(false);
+            setLoginError(null);
+            setIsLoginSubmitting(false);
+        }
+    }, [isLoginModalOpen]);
+
+    const handleEmailAuthSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoginError(null);
+        setIsLoginSubmitting(true);
+
+        if (!loginEmail || !loginPassword) {
+            setLoginError("이메일과 비밀번호를 입력해 주세요.");
+            setIsLoginSubmitting(false);
+            return;
+        }
+
+        if (loginPassword.length < 6) {
+            setLoginError("비밀번호는 최소 6자리 이상이어야 합니다.");
+            setIsLoginSubmitting(false);
+            return;
+        }
+
+        try {
+            if (isSignUpMode) {
+                const { error } = await signUpWithEmail(loginEmail, loginPassword);
+                if (error) {
+                    setLoginError(error.message);
+                } else {
+                    alert("회원가입이 완료되었습니다! 가입하신 정보로 로그인되었습니다.");
+                    setIsLoginModalOpen(false);
+                }
+            } else {
+                const { error } = await signInWithEmail(loginEmail, loginPassword);
+                if (error) {
+                    setLoginError(error.message);
+                } else {
+                    setIsLoginModalOpen(false);
+                }
+            }
+        } catch (err: any) {
+            setLoginError(err.message || "오류가 발생했습니다.");
+        } finally {
+            setIsLoginSubmitting(false);
+        }
+    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail]);
 
     // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
     useEffect(() => {
@@ -402,10 +460,10 @@ function HomeContent() {
                 </div>
 
                 {(isSidebarExpanded || isContactOpen) && (
-                    <button 
-                        className="sidebar-close-btn" 
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
+                    <button
+                        className="sidebar-close-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
                             if (isContactOpen) {
                                 setIsContactOpen(false);
                             } else {
@@ -911,13 +969,66 @@ function HomeContent() {
                                             <span>OR</span>
                                         </div>
 
-                                        <div className="email-login-form">
-                                            <input type="email" placeholder="이메일 주소" className="login-input" />
-                                            <button className="email-submit-btn">이메일로 계속하기</button>
+                                        <form className="email-login-form" onSubmit={handleEmailAuthSubmit}>
+                                            <input
+                                                type="email"
+                                                placeholder="이메일 주소"
+                                                className="login-input"
+                                                value={loginEmail}
+                                                onChange={(e) => setLoginEmail(e.target.value)}
+                                                required
+                                                disabled={isLoginSubmitting}
+                                            />
+                                            <input
+                                                type="password"
+                                                placeholder="비밀번호"
+                                                className="login-input"
+                                                value={loginPassword}
+                                                onChange={(e) => setLoginPassword(e.target.value)}
+                                                required
+                                                disabled={isLoginSubmitting}
+                                            />
+                                            {loginError && (
+                                                <div style={{ color: '#c80000', fontSize: '12px', marginTop: '4px', textAlign: 'center' }}>
+                                                    {loginError}
+                                                </div>
+                                            )}
+                                            <button
+                                                type="submit"
+                                                className="email-submit-btn"
+                                                disabled={isLoginSubmitting}
+                                            >
+                                                {isLoginSubmitting ? "처리 중..." : (isSignUpMode ? "이메일로 가입하기" : "이메일로 로그인")}
+                                            </button>
+                                        </form>
+
+                                        <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px', fontSize: '13px' }}>
+                                            <span style={{ color: '#666' }}>
+                                                {isSignUpMode ? "이미 계정이 있으신가요?" : "아직 계정이 없으신가요?"}
+                                            </span>{" "}
+                                            <button
+                                                type="button"
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: '#000',
+                                                    fontWeight: 'bold',
+                                                    textDecoration: 'underline',
+                                                    cursor: 'pointer',
+                                                    padding: 0,
+                                                    fontSize: 'inherit'
+                                                }}
+                                                onClick={() => {
+                                                    setIsSignUpMode(!isSignUpMode);
+                                                    setLoginError(null);
+                                                }}
+                                                disabled={isLoginSubmitting}
+                                            >
+                                                {isSignUpMode ? "로그인하기" : "회원가입하기"}
+                                            </button>
                                         </div>
 
                                         <div className="login-notice">
-                                            로그인 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하게 됩니다.
                                         </div>
                                     </>
                                 )}
