@@ -3,6 +3,7 @@ import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schema } from './schemaTypes'
 import { apiVersion, dataset, projectId } from './env'
+import { GenerateWorkshopEnglishAction } from './actions/generateWorkshopEnglishAction'
 
 export const config = defineConfig({
   basePath: '/studio',
@@ -10,6 +11,12 @@ export const config = defineConfig({
   dataset,
   apiVersion,
   schema,
+  document: {
+    actions: (prev, context) =>
+      context.schemaType === 'workshop'
+        ? [GenerateWorkshopEnglishAction, ...prev]
+        : prev,
+  },
   plugins: [
     structureTool({
       structure: (S) =>

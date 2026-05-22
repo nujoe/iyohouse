@@ -55,18 +55,24 @@ export function useAuth() {
   useEffect(() => {
     // Initial session check
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
 
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id)
-        setAuthState({
-          user: session.user,
-          session,
-          profile,
-          isLoading: false,
-          isProfileComplete: hasCompletedProfile(profile),
-        })
-      } else {
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id)
+          setAuthState({
+            user: session.user,
+            session,
+            profile,
+            isLoading: false,
+            isProfileComplete: hasCompletedProfile(profile),
+          })
+        } else {
+          setAuthState(prev => ({ ...prev, isLoading: false }))
+        }
+      } catch (error) {
+        console.debug('Supabase session initialization lock/timeout warning:', error)
+        // Fallback: mark loading as false so the app doesn't hang in loading state
         setAuthState(prev => ({ ...prev, isLoading: false }))
       }
     }

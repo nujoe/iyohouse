@@ -4,6 +4,12 @@ import { urlFor } from "@/sanity/image";
 import Image from "next/image";
 import { CSSProperties, memo } from "react";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
+import { useLanguage } from "@/lib/i18n";
+import {
+    getLocalizedWorkshopTitle,
+    getLocalizedWorkshopTutor,
+    isLegacyWorkshop
+} from "@/lib/i18n/workshopLocalization";
 
 interface WorkshopGridProps {
     workshops: any[];
@@ -20,6 +26,7 @@ function WorkshopGrid({
     onSelectWorkshop,
     getTagColor
 }: WorkshopGridProps) {
+    const { language, t } = useLanguage();
     const counts = registrationCounts || registrations.reduce<Record<string, number>>((acc, registration) => {
         const workshopId = registration?.workshop_id;
         if (typeof workshopId === 'string' || typeof workshopId === 'number') {
@@ -30,10 +37,10 @@ function WorkshopGrid({
     }, {});
     
     const renderWorkshopPreview = (ws: any) => {
-        const isHardcoded = !ws.isSanity;
+        const isHardcoded = isLegacyWorkshop(ws);
         const id = isHardcoded ? ws.id : ws._id;
-        const title = isHardcoded ? `AI.zip ${ws.id} 그래픽` : ws.title;
-        const tutor = isHardcoded ? "튜터 : 000 @asdf1234" : `튜터 : ${ws.tutor || '000'}`;
+        const title = getLocalizedWorkshopTitle(ws, language, t);
+        const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
         const capacity = typeof ws.capacity === 'number' ? ws.capacity : 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
         const isClosed = isHardcoded
@@ -90,7 +97,7 @@ function WorkshopGrid({
                 </div>
                 <div className={`blueprint-info ${isClosed ? 'is-closed' : ''}`}>
                     <div className="info-row" style={{ justifyContent: 'flex-start', gap: '0.8rem' }}>
-                        {isClosed && <div className="tag-closed">마감</div>}
+                        {isClosed && <div className="tag-closed">{t.workshop.closed}</div>}
                         <div className="title-box">{title}</div>
                     </div>
                     <hr className="blueprint-hr" />

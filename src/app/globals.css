@@ -333,19 +333,29 @@ body {
     color: rgb(0, 0, 0);
 }
 
-.header-lang span {
+.header-lang button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
     cursor: pointer;
     transition: color 0.2s;
 }
 
-.header-lang span:hover {
+.header-lang button:hover {
     color: #000;
 }
 
-.header-lang .active {
+.header-lang button.active {
     color: #000;
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+.header-lang span {
+    padding: 0 0.25rem;
 }
 
 .header-theme-btn {

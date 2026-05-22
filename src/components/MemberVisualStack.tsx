@@ -19,6 +19,7 @@ export default function MemberVisualStack() {
             alt={`Member Visual ${idx + 1}`}
             width={img.width}
             height={img.height}
+            priority={idx === 0}
             sizes="(max-width: 768px) 100vw, 33vw"
             style={{
               width: '100%',

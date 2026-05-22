@@ -20,6 +20,12 @@ export const workshopType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'titleEn',
+      title: '워크샵 제목 (영문)',
+      type: 'string',
+      description: '영문 페이지에서 우선 노출되는 제목입니다. 비워두면 한글 제목이 표시됩니다.',
+    }),
+    defineField({
       name: 'slug',
       title: 'URL 슬러그',
       type: 'slug',
@@ -80,15 +86,39 @@ export const workshopType = defineType({
       description: '예: 현 @hyun2xyz',
     }),
     defineField({
+      name: 'tutorEn',
+      title: '튜터 이름 (영문)',
+      type: 'string',
+      description: '영문 페이지에서 우선 노출되는 튜터 표기입니다. 비워두면 한글 튜터 이름이 표시됩니다.',
+    }),
+    defineField({
       name: 'tutorBio',
       title: '튜터 소개',
       type: 'text',
       rows: 5,
     }),
     defineField({
+      name: 'tutorBioEn',
+      title: '튜터 소개 (영문)',
+      type: 'text',
+      rows: 5,
+      description: '영문 페이지에서 우선 노출되는 튜터 소개입니다. 비워두면 한글 소개가 표시됩니다.',
+    }),
+    defineField({
       name: 'description',
       title: '워크샵 설명',
       type: 'array',
+      of: [
+        {
+          type: 'block',
+        },
+      ],
+    }),
+    defineField({
+      name: 'descriptionEn',
+      title: '워크샵 설명 (영문)',
+      type: 'array',
+      description: '영문 페이지에서 우선 노출되는 설명입니다. 비워두면 한글 설명이 표시됩니다.',
       of: [
         {
           type: 'block',
@@ -112,8 +142,20 @@ export const workshopType = defineType({
               description: '예: 1주차 (4/11, 4/12)',
             }),
             defineField({
+              name: 'weekLabelEn',
+              title: '주차 레이블 (영문)',
+              type: 'string',
+              description: '예: Week 1 (4/11, 4/12)',
+            }),
+            defineField({
               name: 'content',
               title: '내용',
+              type: 'text',
+              rows: 4,
+            }),
+            defineField({
+              name: 'contentEn',
+              title: '내용 (영문)',
               type: 'text',
               rows: 4,
             }),
@@ -152,10 +194,22 @@ export const workshopType = defineType({
               description: '예: 2026-04-11',
             }),
             defineField({
+              name: 'dateEn',
+              title: '날짜 (영문)',
+              type: 'string',
+              description: '예: Thu class / Sun class',
+            }),
+            defineField({
               name: 'time',
               title: '시간',
               type: 'string',
               description: '예: 2p - 6p',
+            }),
+            defineField({
+              name: 'timeEn',
+              title: '시간 (영문)',
+              type: 'string',
+              description: '예: 2 PM - 6 PM',
             }),
           ],
         }),

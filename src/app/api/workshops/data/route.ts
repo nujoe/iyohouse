@@ -71,6 +71,20 @@ export async function GET() {
     const [workshops, events, counts] = await Promise.all([
       sanityServerClient.fetch(`*[_type == "workshop"] | order(number desc) {
         ...,
+        titleEn,
+        tutorEn,
+        tutorBioEn,
+        descriptionEn,
+        curriculum[]{
+          ...,
+          weekLabelEn,
+          contentEn
+        },
+        schedule[]{
+          ...,
+          dateEn,
+          timeEn
+        },
         supabase_workshop_id,
         "posterMeta": poster.asset->metadata.dimensions
       }`),

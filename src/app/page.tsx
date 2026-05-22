@@ -15,6 +15,16 @@ import MemberView from "@/components/MemberView";
 import MemberVisualStack from "@/components/MemberVisualStack";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import ChatbotWidget from "@/features/iyohouse-chatbot/components/ChatbotWidget";
+import { useLanguage } from "@/lib/i18n";
+import {
+    getLocalizedCurriculumItem,
+    getLocalizedScheduleSession,
+    getLocalizedWorkshopDescription,
+    getLocalizedWorkshopTitle,
+    getLocalizedWorkshopTutor,
+    getLocalizedWorkshopTutorBio,
+    getScheduleSessionLabel,
+} from "@/lib/i18n/workshopLocalization";
 import { loadTossPayments } from "@tosspayments/payment-sdk";
 
 const getTagColor = (tag: string) => {
@@ -41,7 +51,7 @@ const createLegacyWorkshop = (id: number) => ({
     id,
     isSanity: false,
     sortNum: id,
-    title: `AI.zip ${id} 그래픽`,
+    title: `AI.zip ${id}`,
     tutor: "000 @asdf1234",
     price: 150000,
     capacity: 8,
@@ -70,6 +80,7 @@ function HomeContent() {
 
     const { user, profile, isLoading: authLoading, isProfileComplete, signOut, supabase, signInWithGoogle, signInWithKakao, signInWithEmail, signUpWithEmail } = useAuth();
 
+    const { language, t, setLanguage } = useLanguage();
     const [activePreset, setActivePreset] = useState<string>("main");
     const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
     const [dynamicColor, setDynamicColor] = useState("#f8f01dff");
@@ -109,13 +120,13 @@ function HomeContent() {
         setIsLoginSubmitting(true);
 
         if (!loginEmail || !loginPassword) {
-            setLoginError("이메일과 비밀번호를 입력해 주세요.");
+            setLoginError(t.auth.emailRequired);
             setIsLoginSubmitting(false);
             return;
         }
 
         if (loginPassword.length < 6) {
-            setLoginError("비밀번호는 최소 6자리 이상이어야 합니다.");
+            setLoginError(t.auth.passwordMin);
             setIsLoginSubmitting(false);
             return;
         }
@@ -126,7 +137,7 @@ function HomeContent() {
                 if (error) {
                     setLoginError(error.message);
                 } else {
-                    alert("회원가입이 완료되었습니다! 가입하신 정보로 로그인되었습니다.");
+                    alert(t.auth.signupDone);
                     setIsLoginModalOpen(false);
                 }
             } else {
@@ -138,11 +149,11 @@ function HomeContent() {
                 }
             }
         } catch (err: any) {
-            setLoginError(err.message || "오류가 발생했습니다.");
+            setLoginError(err.message || t.auth.genericError);
         } finally {
             setIsLoginSubmitting(false);
         }
-    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail]);
+    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, t]);
 
     // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
     useEffect(() => {
@@ -310,7 +321,7 @@ function HomeContent() {
     const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!contactData.email || !contactData.message) {
-            alert("이메일과 내용을 입력해 주세요.");
+            alert(t.contact.required);
             return;
         }
         setIsSending(true);
@@ -322,14 +333,14 @@ function HomeContent() {
             });
             const result = await response.json();
             if (result.success) {
-                alert("문의가 성공적으로 전송되었습니다! 곧 연락드릴게요.");
+                alert(t.contact.success);
                 setContactData({ email: '', subject: '', message: '' });
             } else throw new Error(result.error);
         } catch (error) {
             console.error('이메일 전송 실패:', error);
-            alert("전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+            alert(t.contact.error);
         } finally { setIsSending(false); }
-    }, [contactData]);
+    }, [contactData, t]);
 
     const getWorkshopCapacity = useCallback((workshop: any) =>
         typeof workshop?.capacity === 'number' ? workshop.capacity : 8, []);
@@ -368,17 +379,17 @@ function HomeContent() {
 
         const dbWorkshopId = workshop.supabase_workshop_id;
         if (!dbWorkshopId) {
-            alert("이 워크숍은 아직 신청할 수 없습니다. (DB UUID 누락)");
+            alert(t.workshop.missingDbId);
             return;
         }
 
         if (isWorkshopClosedForPayment(workshop)) {
-            alert("이미 마감된 워크샵입니다.");
+            alert(t.workshop.closedAlert);
             return;
         }
 
         if (hasSelectableSchedule(workshop) && !selectedSession) {
-            alert("일정을 먼저 선택해 주세요.");
+            alert(t.workshop.scheduleRequired);
             setShowSchedule(true);
             return;
         }
@@ -388,7 +399,7 @@ function HomeContent() {
         if (!payments) {
             const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
             if (!clientKey) {
-                alert("결제 시스템이 올바르게 설정되지 않았습니다. 관리자에게 문의해 주세요.");
+                alert(t.workshop.paymentMisconfigured);
                 return;
             }
             payments = await loadTossPayments(clientKey);
@@ -396,7 +407,7 @@ function HomeContent() {
         }
 
         if (!payments) {
-            alert("결제 시스템을 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+            alert(t.workshop.paymentPreparing);
             return;
         }
 
@@ -415,13 +426,13 @@ function HomeContent() {
             await payments.requestPayment('카드', {
                 amount: amount,
                 orderId: order_id,
-                orderName: workshop_title || workshop.title || `워크숍 ${workshop.number || workshop.id}`,
-                successUrl: `${window.location.origin}/payment/success?registration_id=${registration_id}${selectedSession ? `&schedule=${encodeURIComponent(`${selectedSession.date || ''} ${selectedSession.time || ''}`.trim())}` : ''}`,
+                orderName: workshop_title || getLocalizedWorkshopTitle(workshop, language, t) || t.workshop.fallbackTitle(workshop.number || workshop.id),
+                successUrl: `${window.location.origin}/payment/success?registration_id=${registration_id}${selectedSession ? `&schedule=${encodeURIComponent(getScheduleSessionLabel(selectedSession, language))}` : ''}`,
                 failUrl: `${window.location.origin}/payment/fail?registration_id=${registration_id}`,
             });
         } catch (error: any) {
             console.error("신청/결제 요청 에러:", error);
-            alert(`요청 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+            alert(`${t.workshop.requestError}: ${error.message || t.auth.genericError}`);
         }
     }, [
         getWorkshopCapacity,
@@ -430,8 +441,10 @@ function HomeContent() {
         hasSelectableSchedule,
         isProfileComplete,
         isWorkshopClosedForPayment,
+        language,
         selectedSession,
         supabase,
+        t,
         tossPayments,
         user,
     ]);
@@ -482,39 +495,39 @@ function HomeContent() {
                 {!isContactOpen ? (
                     <nav className="sidebar-nav" onClick={(e) => e.stopPropagation()}>
                         <div className="sidebar-nav-top">
-                            <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>MAIN</button>
-                            <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>MEMBER</button>
-                            <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>WORKSHOP</button>
-                            <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>CALENDAR</button>
-                            <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>CONTACT</button>
+                            <button className={`${activePreset === 'main' ? 'active' : ''}`} onClick={() => { handlePresetChange('main'); setIsSidebarExpanded(false); }}>{t.nav.main}</button>
+                            <button className={`${activePreset === 'member' ? 'active' : ''}`} onClick={() => { handlePresetChange('member'); setIsSidebarExpanded(false); }}>{t.nav.member}</button>
+                            <button className={`${activePreset === 'workshop' ? 'active' : ''}`} onClick={() => { handlePresetChange('workshop'); setIsSidebarExpanded(false); }}>{t.nav.workshop}</button>
+                            <button className={`${activePreset === 'diary' ? 'active' : ''}`} onClick={() => { handlePresetChange('diary'); setIsSidebarExpanded(false); }}>{t.nav.calendar}</button>
+                            <button className={`${isContactOpen ? 'active' : ''}`} onClick={() => { handlePresetChange('contact'); }}>{t.nav.contact}</button>
                         </div>
 
                         <div className="sidebar-nav-bottom">
                             {!user ? (
                                 <>
-                                    <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        로그인
+                                    <button className="user-login-btn" onClick={() => { setIsSignUpMode(false); setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                        {t.auth.login}
                                     </button>
-                                    <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        회원가입
+                                    <button className="user-signup-btn" onClick={() => { setIsSignUpMode(true); setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                        {t.auth.signup}
                                     </button>
                                 </>
                             ) : !isProfileComplete ? (
                                 <>
                                     <button className="user-signup-btn" onClick={() => { goToCompleteProfile(); setIsSidebarExpanded(false); }}>
-                                        회원정보 수정
+                                        {t.auth.editProfile}
                                     </button>
                                     <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
-                                        로그아웃
+                                        {t.auth.logout}
                                     </button>
                                 </>
                             ) : (
                                 <>
                                     <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
-                                        회원정보 수정
+                                        {t.auth.editProfile}
                                     </button>
                                     <button className="user-login-btn" onClick={async () => { await signOut(); setIsSidebarExpanded(false); }}>
-                                        로그아웃
+                                        {t.auth.logout}
                                     </button>
                                 </>
                             )}
@@ -524,24 +537,24 @@ function HomeContent() {
                     <div className="contact-sidebar-content" onClick={(e) => e.stopPropagation()}>
                         <form className="contact-form-classic" onSubmit={handleContactSubmit}>
                             <div className="contact-sidebar-header">
-                                <h2 className="modal-title">이요하우스는 새로운 연결을 기다립니다  </h2>
+                                <h2 className="modal-title">{t.contact.title}</h2>
                             </div>
 
                             <div className="contact-main-scroll">
                                 <div className="form-classic-row">
-                                    <input type="email" placeholder="이메일" className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required />
+                                    <input type="email" placeholder={t.contact.email} className="form-input-classic" value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} required />
                                 </div>
                                 <div className="form-classic-row">
-                                    <input type="text" placeholder="제목" className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} />
+                                    <input type="text" placeholder={t.contact.subject} className="form-input-classic" value={contactData.subject} onChange={(e) => setContactData({ ...contactData, subject: e.target.value })} />
                                 </div>
                                 <div className="form-classic-row flex-textarea">
-                                    <textarea placeholder="내용을 입력해주세요" className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea>
+                                    <textarea placeholder={t.contact.message} className="form-textarea-classic" value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} required></textarea>
                                 </div>
                             </div>
 
                             <div className="form-submit-row">
                                 <button type="submit" className="form-submit-btn-classic" disabled={isSending}>
-                                    {isSending ? '전송 중...' : '전송!'}
+                                    {isSending ? t.contact.sending : t.contact.send}
                                 </button>
                             </div>
                         </form>
@@ -559,11 +572,27 @@ function HomeContent() {
                         className={`header-nav-item ${activePreset === 'member' ? 'active' : ''}`}
                         onClick={() => handlePresetChange('member')}
                     >
-                        MEMBER
+                        {t.nav.member}
                     </button>
 
                     <div className="header-lang">
-                        <span className="active">KOR</span> / <span>ENG</span>
+                        <button
+                            type="button"
+                            className={language === "ko" ? "active" : ""}
+                            onClick={() => setLanguage("ko")}
+                            aria-pressed={language === "ko"}
+                        >
+                            KOR
+                        </button>
+                        <span aria-hidden="true">/</span>
+                        <button
+                            type="button"
+                            className={language === "en" ? "active" : ""}
+                            onClick={() => setLanguage("en")}
+                            aria-pressed={language === "en"}
+                        >
+                            ENG
+                        </button>
                     </div>
 
                     <button className="header-email" onClick={() => handlePresetChange('contact')}>
@@ -634,21 +663,21 @@ function HomeContent() {
                                                             <span className="pills pill-yellow">WORKSHOP</span>
                                                         </div>
                                                         <div className="detail-title-wrapper">
-                                                            <div className="detail-main-title">{selectedWorkshop.title}</div>
+                                                            <div className="detail-main-title">{getLocalizedWorkshopTitle(selectedWorkshop, language, t)}</div>
                                                         </div>
                                                     </div>
                                                     <div className="detail-description">
-                                                        {selectedWorkshop.description?.map((block: any, i: number) => (<p key={i}>{block.children?.map((c: any) => c.text).join('')}</p>))}
+                                                        {getLocalizedWorkshopDescription(selectedWorkshop, language).map((block: any, i: number) => (<p key={i}>{block.children?.map((c: any) => c.text).join('')}</p>))}
                                                     </div>
 
                                                     {/* 튜터 정보 */}
-                                                    {(selectedWorkshop.tutor || selectedWorkshop.tutorBio) && (
+                                                    {(getLocalizedWorkshopTutor(selectedWorkshop, language) || getLocalizedWorkshopTutorBio(selectedWorkshop, language)) && (
                                                         <div className="detail-tutor-section">
-                                                            {selectedWorkshop.tutor && (
-                                                                <div className="detail-tutor-name">튜터 : {selectedWorkshop.tutor}</div>
+                                                            {getLocalizedWorkshopTutor(selectedWorkshop, language) && (
+                                                                <div className="detail-tutor-name">{t.workshop.tutorLabel(getLocalizedWorkshopTutor(selectedWorkshop, language))}</div>
                                                             )}
-                                                            {selectedWorkshop.tutorBio && (
-                                                                <div className="detail-tutor-bio">{selectedWorkshop.tutorBio}</div>
+                                                            {getLocalizedWorkshopTutorBio(selectedWorkshop, language) && (
+                                                                <div className="detail-tutor-bio">{getLocalizedWorkshopTutorBio(selectedWorkshop, language)}</div>
                                                             )}
                                                         </div>
                                                     )}
@@ -656,20 +685,23 @@ function HomeContent() {
                                                     {/* 커리큘럼 */}
                                                     {selectedWorkshop.curriculum && selectedWorkshop.curriculum.length > 0 && (
                                                         <div className="detail-curriculum-section">
-                                                            <div className="detail-section-label">커리큘럼</div>
-                                                            {selectedWorkshop.curriculum.map((week: any, i: number) => (
-                                                                <div key={week._key || i} className="curriculum-row">
-                                                                    <span className="curriculum-week">{week.weekLabel}</span>
-                                                                    <span className="curriculum-content">{week.content}</span>
-                                                                </div>
-                                                            ))}
+                                                            <div className="detail-section-label">{t.workshop.curriculum}</div>
+                                                            {selectedWorkshop.curriculum.map((week: any, i: number) => {
+                                                                const localizedWeek = getLocalizedCurriculumItem(week, language);
+                                                                return (
+                                                                    <div key={week._key || i} className="curriculum-row">
+                                                                        <span className="curriculum-week">{localizedWeek.weekLabel}</span>
+                                                                        <span className="curriculum-content">{localizedWeek.content}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
 
                                                     {/* 정원 */}
                                                     {typeof selectedWorkshop.capacity === 'number' && (
                                                         <div className="detail-capacity">
-                                                            정원 {selectedWorkshop.capacity}명
+                                                            {t.workshop.capacityLabel(selectedWorkshop.capacity)}
                                                         </div>
                                                     )}
 
@@ -680,74 +712,44 @@ function HomeContent() {
                                                             className="refund-accordion-trigger"
                                                             onClick={() => setShowRefundPolicy(!showRefundPolicy)}
                                                         >
-                                                            <span>취소 및 환불 정책</span>
+                                                            <span>{t.workshop.refundPolicy.title}</span>
                                                             <span className={`accordion-icon ${showRefundPolicy ? 'open' : ''}`}></span>
                                                         </button>
                                                         <div className={`refund-accordion-content ${showRefundPolicy ? 'open' : ''}`}>
                                                             <div className="refund-content-inner">
                                                                 <p className="refund-intro">
-                                                                    본 정책은 이요하우스에서 진행하는 유료 워크숍, 클래스, 모임형 프로그램에 적용됩니다.
-                                                                    관련 법령 또는 소비자분쟁해결기준이 본 정책보다 참가자에게 유리한 경우, 해당 기준을 우선 적용합니다.
-                                                                    환불 신청 시점은 이요하우스가 이메일, 신청폼, 채널톡 등 공식 접수 경로를 통해 취소 의사를 확인한 시각을 기준으로 합니다.
+                                                                    {t.workshop.refundPolicy.intro.map((line) => (
+                                                                        <span key={line}>{line} </span>
+                                                                    ))}
                                                                 </p>
 
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">참가자 사정으로 취소하는 경우</h5>
-                                                                    <ul>
-                                                                        <li><strong>워크숍 시작 전:</strong> 참가비 전액 환불</li>
-                                                                        <li><strong>워크숍 시작 후 총 진행 시간의 1/3 경과 전:</strong> 참가비의 2/3 환불</li>
-                                                                        <li><strong>워크숍 시작 후 총 진행 시간의 1/2 경과 전:</strong> 참가비의 1/2 환불</li>
-                                                                        <li><strong>총 진행 시간의 1/2 경과 후 또는 무단 불참:</strong> 환불 불가</li>
-                                                                        <li>다회차 워크숍의 경우, 취소가 접수된 회차가 속한 기간의 환불 가능 금액과 아직 시작하지 않은 잔여 회차 금액을 합산해 환불합니다.</li>
-                                                                    </ul>
-                                                                </div>
-
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">재료비·키트·교재가 있는 경우</h5>
-                                                                    <ul>
-                                                                        <li>워크숍 시작 전 취소 시, 미사용·미수령 상태의 재료비는 환불합니다.</li>
-                                                                        <li>이미 발송된 키트나 교재는 미개봉 상태로 반환 확인 후 환불할 수 있으며, 반송비는 참가자 부담입니다.</li>
-                                                                        <li>개별 제작, 식재료, 생화, 맞춤 인쇄물 등 재판매가 어려운 재료는 신청 페이지에 사전 고지한 경우 실비를 제외하고 환불할 수 있습니다.</li>
-                                                                    </ul>
-                                                                </div>
-
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">이요하우스 사정으로 취소 또는 변경되는 경우</h5>
-                                                                    <ul>
-                                                                        <li>모집 인원 미달, 진행자 사정, 장소 문제 등 이요하우스 사정으로 워크숍이 취소되면 참가비 전액을 환불합니다.</li>
-                                                                        <li>일정이 변경되는 경우, 참가자는 변경 일정 참여 또는 전액 환불 중 선택할 수 있습니다.</li>
-                                                                        <li>단, 참가자의 교통비·숙박비 등 외부 비용은 이요하우스가 별도로 보장하기로 고지한 경우를 제외하고 보상하지 않습니다.</li>
-                                                                    </ul>
-                                                                </div>
-
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">양도 및 일정 변경</h5>
-                                                                    <ul>
-                                                                        <li>워크숍 시작 전까지 이요하우스에 사전 연락하면 참가권을 다른 사람에게 양도할 수 있습니다.</li>
-                                                                        <li>동일 워크숍의 다른 일정으로 변경이 가능한 경우 1회에 한해 변경을 도와드립니다. 단, 잔여석이 없거나 재료 준비가 완료된 경우 변경이 어려울 수 있습니다.</li>
-                                                                    </ul>
-                                                                </div>
-
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">환불 처리 방법</h5>
-                                                                    <ul>
-                                                                        <li>카드 결제는 원 결제수단 취소를 원칙으로 합니다.</li>
-                                                                        <li>계좌이체 결제는 환불받을 계좌 정보를 확인한 뒤 처리합니다.</li>
-                                                                        <li>환불은 접수일로부터 영업일 3~7일 이내 처리하며, 카드사·PG사 사정에 따라 실제 입금 또는 승인 취소 반영일은 달라질 수 있습니다.</li>
-                                                                    </ul>
-                                                                </div>
-
-                                                                <div className="refund-section">
-                                                                    <h5 className="refund-section-title">문의 및 접수</h5>
-                                                                    <p>환불 또는 변경 신청은 아래 공식 경로로 접수해 주세요.</p>
-                                                                    <p className="refund-contact">이메일: <a href="mailto:goyangiyoram@gmail.com">goyangiyoram@gmail.com</a></p>
-                                                                </div>
+                                                                {t.workshop.refundPolicy.sections.map((section) => (
+                                                                    <div className="refund-section" key={section.title}>
+                                                                        <h5 className="refund-section-title">{section.title}</h5>
+                                                                        {section.items && (
+                                                                            <ul>
+                                                                                {section.items.map((item) => (
+                                                                                    <li key={`${section.title}-${item.label || item.text}`}>
+                                                                                        {item.label && <strong>{item.label} </strong>}
+                                                                                        {item.text}
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        )}
+                                                                        {section.body && <p>{section.body}</p>}
+                                                                        {section.contactEmailLabel && (
+                                                                            <p className="refund-contact">
+                                                                                {section.contactEmailLabel}: <a href="mailto:goyangiyoram@gmail.com">goyangiyoram@gmail.com</a>
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     <div className="detail-footer-actions">
-                                                        <div className="price-tag">{selectedWorkshop.price?.toLocaleString()}원</div>
+                                                        <div className="price-tag">{t.workshop.priceLabel(selectedWorkshop.price)}</div>
                                                         {hasSelectableSchedule(selectedWorkshop) && (
                                                             <div className="schedule-selector-wrapper">
                                                                 <button
@@ -755,24 +757,27 @@ function HomeContent() {
                                                                     className={`action-btn outline-btn ${selectedSession ? 'selected' : ''}`}
                                                                     onClick={() => setShowSchedule(!showSchedule)}
                                                                 >
-                                                                    {selectedSession ? `${selectedSession.date || ''} ${selectedSession.time || ''}`.trim() : '일정 선택'}
+                                                                    {selectedSession ? getScheduleSessionLabel(selectedSession, language) : t.workshop.scheduleSelect}
                                                                 </button>
                                                                 {showSchedule && (
                                                                     <div className="schedule-dropdown">
-                                                                        {getWorkshopSchedule(selectedWorkshop).map((session: any, index: number) => (
-                                                                            <button
-                                                                                type="button"
-                                                                                key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
-                                                                                className="schedule-option"
-                                                                                onClick={() => {
-                                                                                    setSelectedSession(session);
-                                                                                    setShowSchedule(false);
-                                                                                }}
-                                                                            >
-                                                                                {session.date && <span className="s-date">{session.date}</span>}
-                                                                                {session.time && <span className="s-time">{session.time}</span>}
-                                                                            </button>
-                                                                        ))}
+                                                                        {getWorkshopSchedule(selectedWorkshop).map((session: any, index: number) => {
+                                                                            const localizedSession = getLocalizedScheduleSession(session, language);
+                                                                            return (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
+                                                                                    className="schedule-option"
+                                                                                    onClick={() => {
+                                                                                        setSelectedSession(session);
+                                                                                        setShowSchedule(false);
+                                                                                    }}
+                                                                                >
+                                                                                    {localizedSession.date && <span className="s-date">{localizedSession.date}</span>}
+                                                                                    {localizedSession.time && <span className="s-time">{localizedSession.time}</span>}
+                                                                                </button>
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -782,7 +787,7 @@ function HomeContent() {
                                                             disabled={isWorkshopClosedForPayment(selectedWorkshop)}
                                                             onClick={() => handleWorkshopPayment(selectedWorkshop)}
                                                         >
-                                                            {isWorkshopClosedForPayment(selectedWorkshop) ? '마감' : '워크숍 신청'}
+                                                            {isWorkshopClosedForPayment(selectedWorkshop) ? t.workshop.closed : t.workshop.apply}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -808,20 +813,16 @@ function HomeContent() {
                         <div className="cell-content main-content-layout">
                             <div className="main-text-column">
                                 <div className="main-intro-text">
-                                    가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다.
-                                    팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다.
-                                    요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다.
-                                    하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다.
-                                    창작자를 위한 공공공원은 이요하우스로 이어집니다.
+                                    {t.mainIntro}
                                 </div>
                                 <div className="info-bottom-text-wrapper">
                                     <div className="info-bottom-text">info</div>
                                     <div className="business-info-overlay">
-                                        <strong>주식회사 이요하우스</strong><br />
-                                        ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
-                                        BUSINESS LICENSE : 718-88-02112<br />
-                                        MALL-ORDER LICENSE : 2024-서울송파-2708<br />
-                                        EMAIL : goyangiyoram@gmail.com<br />
+                                        <strong>{t.footer.company}</strong><br />
+                                        {t.footer.address}<br />
+                                        {t.footer.businessLicense}<br />
+                                        {t.footer.mallOrderLicense}<br />
+                                        {t.footer.email}<br />
                                         WEBSITE :  <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer">@djwns1234</a>
                                     </div>
                                 </div>
@@ -859,28 +860,28 @@ function HomeContent() {
                     <div className="mobile-menu-content-frame">
                         <div className="mobile-menu-list">
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('main'); setIsMenuOpen(false); }}>
-                                <span className="item-label">MAIN</span>
+                                <span className="item-label">{t.nav.main}</span>
                             </button>
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('member'); setIsMenuOpen(false); }}>
-                                <span className="item-label">MEMBER</span>
+                                <span className="item-label">{t.nav.member}</span>
                             </button>
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('workshop'); setIsMenuOpen(false); }}>
-                                <span className="item-label">WORKSHOP</span>
+                                <span className="item-label">{t.nav.workshop}</span>
                             </button>
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('diary'); setIsMenuOpen(false); }}>
-                                <span className="item-label">CALENDAR</span>
+                                <span className="item-label">{t.nav.calendar}</span>
                             </button>
                             <button className="mobile-menu-item" onClick={() => { handlePresetChange('contact'); setIsMenuOpen(false); }}>
-                                <span className="item-label">CONTACT</span>
+                                <span className="item-label">{t.nav.contact}</span>
                             </button>
                         </div>
                         <div className="mobile-menu-footer">
-                            <div className="footer-line">  <strong>주식회사 이요하우스</strong><br />
-                                ADDRESS : 서울시 마포구 희우정로 5길 29, 3층<br />
-                                BUSINESS LICENSE : 718-88-02112<br />
-                                MALL-ORDER LICENSE : 2024-서울송파-2708<br />
-                                EMAIL : goyangiyoram@gmail.com<br />
-                                웹사이트 디자인 : 어 준 <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
+                            <div className="footer-line">  <strong>{t.footer.company}</strong><br />
+                                {t.footer.address}<br />
+                                {t.footer.businessLicense}<br />
+                                {t.footer.mallOrderLicense}<br />
+                                {t.footer.email}<br />
+                                {t.footer.websiteDesign} <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}>@djwns1234</a>
                             </div>
 
                         </div>
@@ -908,7 +909,7 @@ function HomeContent() {
                                             /* 프로필 미완성: 전용 가입 완료 페이지로 이동 */
                                             <div className="profile-setup-container" style={{ marginTop: '24px', textAlign: 'left' }}>
                                                 <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>
-                                                    인증이 완료되었습니다. 서비스를 이용하려면 회원가입을 완료해 주세요.
+                                                    {t.auth.completePrompt}
                                                 </p>
                                                 <button
                                                     type="button"
@@ -916,7 +917,7 @@ function HomeContent() {
                                                     style={{ width: '100%' }}
                                                     onClick={() => { setIsLoginModalOpen(false); goToCompleteProfile(); }}
                                                 >
-                                                    회원가입 완료하기
+                                                    {t.auth.completeAction}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -924,18 +925,18 @@ function HomeContent() {
                                                     style={{ marginTop: '10px', width: '100%', justifyContent: 'center', background: 'transparent', border: '1px solid #ddd', color: '#666' }}
                                                     onClick={() => signOut()}
                                                 >
-                                                    로그아웃
+                                                    {t.auth.logout}
                                                 </button>
                                             </div>
                                         ) : (
                                             /* 프로필 완성: 일반 로그인 상태 */
                                             <div className="profile-welcome-container" style={{ marginTop: '24px' }}>
-                                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{profile?.full_name}님, 안녕하세요!</div>
+                                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{t.auth.welcome(profile?.full_name)}</div>
                                                 <div style={{ marginTop: '8px', fontSize: '14px', opacity: 0.6 }}>{user.email}</div>
 
                                                 <div className="profile-info-display" style={{ marginTop: '20px', textAlign: 'left', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
-                                                    <div style={{ fontSize: '12px', opacity: 0.5 }}>자기소개</div>
-                                                    <div style={{ marginTop: '5px', fontSize: '14px', lineHeight: '1.5' }}>{profile?.bio || '입력된 자기소개가 없습니다.'}</div>
+                                                    <div style={{ fontSize: '12px', opacity: 0.5 }}>{t.auth.bioLabel}</div>
+                                                    <div style={{ marginTop: '5px', fontSize: '14px', lineHeight: '1.5' }}>{profile?.bio || t.auth.noBio}</div>
                                                 </div>
 
                                                 <button
@@ -943,7 +944,7 @@ function HomeContent() {
                                                     style={{ marginTop: '30px' }}
                                                     onClick={async () => { await signOut(); setIsLoginModalOpen(false); }}
                                                 >
-                                                    로그아웃
+                                                    {t.auth.logout}
                                                 </button>
                                             </div>
                                         )}
@@ -958,11 +959,11 @@ function HomeContent() {
                                         <div className="social-login-group">
                                             <button className="social-btn kakao" onClick={signInWithKakao}>
                                                 <span className="btn-icon">K</span>
-                                                <span className="btn-text">카카오로 시작하기</span>
+                                                <span className="btn-text">{t.auth.kakao}</span>
                                             </button>
                                             <button className="social-btn google" onClick={signInWithGoogle}>
                                                 <span className="btn-icon">G</span>
-                                                <span className="btn-text">구글로 시작하기</span>
+                                                <span className="btn-text">{t.auth.google}</span>
                                             </button>
                                         </div>
 
@@ -973,7 +974,7 @@ function HomeContent() {
                                         <form className="email-login-form" onSubmit={handleEmailAuthSubmit}>
                                             <input
                                                 type="email"
-                                                placeholder="이메일 주소"
+                                                placeholder={t.auth.emailPlaceholder}
                                                 className="login-input"
                                                 value={loginEmail}
                                                 onChange={(e) => setLoginEmail(e.target.value)}
@@ -982,7 +983,7 @@ function HomeContent() {
                                             />
                                             <input
                                                 type="password"
-                                                placeholder="비밀번호"
+                                                placeholder={t.auth.passwordPlaceholder}
                                                 className="login-input"
                                                 value={loginPassword}
                                                 onChange={(e) => setLoginPassword(e.target.value)}
@@ -999,13 +1000,13 @@ function HomeContent() {
                                                 className="email-submit-btn"
                                                 disabled={isLoginSubmitting}
                                             >
-                                                {isLoginSubmitting ? "처리 중..." : (isSignUpMode ? "이메일로 가입하기" : "이메일로 로그인")}
+                                                {isLoginSubmitting ? t.auth.submitting : (isSignUpMode ? t.auth.emailSignup : t.auth.emailLogin)}
                                             </button>
                                         </form>
 
                                         <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px', fontSize: '13px' }}>
                                             <span style={{ color: '#666' }}>
-                                                {isSignUpMode ? "이미 계정이 있으신가요?" : "아직 계정이 없으신가요?"}
+                                                {isSignUpMode ? t.auth.hasAccount : t.auth.noAccount}
                                             </span>{" "}
                                             <button
                                                 type="button"
@@ -1025,7 +1026,7 @@ function HomeContent() {
                                                 }}
                                                 disabled={isLoginSubmitting}
                                             >
-                                                {isSignUpMode ? "로그인하기" : "회원가입하기"}
+                                                {isSignUpMode ? t.auth.switchToLogin : t.auth.switchToSignup}
                                             </button>
                                         </div>
 

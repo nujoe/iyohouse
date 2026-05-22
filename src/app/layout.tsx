@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Gowun_Batang, Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
+import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import "./globals.css";
 
 const gowunBatang = Gowun_Batang({
@@ -33,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${gowunBatang.variable} ${notoSerif.variable} ${notoSans.variable}`}>
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );
