@@ -12,7 +12,9 @@ import HomeHeader from "@/components/home/HomeHeader";
 import HomeMainCell from "@/components/home/HomeMainCell";
 import HomeMemberCell from "@/components/home/HomeMemberCell";
 import MobileMenu from "@/components/home/MobileMenu";
+import LoginModal from "@/components/home/LoginModal";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
+import WorkshopDetailOverlay from "@/components/workshop/WorkshopDetailOverlay";
 
 import ChatbotWidget from "@/features/iyohouse-chatbot/components/ChatbotWidget";
 import { useLanguage } from "@/lib/i18n";
@@ -97,63 +99,7 @@ function HomeContent() {
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Email login/signup states
-    const [loginEmail, setLoginEmail] = useState("");
-    const [loginPassword, setLoginPassword] = useState("");
-    const [isSignUpMode, setIsSignUpMode] = useState(false);
-    const [loginError, setLoginError] = useState<string | null>(null);
-    const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (!isLoginModalOpen) {
-            setLoginEmail("");
-            setLoginPassword("");
-            setIsSignUpMode(false);
-            setLoginError(null);
-            setIsLoginSubmitting(false);
-        }
-    }, [isLoginModalOpen]);
-
-    const handleEmailAuthSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoginError(null);
-        setIsLoginSubmitting(true);
-
-        if (!loginEmail || !loginPassword) {
-            setLoginError(t.auth.emailRequired);
-            setIsLoginSubmitting(false);
-            return;
-        }
-
-        if (loginPassword.length < 6) {
-            setLoginError(t.auth.passwordMin);
-            setIsLoginSubmitting(false);
-            return;
-        }
-
-        try {
-            if (isSignUpMode) {
-                const { error } = await signUpWithEmail(loginEmail, loginPassword);
-                if (error) {
-                    setLoginError(error.message);
-                } else {
-                    alert(t.auth.signupDone);
-                    setIsLoginModalOpen(false);
-                }
-            } else {
-                const { error } = await signInWithEmail(loginEmail, loginPassword);
-                if (error) {
-                    setLoginError(error.message);
-                } else {
-                    setIsLoginModalOpen(false);
-                }
-            }
-        } catch (err: any) {
-            setLoginError(err.message || t.auth.genericError);
-        } finally {
-            setIsLoginSubmitting(false);
-        }
-    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, t]);
 
     // 프리셋(메뉴) 혹은 상세 항목 변경 시 스크롤 위치를 항상 최상단으로 리셋
     useEffect(() => {
@@ -505,10 +451,10 @@ function HomeContent() {
                         <div className="sidebar-nav-bottom">
                             {!user ? (
                                 <>
-                                    <button className="user-login-btn" onClick={() => { setIsSignUpMode(false); setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                    <button className="user-login-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
                                         {t.auth.login}
                                     </button>
-                                    <button className="user-signup-btn" onClick={() => { setIsSignUpMode(true); setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
+                                    <button className="user-signup-btn" onClick={() => { setIsLoginModalOpen(true); setIsSidebarExpanded(false); }}>
                                         {t.auth.signup}
                                     </button>
                                 </>
@@ -583,147 +529,21 @@ function HomeContent() {
                         <div className="cell-content workshop-wrapper" onScroll={handleScroll}>
                             {visited.workshop && (
                                 selectedWorkshop ? (
-                                    <div className="workshop-detail-container">
-                                        <div className="detail-layout">
-                                            <WorkshopDetailPoster workshop={selectedWorkshop} />
-                                            <div className="detail-right">
-                                                <div className="detail-info-inner">
-                                                    <div className="detail-info-header">
-                                                        <div className="detail-tags">
-                                                            <span className="pills pill-yellow">WORKSHOP</span>
-                                                        </div>
-                                                        <div className="detail-title-wrapper">
-                                                            <div className="detail-main-title">{getLocalizedWorkshopTitle(selectedWorkshop, language, t)}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="detail-description">
-                                                        {getLocalizedWorkshopDescription(selectedWorkshop, language).map((block: any, i: number) => (<p key={i}>{block.children?.map((c: any) => c.text).join('')}</p>))}
-                                                    </div>
-
-                                                    {/* 튜터 정보 */}
-                                                    {(getLocalizedWorkshopTutor(selectedWorkshop, language) || getLocalizedWorkshopTutorBio(selectedWorkshop, language)) && (
-                                                        <div className="detail-tutor-section">
-                                                            {getLocalizedWorkshopTutor(selectedWorkshop, language) && (
-                                                                <div className="detail-tutor-name">{t.workshop.tutorLabel(getLocalizedWorkshopTutor(selectedWorkshop, language))}</div>
-                                                            )}
-                                                            {getLocalizedWorkshopTutorBio(selectedWorkshop, language) && (
-                                                                <div className="detail-tutor-bio">{getLocalizedWorkshopTutorBio(selectedWorkshop, language)}</div>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {/* 커리큘럼 */}
-                                                    {selectedWorkshop.curriculum && selectedWorkshop.curriculum.length > 0 && (
-                                                        <div className="detail-curriculum-section">
-                                                            <div className="detail-section-label">{t.workshop.curriculum}</div>
-                                                            {selectedWorkshop.curriculum.map((week: any, i: number) => {
-                                                                const localizedWeek = getLocalizedCurriculumItem(week, language);
-                                                                return (
-                                                                    <div key={week._key || i} className="curriculum-row">
-                                                                        <span className="curriculum-week">{localizedWeek.weekLabel}</span>
-                                                                        <span className="curriculum-content">{localizedWeek.content}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-
-                                                    {/* 정원 */}
-                                                    {typeof selectedWorkshop.capacity === 'number' && (
-                                                        <div className="detail-capacity">
-                                                            {t.workshop.capacityLabel(selectedWorkshop.capacity)}
-                                                        </div>
-                                                    )}
-
-                                                    {/* 취소 및 환불 정책 아코디언 */}
-                                                    <div className="detail-refund-accordion">
-                                                        <button
-                                                            type="button"
-                                                            className="refund-accordion-trigger"
-                                                            onClick={() => setShowRefundPolicy(!showRefundPolicy)}
-                                                        >
-                                                            <span>{t.workshop.refundPolicy.title}</span>
-                                                            <span className={`accordion-icon ${showRefundPolicy ? 'open' : ''}`}></span>
-                                                        </button>
-                                                        <div className={`refund-accordion-content ${showRefundPolicy ? 'open' : ''}`}>
-                                                            <div className="refund-content-inner">
-                                                                <p className="refund-intro">
-                                                                    {t.workshop.refundPolicy.intro.map((line) => (
-                                                                        <span key={line}>{line} </span>
-                                                                    ))}
-                                                                </p>
-
-                                                                {t.workshop.refundPolicy.sections.map((section) => (
-                                                                    <div className="refund-section" key={section.title}>
-                                                                        <h5 className="refund-section-title">{section.title}</h5>
-                                                                        {section.items && (
-                                                                            <ul>
-                                                                                {section.items.map((item) => (
-                                                                                    <li key={`${section.title}-${item.label || item.text}`}>
-                                                                                        {item.label && <strong>{item.label} </strong>}
-                                                                                        {item.text}
-                                                                                    </li>
-                                                                                ))}
-                                                                            </ul>
-                                                                        )}
-                                                                        {section.body && <p>{section.body}</p>}
-                                                                        {section.contactEmailLabel && (
-                                                                            <p className="refund-contact">
-                                                                                {section.contactEmailLabel}: <a href="mailto:goyangiyoram@gmail.com">goyangiyoram@gmail.com</a>
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="detail-footer-actions">
-                                                        <div className="price-tag">{t.workshop.priceLabel(selectedWorkshop.price)}</div>
-                                                        {hasSelectableSchedule(selectedWorkshop) && (
-                                                            <div className="schedule-selector-wrapper">
-                                                                <button
-                                                                    type="button"
-                                                                    className={`action-btn outline-btn ${selectedSession ? 'selected' : ''}`}
-                                                                    onClick={() => setShowSchedule(!showSchedule)}
-                                                                >
-                                                                    {selectedSession ? getScheduleSessionLabel(selectedSession, language) : t.workshop.scheduleSelect}
-                                                                </button>
-                                                                {showSchedule && (
-                                                                    <div className="schedule-dropdown">
-                                                                        {getWorkshopSchedule(selectedWorkshop).map((session: any, index: number) => {
-                                                                            const localizedSession = getLocalizedScheduleSession(session, language);
-                                                                            return (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
-                                                                                    className="schedule-option"
-                                                                                    onClick={() => {
-                                                                                        setSelectedSession(session);
-                                                                                        setShowSchedule(false);
-                                                                                    }}
-                                                                                >
-                                                                                    {localizedSession.date && <span className="s-date">{localizedSession.date}</span>}
-                                                                                    {localizedSession.time && <span className="s-time">{localizedSession.time}</span>}
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        <button
-                                                            className={`action-btn fill-btn ${hasSelectableSchedule(selectedWorkshop) && !selectedSession ? 'locked' : ''}`}
-                                                            disabled={isWorkshopClosedForPayment(selectedWorkshop)}
-                                                            onClick={() => handleWorkshopPayment(selectedWorkshop)}
-                                                        >
-                                                            {isWorkshopClosedForPayment(selectedWorkshop) ? t.workshop.closed : t.workshop.apply}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <WorkshopDetailOverlay 
+                                        workshop={selectedWorkshop}
+                                        t={t}
+                                        language={language}
+                                        showSchedule={showSchedule}
+                                        setShowSchedule={setShowSchedule}
+                                        selectedSession={selectedSession}
+                                        setSelectedSession={setSelectedSession}
+                                        showRefundPolicy={showRefundPolicy}
+                                        setShowRefundPolicy={setShowRefundPolicy}
+                                        hasSelectableSchedule={hasSelectableSchedule}
+                                        getWorkshopSchedule={getWorkshopSchedule}
+                                        isWorkshopClosedForPayment={isWorkshopClosedForPayment}
+                                        handleWorkshopPayment={handleWorkshopPayment}
+                                    />
                                 ) : (
                                     <WorkshopGrid workshops={allWorkshops} registrationCounts={registrationCounts} onSelectWorkshop={handleSelectWorkshop} getTagColor={getTagColor} />
                                 )
@@ -757,152 +577,10 @@ function HomeContent() {
 
             {isMounted && (
                 <>
-                    {/* Login Modal Overlay */}
-                    <div className={`login-overlay-wrapper ${isLoginModalOpen ? 'active' : ''}`}>
-                        <div className="login-dimmer" onClick={() => setIsLoginModalOpen(false)}></div>
-                        <div className="login-modal-card">
-                            <div className="login-modal-header">
-
-                                <button className="login-close-btn" onClick={() => setIsLoginModalOpen(false)}>&times;</button>
-                            </div>
-                            <div className="login-modal-body">
-                                {user ? (
-                                    /* 로그인 상태 */
-                                    <div className="login-intro">
-                                        <h3>IYOHOUSE</h3>
-
-                                        {!isProfileComplete ? (
-                                            /* 프로필 미완성: 전용 가입 완료 페이지로 이동 */
-                                            <div className="profile-setup-container" style={{ marginTop: '24px', textAlign: 'left' }}>
-                                                <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>
-                                                    {t.auth.completePrompt}
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    className="email-submit-btn"
-                                                    style={{ width: '100%' }}
-                                                    onClick={() => { setIsLoginModalOpen(false); goToCompleteProfile(); }}
-                                                >
-                                                    {t.auth.completeAction}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="social-btn"
-                                                    style={{ marginTop: '10px', width: '100%', justifyContent: 'center', background: 'transparent', border: '1px solid #ddd', color: '#666' }}
-                                                    onClick={() => signOut()}
-                                                >
-                                                    {t.auth.logout}
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            /* 프로필 완성: 일반 로그인 상태 */
-                                            <div className="profile-welcome-container" style={{ marginTop: '24px' }}>
-                                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{t.auth.welcome(profile?.full_name)}</div>
-                                                <div style={{ marginTop: '8px', fontSize: '14px', opacity: 0.6 }}>{user.email}</div>
-
-                                                <div className="profile-info-display" style={{ marginTop: '20px', textAlign: 'left', background: '#f9f9f9', padding: '15px', borderRadius: '8px' }}>
-                                                    <div style={{ fontSize: '12px', opacity: 0.5 }}>{t.auth.bioLabel}</div>
-                                                    <div style={{ marginTop: '5px', fontSize: '14px', lineHeight: '1.5' }}>{profile?.bio || t.auth.noBio}</div>
-                                                </div>
-
-                                                <button
-                                                    className="email-submit-btn"
-                                                    style={{ marginTop: '30px' }}
-                                                    onClick={async () => { await signOut(); setIsLoginModalOpen(false); }}
-                                                >
-                                                    {t.auth.logout}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    /* 비로그인 상태 */
-                                    <>
-                                        <div className="login-intro">
-                                            <h3>IYOHOUSE</h3>
-                                        </div>
-
-                                        <div className="social-login-group">
-                                            <button className="social-btn kakao" onClick={signInWithKakao}>
-                                                <span className="btn-icon">K</span>
-                                                <span className="btn-text">{t.auth.kakao}</span>
-                                            </button>
-                                            <button className="social-btn google" onClick={signInWithGoogle}>
-                                                <span className="btn-icon">G</span>
-                                                <span className="btn-text">{t.auth.google}</span>
-                                            </button>
-                                        </div>
-
-                                        <div className="login-divider">
-                                            <span>OR</span>
-                                        </div>
-
-                                        <form className="email-login-form" onSubmit={handleEmailAuthSubmit}>
-                                            <input
-                                                type="email"
-                                                placeholder={t.auth.emailPlaceholder}
-                                                className="login-input"
-                                                value={loginEmail}
-                                                onChange={(e) => setLoginEmail(e.target.value)}
-                                                required
-                                                disabled={isLoginSubmitting}
-                                            />
-                                            <input
-                                                type="password"
-                                                placeholder={t.auth.passwordPlaceholder}
-                                                className="login-input"
-                                                value={loginPassword}
-                                                onChange={(e) => setLoginPassword(e.target.value)}
-                                                required
-                                                disabled={isLoginSubmitting}
-                                            />
-                                            {loginError && (
-                                                <div style={{ color: '#c80000', fontSize: '12px', marginTop: '4px', textAlign: 'center' }}>
-                                                    {loginError}
-                                                </div>
-                                            )}
-                                            <button
-                                                type="submit"
-                                                className="email-submit-btn"
-                                                disabled={isLoginSubmitting}
-                                            >
-                                                {isLoginSubmitting ? t.auth.submitting : (isSignUpMode ? t.auth.emailSignup : t.auth.emailLogin)}
-                                            </button>
-                                        </form>
-
-                                        <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px', fontSize: '13px' }}>
-                                            <span style={{ color: '#666' }}>
-                                                {isSignUpMode ? t.auth.hasAccount : t.auth.noAccount}
-                                            </span>{" "}
-                                            <button
-                                                type="button"
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: '#000',
-                                                    fontWeight: 'bold',
-                                                    textDecoration: 'underline',
-                                                    cursor: 'pointer',
-                                                    padding: 0,
-                                                    fontSize: 'inherit'
-                                                }}
-                                                onClick={() => {
-                                                    setIsSignUpMode(!isSignUpMode);
-                                                    setLoginError(null);
-                                                }}
-                                                disabled={isLoginSubmitting}
-                                            >
-                                                {isSignUpMode ? t.auth.switchToLogin : t.auth.switchToSignup}
-                                            </button>
-                                        </div>
-
-                                        <div className="login-notice">
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    <LoginModal 
+                        isOpen={isLoginModalOpen} 
+                        onClose={() => setIsLoginModalOpen(false)} 
+                    />
                 </>
             )}
 
