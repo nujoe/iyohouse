@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
     const supabase = await createClient();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

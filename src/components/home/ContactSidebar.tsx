@@ -11,10 +11,11 @@ interface ContactSidebarProps {
 export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarProps) {
     const [contactData, setContactData] = useState({ email: '', subject: '', message: '' });
     const [isSending, setIsSending] = useState(false);
+    const { email, subject, message } = contactData;
 
     const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!contactData.email || !contactData.message) {
+        if (!email || !message) {
             alert(t.contact.required);
             return;
         }
@@ -23,7 +24,7 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
             const response = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(contactData),
+                body: JSON.stringify({ email, subject, message }),
             });
             const result = await response.json();
             if (result.success) {
@@ -38,7 +39,7 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
         } finally {
             setIsSending(false);
         }
-    }, [contactData, t]);
+    }, [email, message, subject, t]);
 
     if (!isOpen) return null;
 
