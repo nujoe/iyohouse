@@ -11,6 +11,8 @@ interface LoginModalProps {
     initialMode?: "login" | "signup";
 }
 
+type SocialProvider = "kakao" | "google";
+
 export default function LoginModal({ isOpen, onClose, initialMode = "login" }: LoginModalProps) {
     const {
         user,
@@ -30,6 +32,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     const [isSignUpMode, setIsSignUpMode] = useState(initialMode === "signup");
     const [loginError, setLoginError] = useState<string | null>(null);
     const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
+    const [socialLoginProvider, setSocialLoginProvider] = useState<SocialProvider | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -39,8 +42,22 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
             setLoginPassword("");
             setLoginError(null);
             setIsLoginSubmitting(false);
+            setSocialLoginProvider(null);
         }
     }, [isOpen, initialMode]);
+
+    const handleSocialLogin = useCallback(async (provider: SocialProvider) => {
+        setLoginError(null);
+        setSocialLoginProvider(provider);
+
+        const signIn = provider === "kakao" ? signInWithKakao : signInWithGoogle;
+        const { error } = await signIn();
+
+        if (error) {
+            setLoginError(error.message || t.auth.genericError);
+            setSocialLoginProvider(null);
+        }
+    }, [signInWithGoogle, signInWithKakao, t.auth.genericError]);
 
     const handleEmailAuthSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -150,13 +167,23 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                             </div>
 
                             <div className="social-login-group">
-                                <button className="social-btn kakao" onClick={signInWithKakao}>
+                                <button
+                                    type="button"
+                                    className="social-btn kakao"
+                                    onClick={() => handleSocialLogin("kakao")}
+                                    disabled={Boolean(socialLoginProvider)}
+                                >
                                     <span className="btn-icon">K</span>
-                                    <span className="btn-text">{t.auth.kakao}</span>
+                                    <span className="btn-text">{socialLoginProvider === "kakao" ? t.auth.submitting : t.auth.kakao}</span>
                                 </button>
-                                <button className="social-btn google" onClick={signInWithGoogle}>
+                                <button
+                                    type="button"
+                                    className="social-btn google"
+                                    onClick={() => handleSocialLogin("google")}
+                                    disabled={Boolean(socialLoginProvider)}
+                                >
                                     <span className="btn-icon">G</span>
-                                    <span className="btn-text">{t.auth.google}</span>
+                                    <span className="btn-text">{socialLoginProvider === "google" ? t.auth.submitting : t.auth.google}</span>
                                 </button>
                             </div>
 

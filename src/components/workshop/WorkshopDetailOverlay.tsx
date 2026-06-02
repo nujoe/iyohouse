@@ -37,6 +37,7 @@ export default function WorkshopDetailOverlay({
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
     const [showRefundPolicy, setShowRefundPolicy] = useState(false);
     const [tossPayments, setTossPayments] = useState<any>(null);
+    const [isPaymentStarting, setIsPaymentStarting] = useState(false);
 
     useEffect(() => {
         const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
@@ -72,6 +73,8 @@ export default function WorkshopDetailOverlay({
     }, [getWorkshopCapacity, getWorkshopPaidCount]);
 
     const handleWorkshopPayment = useCallback(async (ws: any) => {
+        if (isPaymentStarting) return;
+
         if (!user) {
             onRequireLogin();
             return;
@@ -99,23 +102,25 @@ export default function WorkshopDetailOverlay({
             return;
         }
 
+        setIsPaymentStarting(true);
+
         let payments = tossPayments;
-        if (!payments) {
-            const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-            if (!clientKey) {
-                alert(t.workshop.paymentMisconfigured);
+        try {
+            if (!payments) {
+                const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+                if (!clientKey) {
+                    alert(t.workshop.paymentMisconfigured);
+                    return;
+                }
+                payments = await loadTossPayments(clientKey);
+                setTossPayments(payments);
+            }
+
+            if (!payments) {
+                alert(t.workshop.paymentPreparing);
                 return;
             }
-            payments = await loadTossPayments(clientKey);
-            setTossPayments(payments);
-        }
 
-        if (!payments) {
-            alert(t.workshop.paymentPreparing);
-            return;
-        }
-
-        try {
             const { data: regData, error: rpcError } = await supabase.rpc('create_pending_registration', {
                 p_workshop_id: dbWorkshopId,
             });
@@ -134,8 +139,11 @@ export default function WorkshopDetailOverlay({
         } catch (error: any) {
             console.error("신청/결제 요청 에러:", error);
             alert(`${t.workshop.requestError}: ${error.message || t.auth.genericError}`);
+        } finally {
+            setIsPaymentStarting(false);
         }
     }, [
+        isPaymentStarting,
         user,
         isProfileComplete,
         t,
@@ -283,10 +291,14 @@ export default function WorkshopDetailOverlay({
                             )}
                             <button
                                 className={`action-btn fill-btn ${hasSelectableSchedule(workshop) && !selectedSession ? 'locked' : ''}`}
-                                disabled={isWorkshopClosedForPayment(workshop)}
+                                disabled={isPaymentStarting || isWorkshopClosedForPayment(workshop)}
                                 onClick={() => handleWorkshopPayment(workshop)}
                             >
-                                {isWorkshopClosedForPayment(workshop) ? t.workshop.closed : t.workshop.apply}
+                                {isWorkshopClosedForPayment(workshop)
+                                    ? t.workshop.closed
+                                    : isPaymentStarting
+                                        ? t.workshop.paymentPreparing
+                                        : t.workshop.apply}
                             </button>
                         </div>
                     </div>

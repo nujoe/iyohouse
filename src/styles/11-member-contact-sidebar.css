@@ -208,7 +208,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 108px;
+    height: 88px;
     padding: 0 108px 0 20px;
     background: var(--intersect);
     border-bottom: var(--line-thickness) solid #000;
@@ -219,7 +219,8 @@
 
 .contact-sidebar-header .modal-title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    /* 1.5rem에서 1.8rem으로 크기 확대 */
     font-weight: 900;
     color: #000000;
     letter-spacing: -0.02em;
@@ -425,16 +426,36 @@
         font-size: 1.4rem !important;
     }
 
-    .header-info-content {
-        display: flex;
-        /* Allow it to be visible even on mobile for now */
-    }
-
+    /* 모바일 헤더 정돈 */
     .header-right {
         left: auto !important;
-        width: var(--unit) !important;
-        justify-content: flex-end;
+        width: auto !important;
+        /* 7px 너비 고정 해제 */
+        display: flex !important;
+        align-items: center;
         padding-right: 0;
+        padding-left: 15px !important;
+        /* 구분선과의 안정적인 여백 */
+        justify-content: space-between !important;
+    }
+
+    .header-right>*:not(.header-lang):not(.header-auth-btn):not(.header-nav-item) {
+        display: none !important;
+        /* KOR/ENG, LOGIN, MEMBER 외 모든 요소 숨김 */
+    }
+
+    .header-nav-item {
+        display: flex !important;
+        align-items: center;
+        font-size: 1.1rem !important;
+        font-family: 'courier', serif !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.05em !important;
+        color: #888 !important;
+    }
+
+    .header-nav-item.active {
+        color: #000 !important;
     }
 
     .header-toggle-btn {
@@ -442,9 +463,84 @@
         /* Clean look on mobile */
     }
 
+    /* 로고와 KOR/ENG 폰트 크기 완벽 일치 */
+    .logo-main-text {
+        font-size: 1.3rem !important;
+        font-family: 'courier', serif !important;
+    }
+
+    .header-lang {
+        display: flex !important;
+        align-items: center;
+        font-size: 1.1rem !important;
+        font-family: 'courier', serif !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.05em !important;
+        text-transform: uppercase !important;
+        line-height: 0.8 !important;
+        color: #000 !important;
+        margin-right: 2px;
+    }
+
+    .header-lang button {
+        font-size: 1.1rem !important;
+        font-family: 'courier', serif !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.05em !important;
+        text-transform: uppercase !important;
+        line-height: 0.8 !important;
+        color: #888 !important;
+        transition: color 0.2s;
+    }
+
+    .header-lang button.active {
+        color: #000 !important;
+    }
+
+    .header-lang span {
+        font-size: 1.1rem !important;
+        font-family: 'courier', serif !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.05em !important;
+        text-transform: uppercase !important;
+        line-height: 0.8 !important;
+        color: #888 !important;
+        padding: 0 0.15rem !important;
+    }
+
+    /* 우측 로그인 버튼 축소 */
+    .header-auth-btn {
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        padding: 0 12px !important;
+        height: 100% !important;
+        box-sizing: border-box;
+        max-width: 95px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
     .left-panel.expanded {
         width: 100% !important;
         padding: 40px 30px !important;
+    }
+
+    .left-panel.contact-mode.expanded {
+        padding: 0 !important;
+        /* 컨택 폼이 화면을 가로세로로 빈틈없이 꽉 채우도록 설정 */
+    }
+
+    .contact-sidebar-header {
+        height: 80px !important;
+        /* 모바일 헤더 높이 약간 여유 있게 확대 */
+        padding: 0 60px 0 20px !important;
+        /* 우측 닫기 버튼과의 겹침 방지 */
+    }
+
+    .contact-sidebar-header .modal-title {
+        font-size: 1.4rem !important;
+        /* 모바일 타이틀 폰트 크기 확대 */
     }
 
     .header-email {
@@ -455,14 +551,14 @@
     .mobile-main-divider {
         display: block;
         position: relative;
-        width: 100%;
+        width: 100% !important;
         height: var(--line-gap, 8px);
         background: var(--bg);
         z-index: 10;
         border-top: var(--line-thickness, 1px) solid var(--line, #000);
         border-bottom: var(--line-thickness, 1px) solid var(--line, #000);
         box-sizing: border-box;
-        margin: 30px 0; /* 글과 사진 사이 여백 */
+        margin: 30px 0 !important;
     }
 
     .mobile-main-divider::before,
@@ -498,13 +594,20 @@
     .main-content-layout {
         flex-direction: column !important;
         height: auto !important;
-        padding-bottom: 60px; /* 최하단 여백 */
+        padding-bottom: 60px;
+        /* 최하단 여백 */
+        position: relative !important;
+        /* info 버튼 absolute 배치의 기준점 */
     }
 
     .main-text-column {
         height: auto !important;
         flex: none !important;
         width: 100% !important;
+        padding-right: 25px !important;
+        /* 우측 25px 격자선 침범 방지 */
+        padding-left: 10px !important;
+        box-sizing: border-box !important;
     }
 
     .main-visual-column {
@@ -517,7 +620,9 @@
     .visual-stack-v2 {
         height: auto !important;
         overflow-y: visible !important;
-        padding: 0 10px !important; /* 모바일에 맞는 패딩 */
+        padding: 0 25px 50px 10px !important;
+        /* 하단에 info 버튼이 들어갈 50px 여백 확보 */
+        box-sizing: border-box !important;
     }
 
     /* 모바일 메인 뷰 활성화 시 수직 중앙 나눔선 가림 */
@@ -527,7 +632,7 @@
         pointer-events: none !important;
     }
 
-    /* 멤버 페이지 모바일 최적화 (글 = 위, 사진 = 아래) */
+    /* 멤버 페이지 모바일 최적화 (글 = 위, 사진 = 아래 세로 배치) */
     .cell-member {
         position: absolute !important;
         top: var(--top-row-1) !important;
@@ -548,7 +653,8 @@
     .member-main-content {
         flex-direction: column !important;
         height: auto !important;
-        padding-bottom: 60px; /* 아래 여백 */
+        padding-bottom: 60px;
+        /* 아래 여백 */
     }
 
     .member-text-masonry {
@@ -556,7 +662,19 @@
         flex: none !important;
         width: 100% !important;
         overflow-y: visible !important;
-        padding: 20px 10px !important;
+        padding: 20px 25px 20px 10px !important;
+        /* 우측 25px 격자선 침범 방지 */
+        box-sizing: border-box !important;
+    }
+
+    /* 카드들을 2단에서 1단(한 줄)으로 정렬하여 텍스트가 아래로 좁고 길게 밀리는 것 방지 */
+    .member-text-masonry .masonry-inner {
+        column-count: 1 !important;
+        column-gap: 0 !important;
+    }
+
+    .member-text-masonry .member-card {
+        margin-bottom: 30px !important;
     }
 
     .member-visual-aside {
@@ -566,10 +684,38 @@
         overflow: visible !important;
     }
 
+    /* 모바일 세로 배치이므로 가로 구분선 다시 활성화 */
+    .cell-member .mobile-main-divider {
+        display: block !important;
+    }
+
     /* 모바일 멤버 뷰 활성화 시 수직 중앙 나눔선 가림 */
     .preset-member .v-line-center,
     .preset-member .top-v-center {
         opacity: 0 !important;
         pointer-events: none !important;
+    }
+
+    /* info 버튼 모바일 여백 및 정렬 조정 (사진 밑 우측 하단으로 절대 배치) */
+    .info-bottom-text-wrapper {
+        position: absolute !important;
+        bottom: 15px !important;
+        right: 25px !important;
+        /* 우측 25px 격자선에 정렬 */
+        left: auto !important;
+        top: auto !important;
+        margin: 0 !important;
+        padding: 10px 0 !important;
+        /* 우측 밀착 정렬을 위해 좌우 패딩을 0으로 설정 */
+    }
+
+    /* 모바일에서 사업자 정보 레이어가 화면 오른쪽 밖으로 삐져나가지 않도록 우측 기준 정렬 */
+    .business-info-overlay {
+        right: 0 !important;
+        left: auto !important;
+        width: calc(100vw - 50px) !important;
+        max-width: 320px !important;
+        padding: 24px !important;
+        bottom: calc(100% + 8px) !important;
     }
 }

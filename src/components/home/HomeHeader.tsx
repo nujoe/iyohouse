@@ -8,9 +8,14 @@ interface HomeHeaderProps {
     language: Language;
     logoRef: RefObject<HTMLDivElement | null>;
     t: Translation;
+    user: any;
+    profile: any;
+    isProfileComplete: boolean;
     onLanguageChange: (language: Language) => void;
     onPresetChange: (preset: string) => void;
-    onThemeChange: () => void;
+    onOpenLogin: () => void;
+    onOpenAccountModal: () => void;
+    onGoToCompleteProfile: () => void;
 }
 
 export default function HomeHeader({
@@ -18,10 +23,20 @@ export default function HomeHeader({
     language,
     logoRef,
     t,
+    user,
+    profile,
+    isProfileComplete,
     onLanguageChange,
     onPresetChange,
-    onThemeChange,
+    onOpenLogin,
+    onOpenAccountModal,
+    onGoToCompleteProfile,
 }: HomeHeaderProps) {
+    const nickname = profile?.full_name || user?.email?.split('@')[0] || user?.phone || "";
+    const displayGreeting = language === "en"
+        ? `Hello, ${nickname}`
+        : `안녕하세요 ${nickname} 님`;
+
     return (
         <header className="header">
             <div className="header-left" ref={logoRef} onClick={() => onPresetChange('main')} style={{ cursor: 'pointer' }}>
@@ -59,8 +74,13 @@ export default function HomeHeader({
                 <button className="header-email" onClick={() => onPresetChange('contact')}>
                     goyangiyoram@gmail.com
                 </button>
-                <button className="header-theme-btn" onClick={onThemeChange} title="Change Theme Color">
-                    <div className="theme-dot"></div>
+
+                <button
+                    className="header-auth-btn"
+                    onClick={user ? (isProfileComplete ? onOpenAccountModal : onGoToCompleteProfile) : onOpenLogin}
+                    title={user ? "Edit Profile / Account" : "Log In"}
+                >
+                    {user ? displayGreeting : t.auth.login}
                 </button>
             </div>
         </header>

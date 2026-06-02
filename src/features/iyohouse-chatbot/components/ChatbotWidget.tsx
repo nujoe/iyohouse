@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { chatbotConfig } from "../config";
 
 type ChatMessage = {
@@ -16,13 +16,79 @@ type HealthState = {
   pageSource?: string;
 };
 
+type ChatbotPosition = {
+  x: number | null;
+  y: number;
+};
+
+type ChatbotBounds = {
+  minX: number;
+  maxX: number;
+};
+
+type ChatbotStyle = CSSProperties & {
+  "--iyo-chatbot-left": string;
+  "--iyo-chatbot-y": string;
+};
+
+const idleMovementIntervalMs = 5200;
+const movementViewportPadding = 16;
+const infoBoundaryGap = 12;
+const rightGridBoundaryGap = 14;
+
 const initialAssistantMessage: ChatMessage = {
   id: "hello",
   role: "assistant",
   text: "안녕하세요. 이요하우스 위키에서 공개된 문서를 찾아 답할게요.",
 };
 
+function getNextIdlePosition(bounds: ChatbotBounds): ChatbotPosition {
+  const range = Math.max(0, bounds.maxX - bounds.minX);
+
+  return {
+    x: Math.round(bounds.minX + Math.random() * range),
+    y: 0,
+  };
+}
+
+function resetIdlePosition(current: ChatbotPosition): ChatbotPosition {
+  return current.x === null && current.y === 0 ? current : { x: null, y: 0 };
+}
+
+function getChatbotBounds(chatbotElement: HTMLElement | null): ChatbotBounds {
+  const chatbotWidth = chatbotElement?.getBoundingClientRect().width || 122;
+  const infoRect = document.querySelector(".info-bottom-text-wrapper")?.getBoundingClientRect();
+  const rightGridRects = [
+    ...Array.from(document.querySelectorAll(".top-v-3")),
+    ...Array.from(document.querySelectorAll(".v-line")),
+  ].map((element) => element.getBoundingClientRect());
+
+  const rightGridLeft = rightGridRects.length
+    ? Math.max(...rightGridRects.map((rect) => rect.left))
+    : window.innerWidth - movementViewportPadding;
+  const minX = Math.max(
+    movementViewportPadding,
+    infoRect ? infoRect.right + infoBoundaryGap : window.innerWidth * 0.38
+  );
+  const maxX = Math.min(
+    window.innerWidth - chatbotWidth - movementViewportPadding,
+    rightGridLeft - chatbotWidth - rightGridBoundaryGap
+  );
+
+  if (maxX <= minX) {
+    const fallbackX = Math.max(
+      movementViewportPadding,
+      Math.min(window.innerWidth - chatbotWidth - movementViewportPadding, window.innerWidth * 0.53 - 124)
+    );
+
+    return { minX: fallbackX, maxX: fallbackX };
+  }
+
+  return { minX, maxX };
+}
+
 export default function ChatbotWidget() {
+  const chatbotRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -31,7 +97,7 @@ export default function ChatbotWidget() {
   const [apiKey, setApiKey] = useState("");
   const [health, setHealth] = useState<HealthState | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([initialAssistantMessage]);
-  const [position, setPosition] = useState({ x: 0.68, y: 0.58 });
+  const [position, setPosition] = useState<ChatbotPosition>({ x: null, y: 0 });
   const settingsEnabled = chatbotConfig.settingsEnabled;
 
   const statusText = useMemo(() => {
@@ -66,18 +132,19 @@ export default function ChatbotWidget() {
   }, [isMounted]);
 
   useEffect(() => {
-    if (!isMounted || isOpen || isAsking) return;
+    if (!isMounted || isOpen || isSettingsOpen || isAsking) {
+      setPosition(resetIdlePosition);
+      return;
+    }
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const timer = window.setInterval(() => {
-      setPosition({
-        x: 0.12 + Math.random() * 0.7,
-        y: 0.22 + Math.random() * 0.58,
-      });
-    }, 5200);
+      setPosition(getNextIdlePosition(getChatbotBounds(chatbotRef.current)));
+    }, idleMovementIntervalMs);
 
     return () => window.clearInterval(timer);
-  }, [isMounted, isOpen, isAsking]);
+  }, [isMounted, isOpen, isSettingsOpen, isAsking]);
 
   if (!isMounted || !chatbotConfig.enabled) return null;
 
@@ -146,16 +213,13 @@ export default function ChatbotWidget() {
     }
   };
 
+  const chatbotStyle: ChatbotStyle = {
+    "--iyo-chatbot-left": position.x === null ? "calc(53vw - 124px)" : `${position.x}px`,
+    "--iyo-chatbot-y": `${position.y}px`,
+  };
+
   return (
-    <div
-      className="iyo-chatbot"
-      style={
-        {
-          "--iyo-chatbot-x": `${Math.round(position.x * 100)}vw`,
-          "--iyo-chatbot-y": `${Math.round(position.y * 100)}vh`,
-        } as CSSProperties
-      }
-    >
+    <div className="iyo-chatbot" ref={chatbotRef} style={chatbotStyle}>
       <button
         className="iyo-chatbot-avatar"
         type="button"

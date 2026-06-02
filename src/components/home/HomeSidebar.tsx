@@ -1,5 +1,7 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
+
 import ContactSidebar from "@/components/home/ContactSidebar";
 import type { Translation } from "@/lib/i18n";
 
@@ -38,11 +40,35 @@ export default function HomeSidebar({
     t,
     user,
 }: HomeSidebarProps) {
+    const isPanelOpen = isSidebarExpanded || isContactOpen;
+    const wasPanelOpenRef = useRef(isPanelOpen);
+    const [isPanelClosing, setIsPanelClosing] = useState(false);
+
+    useLayoutEffect(() => {
+        const wasPanelOpen = wasPanelOpenRef.current;
+        wasPanelOpenRef.current = isPanelOpen;
+
+        if (wasPanelOpen && !isPanelOpen) {
+            setIsPanelClosing(true);
+            const timeoutId = window.setTimeout(() => {
+                setIsPanelClosing(false);
+            }, 200);
+
+            return () => window.clearTimeout(timeoutId);
+        }
+
+        if (isPanelOpen) {
+            setIsPanelClosing(false);
+        }
+    }, [isPanelOpen]);
+
+    const shouldShowPanelIcon = !isPanelOpen && !isPanelClosing;
+
     return (
-        <div className={`left-panel ${isSidebarExpanded || isContactOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && onToggleSidebar()}>
+        <div className={`left-panel ${isPanelOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && onToggleSidebar()}>
             <div
                 className="panel-icon"
-                style={{ opacity: isSidebarExpanded || isContactOpen ? 0 : 1, pointerEvents: isSidebarExpanded || isContactOpen ? 'none' : 'auto' }}
+                style={{ opacity: shouldShowPanelIcon ? 1 : 0, pointerEvents: shouldShowPanelIcon ? 'auto' : 'none' }}
                 onClick={(e) => { if (isContactOpen) { e.stopPropagation(); onCloseContact(); } }}
             >
                 <span></span>
@@ -50,7 +76,7 @@ export default function HomeSidebar({
                 <span></span>
             </div>
 
-            {(isSidebarExpanded || isContactOpen) && (
+            {isPanelOpen && (
                 <button
                     className="sidebar-close-btn"
                     onClick={(e) => {

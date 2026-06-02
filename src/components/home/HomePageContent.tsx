@@ -35,7 +35,7 @@ export default function HomePageContent() {
         allWorkshops,
     } = useWorkshopData();
 
-    const { user, isLoading: authLoading, isProfileComplete, signOut } = useAuth();
+        const { user, profile, isLoading: authLoading, isProfileComplete, signOut } = useAuth();
 
     const { language, t, setLanguage } = useLanguage();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -83,8 +83,6 @@ export default function HomePageContent() {
         activePreset,
         logoWidth,
         logoHeight,
-        isSidebarExpanded,
-        isContactOpen,
         dynamicColor,
     });
 
@@ -115,9 +113,14 @@ export default function HomePageContent() {
                 language={language}
                 logoRef={logoRef}
                 t={t}
+                user={user}
+                profile={profile}
+                isProfileComplete={isProfileComplete}
                 onLanguageChange={setLanguage}
                 onPresetChange={handlePresetChange}
-                onThemeChange={handleThemeChange}
+                onOpenLogin={openLogin}
+                onOpenAccountModal={openAccountModal}
+                onGoToCompleteProfile={goToCompleteProfile}
             />
 
             {/* Info overlay removed in favor of expandable header-right */}

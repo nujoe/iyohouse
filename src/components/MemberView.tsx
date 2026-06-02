@@ -37,6 +37,8 @@ function MemberView() {
             </div>
           </div>
 
+          <div className="mobile-main-divider"></div>
+
           <div className="member-visual-aside">
             <MemberVisualStack />
           </div>

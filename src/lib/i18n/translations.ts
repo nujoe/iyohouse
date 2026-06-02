@@ -24,6 +24,7 @@ const ko = {
         calendar: "CALENDAR",
         contact: "CONTACT",
     },
+    mainIntroTitle: "이요하우스는...",
     mainIntro: "가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다. 팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다. 하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.",
     auth: {
         login: "로그인",
@@ -155,6 +156,7 @@ const en: Translation = {
         calendar: "CALENDAR",
         contact: "CONTACT",
     },
+    mainIntroTitle: "IYOHOUSE is",
     mainIntro: "Like a fine thread moving freely between fingers, IYO pays attention to accidental crossings. As in string figure play, where tension and release keep changing the shape, ideas transform through one another's hands. The threads in the cradle may tangle, loosen, or break before they know what they will become. We welcome even misalignment as the beginning of a new connection. A public park for creators continues as IYOHOUSE.",
     auth: {
         login: "Login",

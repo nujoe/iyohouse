@@ -22,13 +22,27 @@ type AuthState = {
   isProfileComplete: boolean
 }
 
-const supabase = createSupabaseBrowserClient()
+type SocialProvider = 'google' | 'kakao'
+
+type SupabaseBrowserClient = ReturnType<typeof createSupabaseBrowserClient>
+
+let supabaseBrowserClient: SupabaseBrowserClient | null = null
+
+function getSupabaseBrowserClient() {
+  if (!supabaseBrowserClient) {
+    supabaseBrowserClient = createSupabaseBrowserClient()
+  }
+
+  return supabaseBrowserClient
+}
 
 function hasCompletedProfile(profile: Profile | null) {
   return Boolean(profile?.completed_at)
 }
 
 export function useAuth() {
+  const supabase = getSupabaseBrowserClient()
+
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -50,7 +64,7 @@ export function useAuth() {
     }
 
     return data as Profile
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     // Initial session check
@@ -104,11 +118,11 @@ export function useAuth() {
     )
 
     return () => subscription.unsubscribe()
-  }, [fetchProfile])
+  }, [fetchProfile, supabase])
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
-  }, [])
+  }, [supabase])
 
   const getAuthRedirectUrl = useCallback(() => {
     const nextPath = `${window.location.pathname}${window.location.search}`
@@ -116,43 +130,40 @@ export function useAuth() {
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath || '/')}`
   }, [])
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithSocialProvider = useCallback(async (provider: SocialProvider) => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: {
         redirectTo: getAuthRedirectUrl(),
       },
     })
 
     if (error) {
-      console.error('Google sign in error:', error)
+      console.error(`${provider} sign in error:`, error)
     }
-  }, [getAuthRedirectUrl])
+
+    return { error }
+  }, [getAuthRedirectUrl, supabase])
+
+  const signInWithGoogle = useCallback(async () => {
+    return signInWithSocialProvider('google')
+  }, [signInWithSocialProvider])
 
   const signInWithKakao = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: getAuthRedirectUrl(),
-      },
-    })
-
-    if (error) {
-      console.error('Kakao sign in error:', error)
-    }
-  }, [getAuthRedirectUrl])
+    return signInWithSocialProvider('kakao')
+  }, [signInWithSocialProvider])
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) console.error('Email sign in error:', error)
     return { data, error }
-  }, [])
+  }, [supabase])
 
   const signUpWithEmail = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) console.error('Email sign up error:', error)
     return { data, error }
-  }, [])
+  }, [supabase])
 
   const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => {
     if (!authState.user) return { error: 'Not authenticated' }
@@ -173,7 +184,7 @@ export function useAuth() {
     }
 
     return { error: error?.message || null }
-  }, [authState.user, fetchProfile])
+  }, [authState.user, fetchProfile, supabase])
 
   return {
     ...authState,

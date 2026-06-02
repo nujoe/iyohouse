@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 interface CalendarViewProps {
     currentMonth: Date;
@@ -13,15 +13,19 @@ function CalendarView({
     onMonthChange,
     calendarEvents
 }: CalendarViewProps) {
+    const [today, setToday] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setToday(new Date());
+    }, []);
 
     const calendarDays = useMemo(() => {
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth();
 
-        const now = new Date();
-        const todayYear = now.getFullYear();
-        const todayMonth = now.getMonth();
-        const todayDate = now.getDate();
+        const todayYear = today?.getFullYear();
+        const todayMonth = today?.getMonth();
+        const todayDate = today?.getDate();
 
         const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -34,7 +38,7 @@ function CalendarView({
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
             const dayEvents = isCurrMonth ? calendarEvents.filter(e => e.date === dateStr) : [];
-            const isToday = isCurrMonth && year === todayYear && month === todayMonth && dayNum === todayDate;
+            const isToday = Boolean(today) && isCurrMonth && year === todayYear && month === todayMonth && dayNum === todayDate;
 
             return {
                 displayNum,
@@ -44,13 +48,18 @@ function CalendarView({
                 key: i
             };
         });
-    }, [currentMonth, calendarEvents]);
+    }, [currentMonth, calendarEvents, today]);
+
+    const todayDayIndex = useMemo(() => {
+        return today ? (today.getDay() + 6) % 7 : null;
+    }, [today]);
 
     return (
         <div className="calendar-container">
             <header className="calendar-header">
                 <div className="month-title">
-                    {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                    <span className="year-sub">{currentMonth.getFullYear()}</span>
+                    <span className="month-main">{currentMonth.toLocaleString('en-US', { month: 'long' })}</span>
                 </div>
                 <div className="calendar-nav">
                     <button className="nav-btn today" onClick={() => onMonthChange(new Date())}>today</button>
@@ -60,8 +69,13 @@ function CalendarView({
             </header>
 
             <div className="calendar-grid-header">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                    <div key={day} className="grid-header-cell">{day}</div>
+                {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day, index) => (
+                    <div
+                        key={day}
+                        className={`grid-header-cell ${index === todayDayIndex ? 'is-today-day' : ''}`}
+                    >
+                        {day}
+                    </div>
                 ))}
             </div>
 

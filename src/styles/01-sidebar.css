@@ -82,18 +82,24 @@
 
 .sidebar-close-btn {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 12px;
+    right: 12px;
     background: none;
     border: none;
     color: var(--line);
     cursor: pointer;
-    padding: 8px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Adjust SVG icon size */
+.sidebar-close-btn svg {
+    width: 24px;
+    height: 24px;
 }
 
 .sidebar-close-btn:hover {
