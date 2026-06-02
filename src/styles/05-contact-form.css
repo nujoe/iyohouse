@@ -1,0 +1,152 @@
+/* 공통 모달 레이아웃 (컨택트 폼 등에서 사용) */
+.modal-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 0.8;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.modal-body::-webkit-scrollbar {
+    display: none;
+}
+
+
+.contact-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    cursor: pointer;
+    line-height: 1;
+    color: var(--line);
+    z-index: 10;
+    transition: transform 0.3s ease;
+}
+
+.contact-close-btn:hover {
+    transform: rotate(90deg);
+}
+
+.contact-main-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-top: 40px;
+    scrollbar-width: none;
+}
+
+.contact-main-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* 컨택트 폼 상세 스타일 */
+.contact-form-wrapper {
+    width: 100%;
+}
+
+.contact-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.header-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.info-label {
+    font-weight: 800;
+    font-size: 0.8rem;
+}
+
+.contact-form-classic {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-classic-row {
+    width: 100%;
+}
+
+.form-input-classic,
+.form-textarea-classic {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px 20px;
+    font-size: 1rem;
+
+    color: #000;
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-input-classic:focus,
+.form-textarea-classic:focus {
+    border-color: var(--intersect);
+}
+
+.form-textarea-classic {
+    min-height: 400px;
+    resize: none;
+}
+
+.form-submit-btn-classic {
+    width: 100%;
+    background: #000;
+    color: #fff;
+    padding: 18px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+    margin-top: 10px;
+}
+
+.form-submit-btn-classic:hover {
+    opacity: 0.8;
+}
+
+.form-submit-btn-classic:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

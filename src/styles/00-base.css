@@ -1,0 +1,74 @@
+
+:root {
+    --bg: #ffffff;
+    --line: #000000;
+    --accent: #c6ff00;
+    --intersect: #f8f01dff;
+    --intro-bg: #FF3B30;
+    /* Premium Red for Intro area */
+
+    --line-thickness: 1px;
+    --line-gap: 11px;
+    /* 노트북 이상 기기에서 11px로 확장 */
+    --unit: calc(var(--line-gap) - var(--line-thickness));
+
+    --top-row-1: 5.2rem;
+    --top-row-2: calc(var(--top-row-1) + var(--unit));
+
+    --line-x-1: calc(100% - (var(--unit) * 2));
+    --line-x-3: calc(100% - var(--unit));
+
+    --transition: 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    --panel-width: 6%;
+}
+
+::selection {
+    background: var(--intersect);
+    color: #000;
+}
+
+
+
+/* ─── 부팅(Hydration) 중 트랜지션 완전 차단 ─────
+   초기 로드 시 격자들이 main 위치에서 현재 preset까지
+   슬라이드하며 발생하는 CLS를 원천 차단합니다.
+   JS에서 마운트 직후 이 클래스를 제거합니다. */
+.is-booting,
+.is-booting * {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 단, skeleton shimmer는 예외 처리 (is-booting 해제 후에도 자연스럽게 작동) */
+.is-booting .blueprint-img-box {
+    animation: none !important;
+}
+
+* {
+    box-sizing: border-box;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Gowun Batang', serif;
+    background-color: var(--bg);
+    color: var(--line);
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+.app-container {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}

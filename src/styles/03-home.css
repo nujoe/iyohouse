@@ -1,0 +1,526 @@
+/* ─── Main View Redesign Elements ─── */
+.mobile-main-divider {
+    display: none;
+}
+
+.main-content-layout {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+.main-text-column {
+    flex: 0 0 var(--line-x-center);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.main-visual-column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* 내부 MemberVisualStack에서 스크롤 처리 */
+}
+
+.main-intro-title {
+    display: block;
+    position: relative;
+    padding: 30px 10px 0px 10px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #000;
+    letter-spacing: -0.03em;
+}
+
+.main-intro-text {
+    display: block;
+    position: relative;
+    padding: 10px 10px 0px 10px;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #000;
+    word-break: keep-all;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+}
+
+.info-bottom-text-wrapper {
+    margin-top: auto;
+    padding: 15px 15px;
+    width: fit-content;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .main-intro-title {
+        font-size: 1.8rem;
+        padding: 20px 20px 0px 20px;
+    }
+
+    .main-intro-text {
+        position: relative;
+        left: 0;
+        top: 0;
+        transform: none;
+        width: 100%;
+        padding: 10px 20px 40px 20px;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+}
+
+.info-bottom-text {
+    font-size: 1.5rem;
+    font-weight: 100;
+    color: #000;
+    text-transform: lowercase;
+    letter-spacing: -0.05em;
+    line-height: 0.8;
+    margin-left: 0;
+    transition: opacity 0.3s;
+}
+
+.business-info-overlay {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 20px;
+    width: 400px;
+    padding: 36px;
+    background: #fff;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-20px);
+    z-index: 100;
+}
+
+/* Grid Frame Styling for Info Overlay */
+.business-info-overlay::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 1;
+}
+
+.business-info-overlay::after {
+    --t: 1px;
+    --s: var(--line-gap);
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        /* Fills (centered inside 1px border) */
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        /* Borders (aligned with grid lines) */
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000);
+    background-size:
+        calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px), calc(var(--s) - 2px) calc(var(--s) - 2px),
+        var(--s) var(--s), var(--s) var(--s), var(--s) var(--s), var(--s) var(--s);
+    background-position:
+        top 1px left 1px, top 1px right 1px, bottom 1px left 1px, bottom 1px right 1px,
+        top 0 left 0, top 0 right 0, bottom 0 left 0, bottom 0 right 0;
+    background-repeat: no-repeat;
+    z-index: 2;
+}
+
+.business-info-overlay>* {
+    position: relative;
+    z-index: 5;
+}
+
+.main-visual-aside {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .main-content-layout {
+        flex-direction: column !important;
+    }
+
+    .main-text-column {
+        flex: none;
+        width: 100%;
+    }
+
+    .main-visual-column {
+        flex: none;
+        width: 100%;
+    }
+
+    .main-intro-text {
+        padding: 10px 20px 40px 20px;
+        font-size: 1rem;
+    }
+
+    .info-bottom-text-wrapper {
+        padding: 20px;
+    }
+}
+
+.business-info-overlay a {
+    color: inherit;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.info-bottom-text-wrapper:hover .business-info-overlay,
+.info-bottom-text-wrapper.is-pinned .business-info-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.info-bottom-text-wrapper:hover .info-bottom-text,
+.info-bottom-text-wrapper.is-pinned .info-bottom-text {
+    opacity: 0.5;
+}
+
+/* ─── End of File ─── */
+
+.mobile-menu-btn {
+    display: none;
+}
+
+@media (max-width: 900px) {
+
+    .hamburger-box {
+        width: 14px;
+        height: 9px;
+        position: relative;
+        display: block;
+    }
+
+    .hamburger-inner,
+    .hamburger-inner::before,
+    .hamburger-inner::after {
+        width: 14px;
+        height: 1px;
+        background-color: #000;
+        position: absolute;
+        left: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .hamburger-inner {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .hamburger-inner::before {
+        content: "";
+        top: -4px;
+    }
+
+    .hamburger-inner::after {
+        content: "";
+        bottom: -4px;
+    }
+
+    /* 상단 네비게이션: 로그인 & 햄버거만 노출, 영역 축소 */
+    .controls {
+        justify-content: flex-end !important;
+        gap: 0 !important;
+    }
+
+    .controls .user-login-btn,
+    .controls .mobile-menu-btn {
+        flex: none !important;
+        width: 60px !important;
+        /* 영역을 작게 고정 */
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #000;
+        padding: 0 !important;
+    }
+
+    /* 데스크탑 전용 버튼 (MEMBER, WORKSHOP, IYOCA 등) 숨김 */
+    .nav-desktop-only {
+        display: none !important;
+    }
+
+    .user-login-btn svg {
+        stroke-width: 2px;
+    }
+
+    .logo {
+        padding: 0 10px !important;
+    }
+
+    .logo-title {
+        font-size: 1rem !important;
+    }
+}
+
+/* ─── Contact Overlay Mobile Optimization ─── */
+@media (max-width: 900px) {
+    .contact-overlay {
+        width: 100vw !important;
+        right: 0 !important;
+        top: var(--top-row-1) !important;
+        height: calc(100vh - var(--top-row-1)) !important;
+    }
+
+    .contact-content {
+        padding: 20px !important;
+        width: 100% !important;
+    }
+
+    .contact-header h2 {
+        font-size: 2rem !important;
+    }
+
+    .contact-form input,
+    .contact-form textarea {
+        font-size: 14px !important;
+    }
+}
+
+/* 초소형 모바일 (iPhone SE 등) */
+@media (max-width: 360px) {
+    .controls button {
+        padding: 0 5px !important;
+        font-size: 11px !important;
+    }
+
+    .logo-title {
+        font-size: 0.9rem !important;
+    }
+}
+
+.mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 30000;
+    /* 다른 모든 것보다 위에 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.4s;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-menu-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: relative;
+    /* 격자 프레임 효과 추가 */
+}
+
+.mobile-menu-header {
+    height: var(--top-row-1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.menu-close-btn {
+    width: var(--top-row-1);
+    height: var(--top-row-1);
+    background: none;
+    border: none;
+    border-left: 1px solid var(--line);
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-icon {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+
+.close-icon::before,
+.close-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 1.5px;
+    background: #000;
+}
+
+.close-icon::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.close-icon::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.mobile-menu-content-frame {
+    flex: 1;
+    position: relative;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu-content-frame::before {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: var(--t) solid var(--line);
+    box-shadow:
+        inset 0 0 0 calc(var(--line-gap) - 2 * var(--t)) #ffffff,
+        inset 0 0 0 calc(var(--line-gap) - var(--t)) var(--line);
+    z-index: 10;
+}
+
+.mobile-menu-content-frame::after {
+    --t: 1px;
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--intersect), var(--intersect)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line)),
+        linear-gradient(var(--line), var(--line));
+    background-size:
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        calc(var(--line-gap) - 2 * var(--t)) calc(var(--line-gap) - 2 * var(--t)),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap),
+        var(--line-gap) var(--line-gap);
+    background-position:
+        top var(--t) left var(--t), top var(--t) right var(--t),
+        bottom var(--t) left var(--t), bottom var(--t) right var(--t),
+        top 0 left 0, top 0 right 0,
+        bottom 0 left 0, bottom 0 right 0;
+    background-repeat: no-repeat;
+    z-index: 11;
+    mix-blend-mode: darken;
+}
+
+.mobile-menu-list {
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    gap: 0;
+    position: relative;
+    z-index: 5;
+}
+
+.mobile-menu-item {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    padding: 25px 0;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 0.1px solid var(--line);
+    width: 100%;
+}
+
+.mobile-menu-item:first-child {
+    border-top: 0.1px solid var(--line);
+}
+
+.item-label {
+    font-size: clamp(1.5rem, 8vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #000;
+    text-transform: uppercase;
+}
+
+.mobile-menu-footer {
+    margin-top: auto;
+    padding: 40px 20px;
+    font-size: 0.65rem;
+    color: #999;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-sep {
+    position: relative !important;
+    left: auto !important;
+    align-self: flex-start !important;
+    flex-shrink: 0;
+    transition: none !important;
+    width: var(--line-gap);
+    height: calc(var(--top-row-1) + var(--line-gap));
+    z-index: 12100;
+    /* 수직선: 좌우 끝에 1px 선 배치 (헤더부터 교차점까지) */
+    background:
+        linear-gradient(to right, var(--line) var(--line-thickness), transparent var(--line-thickness)) no-repeat left / var(--line-thickness) 100%,
+        linear-gradient(to left, var(--line) var(--line-thickness), transparent var(--line-thickness)) no-repeat right / var(--line-thickness) 100%;
+}
+
+/* 교차점 마커: 실제 border-box 스타일의 박스를 var(--top-row-1) 위치에 배치 */
+.btn-sep::after {
+    content: "";
+    position: absolute;
+    top: var(--top-row-1);
+    left: 0;
+    width: 100%;
+    height: var(--line-gap);
+    background: var(--intersect);
+    border: var(--line-thickness) solid var(--line);
+    box-sizing: border-box;
+    pointer-events: none;
+}

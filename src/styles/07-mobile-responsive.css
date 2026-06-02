@@ -1,0 +1,263 @@
+/* ─── 모바일 반응형 (Responsive) ──────────────── */
+@media (max-width: 768px) {
+    .header {
+        /* 높이는 JS의 logoHeight를 그대로 따르도록 고정 해제 */
+        height: var(--top-row-1) !important;
+
+    }
+
+
+    .logo-main-text {
+        font-size: 1.2rem !important;
+    }
+
+    .header-right {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        flex: 1;
+        font-size: 1rem;
+        height: 100%;
+        width: auto !important;
+        transition: background-color 0.4s ease;
+    }
+
+
+
+    .header-info-content {
+        display: none !important;
+    }
+
+    .header-toggle-btn {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .circle-marker {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .header-info-content {
+        display: none !important;
+    }
+
+    /* 세로선이 헤더를 침범하지 않도록 상단 여백 부여 (베이스에서 처리됨) */
+
+    /* 버튼 구분선 고정 - flex flow 사용 */
+    .btn-sep {
+        position: relative !important;
+        left: auto !important;
+        flex-shrink: 0;
+        transition: none !important;
+    }
+
+    .header-left {
+        position: relative !important;
+        width: fit-content !important;
+        flex-shrink: 0;
+    }
+
+    .mobile-info-overlay {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .mobile-info-modal {
+        background: #ffffff;
+        width: 100%;
+        max-height: 80vh;
+        position: relative;
+        padding: 40px 24px;
+        border: 1px solid var(--line);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+    }
+
+    .mobile-info-close {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #000;
+        z-index: 2;
+    }
+
+    .mobile-typewriter-text {
+        font-size: 1.2rem;
+        line-height: 1.6;
+        font-weight: 600;
+        color: #000;
+        white-space: pre-line;
+        word-break: keep-all;
+    }
+
+    .logo-img {
+        height: 24px;
+    }
+
+    .logo-title {
+        font-size: 1rem;
+    }
+
+    .logo-subtitle {
+        display: none;
+        /* Hide subtitle for space */
+    }
+
+    .controls {
+        flex: 1;
+        display: flex !important;
+        overflow: hidden;
+        /* Disable scrolling */
+        height: 100%;
+        align-items: center;
+
+        /* Center-align buttons vertically */
+    }
+
+    .controls::-webkit-scrollbar {
+        display: none;
+    }
+
+    .controls button {
+        flex: 1;
+        /* Distribute space proportionally */
+        min-width: 0;
+        /* Allow shrinking below content width */
+
+        font-size: 16px;
+        letter-spacing: -0.05em;
+        white-space: nowrap;
+        height: 100%;
+    }
+
+    .main-left-text {
+        position: relative;
+        left: 0;
+        top: 0;
+        transform: none;
+        width: 100%;
+        padding: 15px;
+        font-size: 10pt;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(4px);
+    }
+
+    .info-row {
+        flex-direction: row !important;
+        align-items: center !important;
+        flex-wrap: wrap;
+        gap: 8px !important;
+    }
+
+    #network-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .cell-workshop {
+        align-items: flex-start !important;
+        /* Ensure the content starts from the top on mobile */
+    }
+
+    .workshop-wrapper {
+        padding: 0;
+        align-items: flex-start !important;
+    }
+
+    .workshop-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        column-gap: 12px;
+        row-gap: 24px;
+        padding: 15px 15px 20px 15px;
+        /* Reduced top padding */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .workshop-item {
+        gap: 0.6rem;
+        width: 100%;
+        padding-top: 0 !important;
+        /* Zero padding at the top of items */
+    }
+
+    .blueprint-img-box {
+        aspect-ratio: var(--aspect-ratio, 1080 / 1350) !important;
+    }
+
+    .title-box {
+        font-size: 14px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .tutor-box {
+        font-size: 11px !important;
+        min-height: auto !important;
+        padding: 4px 0 !important;
+    }
+
+
+    .color-dots {
+
+        gap: 4px;
+
+
+    }
+
+    .color-dots span {
+        min-width: 30px !important;
+        height: 14px !important;
+        /* Narrower height for mobile */
+        font-size: 7px !important;
+        padding: 1px 3px !important;
+        border-radius: 7px !important;
+    }
+
+    /* Adjust Grid Lines to match mobile 12px/24px gaps */
+    .workshop-item::after {
+        right: -6px !important;
+        top: -12px !important;
+        bottom: -12px !important;
+    }
+
+    .workshop-item::before {
+        bottom: -12px !important;
+        left: -3px !important;
+        /* Slightly shortened on the left */
+        right: -6px !important;
+    }
+
+    .intersection-diamond {
+        right: -6px !important;
+        bottom: -12px !important;
+        width: 8px !important;
+        height: 8px !important;
+    }
+
+    .about-text-wrapper h2 {
+        font-size: 1.8rem;
+    }
+
+    .about-text-wrapper p {
+        font-size: 1rem;
+    }
+}

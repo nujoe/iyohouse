@@ -1,0 +1,193 @@
+.left-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width, var(--panel-width));
+    height: 100%;
+    background: var(--intersect);
+
+    z-index: 12005;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    transition: width 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.18s ease;
+    cursor: pointer;
+    overflow: hidden;
+
+    box-sizing: border-box;
+    border-right: 1px solid #000;
+    margin-right: calc(var(--line-thickness) * -1);
+}
+
+.left-panel.contact-mode {
+    padding: 0;
+}
+
+.left-panel.contact-mode .panel-icon {
+    display: none;
+}
+
+
+.left-panel::before {
+    top: 0;
+}
+
+.left-panel::after {
+    bottom: 0;
+}
+
+.left-panel.expanded {
+    width: 60%;
+}
+
+.panel-icon {
+    width: 50px;
+    height: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 0 auto 30px auto;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-icon:hover {
+    transform: scale(1.05);
+}
+
+.panel-icon span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    border-radius: 5px;
+    background-color: #000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: right;
+}
+
+.panel-icon:hover span:nth-child(1) {
+    width: 70%;
+}
+
+.panel-icon:hover span:nth-child(2) {
+    width: 100%;
+}
+
+.panel-icon:hover span:nth-child(3) {
+    width: 40%;
+}
+
+
+.sidebar-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--line);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.sidebar-close-btn:hover {
+    transform: rotate(90deg);
+    opacity: 0.7;
+}
+
+.left-panel .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    align-items: flex-start;
+    font-family: 'courier', serif;
+}
+
+.sidebar-nav-top {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: fit-content;
+    margin-top: -40px;
+
+    opacity: 0;
+    transition: opacity var(--transition);
+    line-height: 0.9;
+}
+
+.left-panel.expanded .sidebar-nav-top {
+    opacity: 1;
+}
+
+.sidebar-nav-bottom {
+    margin-top: auto;
+    display: flex;
+    gap: 20px;
+    flex-direction: column;
+    transition: none !important;
+}
+
+.left-panel.expanded .sidebar-nav {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.left-panel .sidebar-nav button {
+    width: auto;
+    height: auto;
+    border: none;
+    background: transparent;
+    font-family: 'courier', serif;
+    padding: 0;
+    margin: 0;
+    font-size: 3.3rem;
+    font-weight: 900;
+
+    /* 높이를 더 낮추기 위해 타이트하게 조정 */
+    color: var(--line);
+    text-align: left;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+
+
+
+.left-panel .user-login-btn,
+.left-panel .user-signup-btn {
+    width: auto;
+    height: auto;
+    border: none;
+    background: transparent;
+    padding: 6px 0;
+    margin: 0;
+    line-height: 1.1;
+    font-weight: 900;
+    line-height: 1.2;
+    color: var(--line);
+    text-align: left;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+
+.left-panel .user-login-btn:hover,
+.left-panel .user-signup-btn:hover {
+    color: var(--intersect) !important;
+}
+
+
+

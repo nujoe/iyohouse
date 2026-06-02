@@ -1,0 +1,378 @@
+/* ─── Stage / Grid frame ────────────── */
+.stage {
+    position: relative;
+    /* 사이드바 테두리와 격자선을 완벽히 겹치게 하기 위해 1px 왼쪽으로 이동 */
+    margin-left: calc(var(--panel-width) - 1px);
+    width: calc(100% - var(--panel-width) + 1px);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.grid-frame {
+    position: absolute;
+    inset: 0;
+}
+
+/* ─── 공통 더블라인 ──────────────────── */
+.h-line,
+.v-line {
+    position: absolute;
+    z-index: 4500;
+    pointer-events: none;
+}
+
+.h-line::before,
+.h-line::after,
+.v-line::before,
+.v-line::after {
+    content: "";
+    position: absolute;
+    background: var(--line);
+}
+
+/* 가로 더블라인 */
+.h-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--line-gap);
+    transition: top var(--transition);
+    background: var(--bg);
+    z-index: 11000;
+    pointer-events: none;
+}
+
+.h-line::before,
+.h-line::after {
+    width: 100%;
+    height: var(--line-thickness);
+    left: 0;
+}
+
+.h-line::before {
+    top: 0;
+}
+
+.h-line::after {
+    bottom: 0;
+}
+
+/* 세로 더블라인 */
+.v-line {
+    top: var(--top-row-1);
+    width: var(--line-gap);
+    height: calc(100% - var(--top-row-1));
+    transition: left var(--transition), opacity var(--transition), top var(--transition), height var(--transition);
+    z-index: 11000;
+    pointer-events: none;
+}
+
+.v-line-center {
+    /* 메인과 멤버 프리셋에서는 전체 높이 유지 */
+    height: calc(100% - var(--top-row-1));
+}
+
+.preset-workshop .v-line-center,
+.preset-club .v-line-center,
+.preset-diary .v-line-center,
+.preset-contact .v-line-center {
+    /* 그 외 프리셋에서는 헤더 밴드만큼 수축 */
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+}
+
+/* 메인 페이지에서도 세로선 표시 */
+.preset-main .v-line {
+    opacity: 1;
+}
+
+.v-line::before,
+.v-line::after {
+    width: var(--line-thickness);
+    height: 100%;
+    top: 0;
+}
+
+.v-line::before {
+    left: 0;
+}
+
+.v-line::after {
+    right: 0;
+}
+
+/* ─── 외곽선 ─────────────────────────── */
+.grid-frame::after {
+    content: "";
+    position: absolute;
+    background: var(--line);
+    pointer-events: none;
+    inset: 0 0 auto 0;
+    height: var(--line-thickness);
+}
+
+/* ─── 가로선 위치 ─────────────────────── */
+.grid-row-1 {
+    top: var(--top-row-1);
+}
+
+.grid-row-2 {
+    top: var(--top-row-2);
+    transition: top var(--transition);
+}
+
+/* ─── 컨텐츠 영역 세로선 ─────────────── */
+/* height transition 추가 → top-row-2 변화 시 끊김 없이 이어짐 */
+.top-v-1,
+.top-v-2,
+.top-v-3 {
+    position: absolute;
+    width: var(--line-gap);
+    top: var(--top-row-1);
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+    transition: left var(--transition), height var(--transition);
+    z-index: 11001;
+    pointer-events: none;
+    background: transparent;
+}
+
+/* 교차점 마커 (상/하) */
+.top-v-1::before,
+.top-v-1::after,
+.top-v-2::before,
+.top-v-2::after,
+.top-v-3::before,
+.top-v-3::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--line-gap);
+    background: var(--intersect);
+    border: var(--line-thickness) solid var(--line);
+    box-sizing: border-box;
+}
+
+.top-v-1::before,
+.top-v-2::before,
+.top-v-3::before {
+    top: 0;
+}
+
+.top-v-1::after,
+.top-v-2::after,
+.top-v-3::after {
+    bottom: 0;
+}
+
+.top-v-1 {
+    left: var(--line-x-1);
+}
+
+.top-v-2 {
+    left: var(--line-x-2);
+}
+
+.top-v-3 {
+    left: var(--line-x-3);
+}
+
+.top-v-center {
+    position: absolute;
+    width: var(--line-gap);
+    left: var(--line-x-center);
+    top: var(--top-row-1);
+    height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
+    /* 가로선 grid-row-2 위치까지 확장하여 교차점 마커 표시 */
+    transition: all var(--transition);
+    z-index: 11001;
+    pointer-events: none;
+    opacity: 1;
+}
+
+.top-v-center::before,
+.top-v-center::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--line-gap);
+    background: var(--intersect);
+    border: var(--line-thickness) solid var(--line);
+    box-sizing: border-box;
+}
+
+.top-v-center::before {
+    top: 0;
+}
+
+.top-v-center::after {
+    bottom: 0;
+}
+
+.v-line-center {
+    opacity: 1;
+    /* Always visible and part of interaction */
+}
+
+/* ─── 콘텐츠 셀 ──────────────────────── */
+.cell {
+    position: absolute;
+    overflow: hidden;
+    transition: all var(--transition);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cell-main {
+    top: var(--top-row-1);
+}
+
+.preset-main .cell-main {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.cell-member {
+    position: absolute;
+    top: var(--top-row-2);
+    left: 0;
+    width: 100%;
+    height: calc(100% - var(--top-row-2));
+    background: var(--bg);
+    transition: all var(--transition);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.cell-member.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 20;
+}
+
+.cell-member .cell-content {
+    display: block;
+    /* Flex center 방해 제거 */
+}
+
+
+
+
+.cell.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+/* ─── 프리뷰 가림막 (Cover) 및 내부 ──────────────────────── */
+
+.cell-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scroll-container {
+    display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+
+.cell-workshop {
+    position: absolute;
+    top: calc(var(--top-row-1) + var(--line-gap));
+    bottom: 0;
+    /* line1 ~ line3 사이를 워크숍 구역으로 지정 */
+    left: var(--line-x-1);
+    width: calc(var(--line-x-3) - var(--line-x-1));
+    color: #2563eb;
+    background: transparent;
+    transition: all var(--transition), opacity var(--transition);
+}
+
+.cell-workshop.active {
+    /* 기본값인 line1~line3를 그대로 유지하며 우선순위만 높임 */
+    z-index: 10;
+}
+
+.contact-open .cell-workshop.active {
+    left: 0;
+    right: 0;
+    width: auto;
+    height: auto;
+    bottom: 0;
+}
+
+.cell-contact {
+    top: var(--top-row-1);
+    height: calc(var(--top-row-2) - var(--top-row-1));
+    left: var(--line-x-1);
+    width: calc(var(--line-x-3) - var(--line-x-1));
+    color: #dc2626;
+    background: transparent;
+}
+
+
+
+.cell-diary {
+    position: absolute;
+    top: calc(var(--top-row-1) + var(--line-gap));
+    bottom: 0;
+    /* line3 ~ 화면 우측 끝을 캘린더 구역으로 지정 */
+    left: var(--line-x-3);
+    right: 0;
+    color: #9333ea;
+    background: transparent;
+    transition: all var(--transition), opacity var(--transition);
+}
+
+.cell-diary.active {
+    z-index: 10;
+}
+
+.contact-open .cell-diary.active {
+    left: 0;
+    bottom: 0;
+}
+
+
+.cell-main {
+    position: absolute;
+    top: var(--top-row-1);
+    height: calc(var(--top-row-2) - var(--top-row-1));
+    left: 0;
+    right: 0;
+    color: #000000;
+    font-weight: 400;
+    font-size: 2.25rem;
+    transition: all var(--transition);
+}
+
+.cell-main.active {
+    z-index: 10;
+}
+
+/* 블렌드 모드(difference)가 동작하려면 고립된 스태킹 컨텍스트(.cell) 내에 확실한 배경색이 필요합니다. 
+   우측의 수직 그리드 선을 가리지 않도록 right: 25px 제약을 두고 흰색 배경을 깔아줍니다. */
+.cell-main::before {
+    content: '';
+    position: absolute;
+    inset: 0 25px 0 0;
+    /* top right bottom left */
+    background: var(--bg);
+    z-index: -1;
+}
+
+
+
+
+
