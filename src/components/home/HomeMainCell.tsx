@@ -1,5 +1,6 @@
 "use client";
 
+import HomeInfoButton from "@/components/home/HomeInfoButton";
 import MemberVisualStack from "@/components/MemberVisualStack";
 import type { Translation } from "@/lib/i18n";
 
@@ -17,18 +18,9 @@ export default function HomeMainCell({ activePreset, t }: HomeMainCellProps) {
                     <div className="main-intro-text">
                         {t.mainIntro}
                     </div>
-                    <div className="info-bottom-text-wrapper">
-                        <div className="info-bottom-text">info</div>
-                        <div className="business-info-overlay">
-                            <strong>{t.footer.company}</strong><br />
-                            {t.footer.address}<br />
-                            {t.footer.businessLicense}<br />
-                            {t.footer.mallOrderLicense}<br />
-                            {t.footer.email}<br />
-                            WEBSITE :  <a href="https://www.instagram.com/djwns1234/" target="_blank" rel="noopener noreferrer">@djwns1234</a>
-                        </div>
-                    </div>
+                    <HomeInfoButton className="main-inline-info" t={t} />
                 </div>
+                <div className="mobile-main-divider"></div>
                 <div className="main-visual-column">
                     <MemberVisualStack />
                 </div>
