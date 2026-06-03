@@ -76,11 +76,13 @@ export default function HomeHeader({
                 </button>
 
                 <button
-                    className="header-auth-btn"
+                    className={`header-auth-btn ${user ? 'logged-in' : ''}`}
                     onClick={user ? (isProfileComplete ? onOpenAccountModal : onGoToCompleteProfile) : onOpenLogin}
                     title={user ? "Edit Profile / Account" : "Log In"}
                 >
-                    {user ? displayGreeting : t.auth.login}
+                    <span className="auth-btn-text">
+                        {user ? displayGreeting : t.auth.login}
+                    </span>
                 </button>
             </div>
         </header>

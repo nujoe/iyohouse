@@ -1,6 +1,7 @@
 /* Mobile-only scroll and divider policy.
    Desktop grid transitions stay in the earlier files; this file only wins on mobile. */
 @media (max-width: 768px) {
+
     .v-line-center,
     .top-v-center {
         opacity: 0 !important;
@@ -16,16 +17,31 @@
         height: 0 !important;
     }
 
-    .cell-main,
-    .cell-member,
-    .cell-workshop,
-    .cell-diary {
+    .cell-main {
         top: var(--top-row-1) !important;
         left: 0 !important;
         right: 0 !important;
         bottom: auto !important;
         width: auto !important;
         height: calc(100dvh - var(--top-row-1)) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: auto !important;
+        overscroll-behavior: none !important;
+        overscroll-behavior-x: none !important;
+        overscroll-behavior-y: none !important;
+        touch-action: pan-y;
+    }
+
+    .cell-member,
+    .cell-workshop,
+    .cell-diary {
+        top: var(--top-row-2) !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: calc(100dvh - var(--top-row-2)) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: auto !important;
@@ -44,12 +60,9 @@
         overscroll-behavior-y: none !important;
     }
 
-    .preset-member .grid-row-2,
-    .preset-workshop .grid-row-2,
-    .preset-diary .grid-row-2 {
-        opacity: 0 !important;
-        transition: none !important;
-    }
+
+
+
 
     .preset-diary .cell-diary {
         left: calc((var(--line-gap) * 2) + var(--line-thickness)) !important;
@@ -132,7 +145,7 @@
 
     .workshop-grid {
         min-height: 100%;
-        padding-top: 12px !important;
+        padding-top: 20px !important;
         box-sizing: border-box;
     }
 
@@ -150,9 +163,9 @@
     .calendar-header {
         grid-template-columns: 1fr !important;
         grid-template-rows: auto auto !important;
-        row-gap: 14px !important;
+        row-gap: 8px !important;
         margin-top: 12px !important;
-        margin-bottom: 28px !important;
+        margin-bottom: 16px !important;
     }
 
     .month-title {
@@ -165,11 +178,19 @@
     .calendar-nav {
         grid-column: 1 !important;
         grid-row: 2 !important;
-        justify-self: end !important;
-        justify-content: flex-end !important;
+        justify-self: center !important;
+        justify-content: center !important;
         align-items: center !important;
-        gap: 18px !important;
-        margin-top: 0 !important;
+        gap: 4px !important;
+        margin-top: 5px !important;
+        margin-bottom: 0;
+    }
+
+    .calendar-nav .nav-btn {
+        font-size: 12px !important;
+        /* 모바일 전용 크기 조정 */
+        padding: 2px 4px !important;
+        /* 모바일 전용 버튼 내부 패딩 */
     }
 
     .calendar-grid-header,
@@ -225,6 +246,23 @@
         box-sizing: border-box !important;
     }
 
+    .calendar-popover-card {
+        --mobile-calendar-popover-left: calc(var(--panel-width, 14vw) + (var(--line-gap, 8px) * 2) + var(--line-thickness, 1px) - 1px);
+
+        top: auto !important;
+        left: var(--mobile-calendar-popover-left) !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(58dvh, 420px) !important;
+        overflow-y: auto !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-radius: 16px 0 0 0 !important;
+        box-sizing: border-box !important;
+    }
+
     .mobile-main-divider {
         display: block !important;
         flex: none !important;
@@ -255,13 +293,22 @@
         left: auto !important;
         bottom: calc(100% + 8px) !important;
         width: calc(100vw - 50px) !important;
-        max-width: 320px !important;
-        padding: 24px !important;
+        max-width: 270px !important;
+        padding: 16px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
     }
 }
 
 @media (min-width: 769px) {
     .mobile-fixed-info {
         display: none !important;
+    }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+    .preset-member .cell-member.active {
+        animation: none !important;
+        transform: none !important;
     }
 }

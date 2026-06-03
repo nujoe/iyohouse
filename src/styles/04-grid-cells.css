@@ -100,15 +100,7 @@
     right: 0;
 }
 
-/* ─── 외곽선 ─────────────────────────── */
-.grid-frame::after {
-    content: "";
-    position: absolute;
-    background: var(--line);
-    pointer-events: none;
-    inset: 0 0 auto 0;
-    height: var(--line-thickness);
-}
+
 
 /* ─── 가로선 위치 ─────────────────────── */
 .grid-row-1 {

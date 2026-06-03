@@ -94,7 +94,8 @@
 
 .header-auth-btn {
     height: 100%;
-    background: var(--intersect);
+    /* background: var(--intersect); */
+    background-color: transparent;
     border: none;
     cursor: pointer;
     display: flex;
@@ -103,7 +104,7 @@
     transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
     border-left: 1px solid var(--line);
-    padding: 0 24px;
+    padding: 0 20px;
     font-family: inherit;
     font-size: 1.4rem;
     font-weight: 700;
@@ -112,7 +113,7 @@
 }
 
 .header-auth-btn:hover {
-    background: #000;
+    /* background: #000; */
     color: var(--intersect);
 }
 

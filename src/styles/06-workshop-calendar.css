@@ -617,3 +617,78 @@
     min-height: 50px;
     color: var(--line);
 }
+
+/* ─── 캘린더 일정 상세 정보 팝오버 (Popover) ─── */
+.calendar-popover-overlay {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 12500;
+    cursor: default;
+}
+
+.calendar-popover-card {
+    background: #fff;
+    border: 1px solid #000;
+    box-shadow: none;
+    border-radius: 16px;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    animation: popoverFadeIn 0.15s ease-out;
+    overflow: hidden;
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.calendar-popover-card .popover-header {
+    background: hsl(0, 0%, 88%);
+    padding: 8px 12px;
+    border-bottom: 1px solid #000;
+    display: flex;
+    align-items: center;
+}
+
+.calendar-popover-card .popover-title {
+    font-weight: 900;
+    font-size: 13px;
+    color: #000;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+
+.calendar-popover-card .popover-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calendar-popover-card .popover-meta {
+    font-size: 11px;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-weight: bold;
+}
+
+.calendar-popover-card .popover-desc {
+    font-size: 11px;
+    line-height: 1.4;
+    margin: 0;
+    white-space: pre-wrap;
+    color: #333;
+    border-top: 1px dashed #ccc;
+    padding-top: 8px;
+}
