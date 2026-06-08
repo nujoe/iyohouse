@@ -24,6 +24,9 @@ const notoSans = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: "IYOHOUSE",
   description: "IYOHOUSE WORKSHOP",
+  icons: {
+    icon: "/favicon.webp",
+  },
 };
 
 export default function RootLayout({
