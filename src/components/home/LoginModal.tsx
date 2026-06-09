@@ -18,7 +18,6 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
         isProfileComplete,
         signOut,
         signInWithGoogle,
-        signInWithKakao,
         signInWithEmail,
         signUpWithEmail
     } = useAuth();
@@ -150,10 +149,6 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                             </div>
 
                             <div className="social-login-group">
-                                <button className="social-btn kakao" onClick={signInWithKakao}>
-                                    <span className="btn-icon">K</span>
-                                    <span className="btn-text">{t.auth.kakao}</span>
-                                </button>
                                 <button className="social-btn google" onClick={signInWithGoogle}>
                                     <span className="btn-icon">G</span>
                                     <span className="btn-text">{t.auth.google}</span>
