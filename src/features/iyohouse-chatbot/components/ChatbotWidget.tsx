@@ -42,11 +42,22 @@ const initialAssistantMessage: ChatMessage = {
   text: "안녕하세요. 이요하우스 위키에서 공개된 문서를 찾아 답할게요.",
 };
 
-function getNextIdlePosition(bounds: ChatbotBounds): ChatbotPosition {
+const maxStepSize = 80;
+
+function getNextIdlePosition(bounds: ChatbotBounds, currentX: number | null): ChatbotPosition {
   const range = Math.max(0, bounds.maxX - bounds.minX);
+  const fallbackX = Math.round(bounds.minX + range / 2);
+  const baseX = currentX === null ? fallbackX : currentX;
+  
+  // -maxStepSize ~ +maxStepSize 범위에서 랜덤 스텝 생성
+  const step = Math.round((Math.random() * 2 - 1) * maxStepSize);
+  let nextX = baseX + step;
+  
+  // 바운더리 클램핑
+  nextX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
 
   return {
-    x: Math.round(bounds.minX + Math.random() * range),
+    x: nextX,
     y: 0,
   };
 }
@@ -140,7 +151,10 @@ export default function ChatbotWidget() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const timer = window.setInterval(() => {
-      setPosition(getNextIdlePosition(getChatbotBounds(chatbotRef.current)));
+      setPosition((current) => {
+        const bounds = getChatbotBounds(chatbotRef.current);
+        return getNextIdlePosition(bounds, current.x);
+      });
     }, idleMovementIntervalMs);
 
     return () => window.clearInterval(timer);
@@ -227,10 +241,12 @@ export default function ChatbotWidget() {
         aria-expanded={isOpen}
         onClick={() => setIsOpen((value) => !value)}
       >
-        <span className="iyo-chatbot-face">(=ˆ ･ ˆ=)</span>
-        <span className="iyo-chatbot-tail" aria-hidden="true">
-          ⌒
-        </span>
+        <div className="iyo-chatbot-inner-avatar">
+          <span className="iyo-chatbot-face">(=ˆ ･ ˆ=)</span>
+          <span className="iyo-chatbot-tail" aria-hidden="true">
+            ⌒
+          </span>
+        </div>
       </button>
 
       {isOpen && (

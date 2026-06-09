@@ -11,6 +11,8 @@ interface LoginModalProps {
     initialMode?: "login" | "signup";
 }
 
+type SocialProvider = "google";
+
 export default function LoginModal({ isOpen, onClose, initialMode = "login" }: LoginModalProps) {
     const {
         user,
@@ -29,7 +31,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     const [isSignUpMode, setIsSignUpMode] = useState(initialMode === "signup");
     const [loginError, setLoginError] = useState<string | null>(null);
     const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
-    const [isGoogleLoginSubmitting, setIsGoogleLoginSubmitting] = useState(false);
+    const [socialLoginProvider, setSocialLoginProvider] = useState<SocialProvider | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -39,19 +41,19 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
             setLoginPassword("");
             setLoginError(null);
             setIsLoginSubmitting(false);
-            setIsGoogleLoginSubmitting(false);
+            setSocialLoginProvider(null);
         }
     }, [isOpen, initialMode]);
 
-    const handleGoogleLogin = useCallback(async () => {
+    const handleSocialLogin = useCallback(async (provider: SocialProvider) => {
         setLoginError(null);
-        setIsGoogleLoginSubmitting(true);
+        setSocialLoginProvider(provider);
 
         const { error } = await signInWithGoogle();
 
         if (error) {
             setLoginError(error.message || t.auth.genericError);
-            setIsGoogleLoginSubmitting(false);
+            setSocialLoginProvider(null);
         }
     }, [signInWithGoogle, t.auth.genericError]);
 
@@ -166,11 +168,11 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                                 <button
                                     type="button"
                                     className="social-btn google"
-                                    onClick={handleGoogleLogin}
-                                    disabled={isGoogleLoginSubmitting}
+                                    onClick={() => handleSocialLogin("google")}
+                                    disabled={Boolean(socialLoginProvider)}
                                 >
                                     <span className="btn-icon">G</span>
-                                    <span className="btn-text">{isGoogleLoginSubmitting ? t.auth.submitting : t.auth.google}</span>
+                                    <span className="btn-text">{socialLoginProvider === "google" ? t.auth.submitting : t.auth.google}</span>
                                 </button>
                             </div>
 

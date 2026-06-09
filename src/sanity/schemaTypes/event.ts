@@ -26,6 +26,14 @@ export const eventType = defineType({
       description: '예: 1p - 5p',
     }),
     defineField({
+      name: 'author',
+      title: '작성자',
+      type: 'string',
+      options: {
+        list: ['현', '가은', '가현', '연서', '준'],
+      },
+    }),
+    defineField({
       name: 'description',
       title: '설명',
       type: 'text',

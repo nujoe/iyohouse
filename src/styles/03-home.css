@@ -39,7 +39,7 @@
     position: relative;
     margin: 0;
     padding: 30px 10px 0px 10px;
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 800;
     color: #000;
     letter-spacing: -0.03em;
@@ -504,7 +504,7 @@
     left: auto !important;
     align-self: flex-start !important;
     flex-shrink: 0;
-    transition: none !important;
+    transition: height var(--transition), opacity var(--transition);
     width: var(--line-gap);
     height: calc(var(--top-row-1) + var(--line-gap));
     z-index: 12100;
@@ -526,4 +526,5 @@
     border: var(--line-thickness) solid var(--line);
     box-sizing: border-box;
     pointer-events: none;
+    transition: top var(--transition), opacity var(--transition);
 }

@@ -7,6 +7,15 @@
     --intro-bg: #FF3B30;
     /* Premium Red for Intro area */
 
+    /* Curated tag color variables */
+    --tag-yellow: var(--intersect);
+    --tag-green: var(--accent);
+    --tag-red: var(--intro-bg);
+    --tag-blue: #3b82f6;
+    --tag-orange: #f97316;
+    --tag-purple: #8b5cf6;
+    --tag-pink: #ec4899;
+
     --line-thickness: 1px;
     --line-gap: 11px;
     /* 노트북 이상 기기에서 11px로 확장 */

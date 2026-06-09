@@ -15,8 +15,8 @@
   font-family: var(--font-noto-sans), system-ui, sans-serif;
   pointer-events: none;
   transition:
-    left 1800ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    bottom 1800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    left 2400ms cubic-bezier(0.42, 0, 0.58, 1),
+    bottom 2400ms cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 .iyo-chatbot button,
@@ -33,16 +33,21 @@
 }
 
 .iyo-chatbot-avatar {
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 2px;
   border: 0;
   background: transparent;
   color: var(--iyo-chatbot-ink);
   cursor: pointer;
   transform: translate3d(0, 0, 0);
   transition: transform 160ms ease;
+  padding: 0;
+  outline: none;
+}
+
+.iyo-chatbot-inner-avatar {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 2px;
 }
 
 .iyo-chatbot-avatar:hover,

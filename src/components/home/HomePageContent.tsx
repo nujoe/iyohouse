@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useWorkshopData } from "@/hooks/useWorkshopData";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
@@ -43,6 +43,7 @@ export default function HomePageContent() {
     const { isBooting, isMounted } = useHomeBootState();
     const { currentMonth, setCurrentMonth } = useHomeCalendarMonth();
     const { dynamicColor, handleThemeChange } = useHomeTheme();
+    const [isHeaderHovered, setIsHeaderHovered] = useState(false);
     const {
         closeLoginModal,
         closeMenu,
@@ -87,8 +88,13 @@ export default function HomePageContent() {
     });
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''}`}>
+        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''} ${isHeaderHovered ? 'header-hovered' : ''}`}>
             <style>{rootGridStyle}</style>
+
+            <div 
+                className="header-trigger" 
+                onMouseEnter={() => setIsHeaderHovered(true)} 
+            />
 
             <HomeSidebar
                 activePreset={activePreset}
@@ -121,6 +127,8 @@ export default function HomePageContent() {
                 onOpenLogin={openLogin}
                 onOpenAccountModal={openAccountModal}
                 onGoToCompleteProfile={goToCompleteProfile}
+                onMouseEnter={() => setIsHeaderHovered(true)}
+                onMouseLeave={() => setIsHeaderHovered(false)}
             />
 
             {/* Info overlay removed in favor of expandable header-right */}

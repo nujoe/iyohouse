@@ -215,7 +215,7 @@
         font-size: 7px !important;
         padding: 1px 3px !important;
         margin-top: 0 !important;
-        border-radius: 2px !important;
+        border-radius: 10px !important;
     }
 
     .tag-closed {
@@ -268,7 +268,7 @@
         border-right: none !important;
         border-bottom: none !important;
         border-top: 1px solid #000 !important;
-        border-radius: 16px 0 0 0 !important;
+        border-radius: 10px 0 0 0 !important;
         box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.1) !important;
         animation: slideUpBottom 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         z-index: 12501 !important;

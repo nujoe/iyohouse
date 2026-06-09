@@ -127,12 +127,9 @@ export const workshopType = defineType({
       of: [{ type: 'string' }],
       options: {
         list: [
-          { title: 'AI', value: 'AI' },
           { title: 'WORKSHOP', value: 'WORKSHOP' },
-          { title: 'GRAPHIC', value: 'GRAPHIC' },
-          { title: 'VFX', value: 'VFX' },
-          { title: 'PHOTO', value: 'PHOTO' },
-          { title: 'VIDEO', value: 'VIDEO' },
+          { title: 'TALK', value: 'TALK' },
+          { title: 'IYOCA', value: 'IYOCA' },
         ],
       },
     }),

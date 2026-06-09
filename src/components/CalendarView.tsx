@@ -9,6 +9,23 @@ interface CalendarViewProps {
     calendarEvents: any[];
 }
 
+const getAuthorColor = (author?: string) => {
+    switch (author) {
+        case "준":
+            return "var(--tag-red)";
+        case "현":
+            return "var(--tag-green)";
+        case "가은":
+            return "var(--tag-blue)";
+        case "가현":
+            return "var(--tag-purple)";
+        case "연서":
+            return "var(--tag-yellow)";
+        default:
+            return "transparent";
+    }
+};
+
 function PopoverCard({ activeEvent, onClose }: { activeEvent: { event: any; rect: DOMRect }; onClose: () => void }) {
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const cardRef = useRef<HTMLDivElement>(null);
@@ -43,7 +60,7 @@ function PopoverCard({ activeEvent, onClose }: { activeEvent: { event: any; rect
         setCoords({ top, left });
     }, [activeEvent]);
 
-    const { title, date, time, description } = activeEvent.event;
+    const { title, date, time, description, author } = activeEvent.event;
 
     return (
         <div
@@ -59,12 +76,19 @@ function PopoverCard({ activeEvent, onClose }: { activeEvent: { event: any; rect
             }}
         >
             <div className="popover-header">
+                {author && (
+                    <span 
+                        className="event-author-dot" 
+                        style={{ backgroundColor: getAuthorColor(author), marginRight: '6px', flexShrink: 0 }}
+                    />
+                )}
                 <span className="popover-title">{title}</span>
             </div>
             <div className="popover-body">
                 <div className="popover-meta">
                     <span className="popover-date">{date}</span>
                     {time && <span className="popover-time">{time}</span>}
+                    {author && <span className="popover-author">작성자: {author}</span>}
                 </div>
                 {description && (
                     <p className="popover-desc">{description}</p>
@@ -141,8 +165,8 @@ function CalendarView({
                 </div>
                 <div className="calendar-nav">
                     <button className="nav-btn today" onClick={() => onMonthChange(new Date())}>today</button>
-                    <button className="nav-btn prev" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>prev</button>
-                    <button className="nav-btn next" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>next</button>
+                    <button className="nav-btn prev" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lt;</button>
+                    <button className="nav-btn next" onClick={() => onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&gt;</button>
                 </div>
             </header>
 
@@ -173,7 +197,13 @@ function CalendarView({
                                 style={{ "--idx": idx } as any}
                                 onClick={(e) => handleEventClick(e, evt)}
                             >
-                                {evt.title} {evt.time}
+                                {evt.author && (
+                                    <span
+                                        className="event-author-dot"
+                                        style={{ backgroundColor: getAuthorColor(evt.author) }}
+                                    />
+                                )}
+                                <span className="event-title-text">{evt.title}</span>
                             </div>
                         ))}
                     </div>

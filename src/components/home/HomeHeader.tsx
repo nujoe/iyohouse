@@ -16,6 +16,8 @@ interface HomeHeaderProps {
     onOpenLogin: () => void;
     onOpenAccountModal: () => void;
     onGoToCompleteProfile: () => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
 }
 
 export default function HomeHeader({
@@ -31,6 +33,8 @@ export default function HomeHeader({
     onOpenLogin,
     onOpenAccountModal,
     onGoToCompleteProfile,
+    onMouseEnter,
+    onMouseLeave,
 }: HomeHeaderProps) {
     const nickname = profile?.full_name || user?.email?.split('@')[0] || user?.phone || "";
     const displayGreeting = language === "en"
@@ -38,7 +42,7 @@ export default function HomeHeader({
         : `안녕하세요 ${nickname} 님`;
 
     return (
-        <header className="header">
+        <header className="header" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
             <div className="header-left" ref={logoRef} onClick={() => onPresetChange('main')} style={{ cursor: 'pointer' }}>
                 <div className="logo-main-text">iYOHOUSE</div>
             </div>

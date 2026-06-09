@@ -121,7 +121,7 @@
     width: var(--line-gap);
     top: var(--top-row-1);
     height: calc(var(--top-row-2) - var(--top-row-1) + var(--line-gap));
-    transition: left var(--transition), height var(--transition);
+    transition: left var(--transition), top var(--transition), height var(--transition);
     z-index: 11001;
     pointer-events: none;
     background: transparent;
@@ -283,9 +283,9 @@
     position: absolute;
     top: calc(var(--top-row-1) + var(--line-gap));
     bottom: 0;
-    /* line1 ~ line3 사이를 워크숍 구역으로 지정 */
-    left: var(--line-x-1);
-    width: calc(var(--line-x-3) - var(--line-x-1));
+    /* line1 ~ line3 사이의 순수 영역(더블라인 폭 제외)을 워크숍 구역으로 지정 */
+    left: calc(var(--line-x-1) + var(--line-gap));
+    width: calc(var(--line-x-3) - var(--line-x-1) - var(--line-gap));
     color: #2563eb;
     background: transparent;
     transition: all var(--transition), opacity var(--transition);
@@ -319,8 +319,8 @@
     position: absolute;
     top: calc(var(--top-row-1) + var(--line-gap));
     bottom: 0;
-    /* line3 ~ 화면 우측 끝을 캘린더 구역으로 지정 */
-    left: var(--line-x-3);
+    /* line3 ~ 화면 우측 끝 사이의 순수 영역(더블라인 폭 제외)을 캘린더 구역으로 지정 */
+    left: calc(var(--line-x-3) + var(--line-gap));
     right: 0;
     color: #9333ea;
     background: transparent;
@@ -353,7 +353,7 @@
     z-index: 10;
 }
 
-/* 블렌드 모드(difference)가 동작하려면 고립된 스태킹 컨텍스트(.cell) 내에 확실한 배경색이 필요합니다.
+/* 블렌드 모드(difference)가 동작하려면 고립된 스태킹 컨텍스트(.cell) 내에 확실한 배경색이 필요합니다. 
    우측의 수직 그리드 선을 가리지 않도록 right: 25px 제약을 두고 흰색 배경을 깔아줍니다. */
 .cell-main::before {
     content: '';
@@ -363,3 +363,8 @@
     background: var(--bg);
     z-index: -1;
 }
+
+
+
+
+

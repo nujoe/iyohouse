@@ -34,12 +34,12 @@
     align-items: start;
     width: 100%;
 
-    /* 전체 그리드의 상단과 좌측을 막아주는 선 추가 */
-    border-top: 1px solid #000;
-    border-left: 1px solid #000;
+    /* 더블라인이 이미 경계를 형성하므로 개별 테두리선 제거 */
+    border-top: none;
+    border-left: none;
 
-    /* 선이 그리드 밖으로 나가지 않도록 여백 조정 */
-    padding: 0 27px 0 30px;
+    /* 순수 영역 내에서 대칭 패딩 설정 (왼쪽 29px 패딩 시 로고 및 캘린더의 40px 라인과 일치) */
+    padding: 0 29px;
 }
 
 /* Calendar Section */
@@ -58,7 +58,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 30px 27px 30px 30px;
+    /* 왼쪽 시작 위치를 40px로 유지하기 위해 셀 오프셋(21px) 제외 보정 */
+    padding: 30px 27px 30px 19px;
     background: transparent;
     backdrop-filter: none;
 }
@@ -103,32 +104,39 @@
     grid-column: 3;
     justify-content: flex-end;
     align-items: center;
+    align-self: end;
+    margin-bottom: 2px;
 }
 
 .nav-btn {
     background: transparent;
     color: #000;
-    border: none;
-    height: auto;
-    padding: 0;
+    border: 1px solid #000;
     border-radius: 0;
-    font-size: 12px;
+    font-size: 11px;
     font-family: 'courier', serif;
     letter-spacing: 0.05em;
     font-weight: bold;
     cursor: pointer;
-    transition: opacity 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
     text-transform: lowercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
 }
 
 .nav-btn:hover {
-    background: transparent;
-    opacity: 0.6;
+    background: var(--intersect);
+    color: #000;
     transform: none;
 }
 
 .nav-btn.today {
-    background: transparent;
+    padding: 0 12px;
+    min-width: auto;
 }
 
 
@@ -238,22 +246,38 @@
 }
 
 .event-box {
-    background: hsl(0, 0%, calc(88% + (var(--idx, 0) * 3%)));
+
     color: #000;
     padding: 0 10px;
     height: 24px;
     font-size: 11px;
     display: flex;
     align-items: center;
+    gap: 6px;
     border-bottom: var(--line-thickness) solid #000;
     width: 100%;
     z-index: 5;
     position: relative;
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     text-align: left;
     margin: 0;
+    cursor: pointer;
+}
+
+.event-author-dot {
+    width: 8px;
+    height: 8px;
+    border: 0.5px solid #000;
+    border-radius: 0;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.event-title-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .event-box:first-of-type {
@@ -572,37 +596,37 @@ a.workshop-item {
 }
 
 .dot-yellow {
-    background: yellow;
+    background: var(--tag-yellow);
     color: black;
 }
 
 .dot-green {
-    background: #00ff00;
+    background: var(--tag-green);
     color: black;
 }
 
 .dot-blue {
-    background: #ffffff;
-    color: rgb(0, 0, 0);
+    background: var(--tag-blue);
+    color: white;
 }
 
 .dot-orange {
-    background: #f97316;
+    background: var(--tag-orange);
     color: white;
 }
 
 .dot-purple {
-    background: #a855f7;
+    background: var(--tag-purple);
     color: white;
 }
 
 .dot-pink {
-    background: #ec4899;
+    background: var(--tag-pink);
     color: white;
 }
 
 .dot-red {
-    background: #ef4444;
+    background: var(--tag-red);
     color: white;
 }
 
@@ -635,7 +659,7 @@ a.workshop-item {
     background: #fff;
     border: 1px solid #000;
     box-shadow: none;
-    border-radius: 16px;
+    border-radius: 10px;
     font-family: 'Courier New', Courier, monospace;
     display: flex;
     flex-direction: column;
@@ -649,6 +673,7 @@ a.workshop-item {
         opacity: 0;
         transform: scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -685,6 +710,12 @@ a.workshop-item {
     flex-direction: column;
     gap: 2px;
     font-weight: bold;
+}
+
+.calendar-popover-card .popover-author {
+    font-size: 10px;
+    color: #777;
+    margin-top: 2px;
 }
 
 .calendar-popover-card .popover-desc {

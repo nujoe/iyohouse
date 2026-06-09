@@ -15,9 +15,9 @@ export default function HomeMainCell({ activePreset, t }: HomeMainCellProps) {
             <div className="cell-cover"></div>
             <div className="cell-content main-content-layout">
                 <div className="main-text-column">
-                    <h1 className="main-intro-title">
+                    <div className="main-intro-title">
                         {t.mainIntroTitle}
-                    </h1>
+                    </div>
                     <div className="main-intro-text">
                         {t.mainIntro}
                     </div>

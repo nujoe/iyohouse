@@ -26,7 +26,7 @@ const ko: MemberProfile[] = [
     name: "연서",
     role: "Designer",
     description:
-      "Lorem ipsum dolor sit amet, Lorem ipsum, dolor sit amet, consectetur adipiscing elit. Quis quod optio tempora maiores molestias delectus eaque omnis modi numquam sit ullam unde, inventore in, praesentium corrupti ratione totam asperiores minus.consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
+      "가느다란 실이 손가락 사이를 자유롭게 오가듯, ‘이요’는 우연한 교차에 주목합니다. 팽팽히 당기고 느슨히 푸는 실뜨기처럼, 생각은 서로의 손길을 타며 끊임없이 변형됩니다. 요람 속의 실들은 무엇이 될지 모른 채 잠시 엉키고 때로는 끊어지기도 합니다. 하지만 우리는 어긋남조차 새로운 연결이 된다는 사실을 기꺼이 받아들입니다. 창작자를 위한 공공공원은 이요하우스로 이어집니다.",
     links: [
       { label: "링크 1", url: "#" },
       { label: "링크 2", url: "#" },
@@ -75,7 +75,7 @@ const en: MemberProfile[] = [
     name: "Yeonseo",
     role: "Designer",
     description:
-      "Lorem ipsum dolor sit amet, Lorem ipsum, dolor sit amet, consectetur adipiscing elit. Quis quod optio tempora maiores molestias delectus eaque omnis modi numquam sit ullam unde, inventore in, praesentium corrupti ratione totam asperiores minus.consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat.",
+      "Just as a thin thread moves freely between fingers, 'iyo' focuses on accidental crossings. Like cat's cradle, pulling tight and releasing loose, thoughts constantly transform through each other's touch. The threads in the cradle tangle for a moment and sometimes break, not knowing what they will become. But we willingly accept that even misalignment becomes a new connection. Public Park for Creators leads to IYOHOUSE.",
     links: [
       { label: "LINK 1", url: "#" },
       { label: "LINK 2", url: "#" },

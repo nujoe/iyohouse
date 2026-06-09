@@ -23,13 +23,13 @@ export function useGridLayout({
             "--line-x-1": currentPreset.line1,
             "--line-x-3": currentPreset.line3,
             "--line-x-4": lineX4,
-            "--top-row-1": logoHeight,
+            "--top-row-1-actual": logoHeight,
             "--top-row-2": currentPreset.top2,
             "--line-x-center": "calc(50% - var(--line-gap) / 2)",
             "--intersect": intersectColor,
         } as CSSProperties;
 
-        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc(50% - var(--line-gap) / 2); --top-row-1: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
+        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc(50% - var(--line-gap) / 2); --top-row-1-actual: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
 
         return {
             currentPreset,
