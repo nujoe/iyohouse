@@ -37,6 +37,7 @@
 .main-intro-title {
     display: block;
     position: relative;
+    margin: 0;
     padding: 30px 10px 0px 10px;
     font-size: 1.5rem;
     font-weight: 800;

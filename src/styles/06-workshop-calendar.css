@@ -294,6 +294,10 @@
     min-width: 0;
 }
 
+a.workshop-item {
+    text-decoration: none;
+}
+
 /* Vertical grid line */
 .workshop-item::after {
     content: "";

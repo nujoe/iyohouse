@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { Gowun_Batang, Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import {
+  SITE_DESCRIPTION,
+  SITE_EMAIL,
+  SITE_LOGO,
+  SITE_NAME,
+  SITE_OG_IMAGE,
+  SITE_URL,
+} from "@/lib/site";
 import "./globals.css";
 
 const gowunBatang = Gowun_Batang({
@@ -22,16 +30,59 @@ const notoSans = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "IYOHOUSE",
-  description: "이요하우스는 창작자를 위한 워크숍, 실험, 모임을 운영하는 서울 기반 크리에이티브 공간입니다.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "IYOHOUSE",
-    description: "이요하우스는 창작자를 위한 워크숍, 실험, 모임을 운영하는 서울 기반 크리에이티브 공간입니다.",
-    siteName: "IYOHOUSE",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+    type: "website",
+    images: [
+      {
+        url: SITE_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: SITE_OG_IMAGE,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
   icons: {
     icon: "/favicon.webp",
   },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}${SITE_LOGO}`,
+  description: SITE_DESCRIPTION,
+  email: SITE_EMAIL,
 };
 
 export default function RootLayout({
@@ -42,6 +93,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${gowunBatang.variable} ${notoSerif.variable} ${notoSans.variable}`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

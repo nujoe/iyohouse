@@ -43,6 +43,56 @@ export const workshopType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'seo',
+      title: 'SEO / 공유 설정',
+      type: 'object',
+      description: '검색 결과와 카카오톡/문자 공유 미리보기에서 우선 사용되는 값입니다. 비워두면 워크샵 기본 정보로 자동 생성됩니다.',
+      options: {
+        collapsible: true,
+        collapsed: false,
+      },
+      fields: [
+        defineField({
+          name: 'title',
+          title: '검색 제목',
+          type: 'string',
+          description: '예: AI.zip 그래픽 워크숍 | IYOHOUSE',
+          validation: (Rule) => Rule.max(70),
+        }),
+        defineField({
+          name: 'description',
+          title: '검색 소개문',
+          type: 'text',
+          rows: 3,
+          description: '구글 검색 결과와 공유 카드에 표시될 120~155자 소개문',
+          validation: (Rule) => Rule.max(155),
+        }),
+        defineField({
+          name: 'image',
+          title: '공유 이미지',
+          type: 'image',
+          description: '권장 비율 1200x630. 비워두면 포스터 이미지를 사용합니다.',
+          options: {
+            hotspot: true,
+          },
+        }),
+        defineField({
+          name: 'imageAlt',
+          title: '공유 이미지 대체 텍스트',
+          type: 'string',
+          description: '이미지를 볼 수 없는 환경과 접근성용 설명',
+          validation: (Rule) => Rule.max(120),
+        }),
+        defineField({
+          name: 'noindex',
+          title: '검색 노출 제외',
+          type: 'boolean',
+          initialValue: false,
+          description: '테스트/비공개 워크샵이면 켭니다.',
+        }),
+      ],
+    }),
+    defineField({
       name: 'supabase_workshop_id',
       title: 'DB 워크숍 UUID',
       type: 'string',
@@ -62,6 +112,13 @@ export const workshopType = defineType({
       options: {
         hotspot: true,
       },
+    }),
+    defineField({
+      name: 'posterAlt',
+      title: '포스터 대체 텍스트',
+      type: 'string',
+      description: '예: AI.zip 그래픽 워크숍 포스터',
+      validation: (Rule) => Rule.max(120),
     }),
     defineField({
       name: 'tags',

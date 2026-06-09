@@ -22,7 +22,7 @@ type AuthState = {
   isProfileComplete: boolean
 }
 
-type SocialProvider = 'google' | 'kakao'
+type SocialProvider = 'google'
 
 type SupabaseBrowserClient = ReturnType<typeof createSupabaseBrowserClient>
 
@@ -149,10 +149,6 @@ export function useAuth() {
     return signInWithSocialProvider('google')
   }, [signInWithSocialProvider])
 
-  const signInWithKakao = useCallback(async () => {
-    return signInWithSocialProvider('kakao')
-  }, [signInWithSocialProvider])
-
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) console.error('Email sign in error:', error)
@@ -189,7 +185,6 @@ export function useAuth() {
   return {
     ...authState,
     signInWithGoogle,
-    signInWithKakao,
     signInWithEmail,
     signUpWithEmail,
     signOut,
