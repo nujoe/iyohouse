@@ -2,10 +2,22 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 function getSafeNextPath(requestedNext: string | null) {
-  if (!requestedNext?.startsWith('/') || requestedNext.startsWith('//')) return '/'
-  if (requestedNext.startsWith('/auth') || requestedNext.startsWith('/complete-profile')) return '/'
+  if (!requestedNext?.startsWith('/') || requestedNext.startsWith('//') || requestedNext.startsWith('/\\')) return '/'
 
-  return requestedNext
+  try {
+    const parsed = new URL(requestedNext, 'https://iyohouse.local')
+    if (parsed.origin !== 'https://iyohouse.local') return '/'
+    if (
+      parsed.pathname === '/auth' ||
+      parsed.pathname.startsWith('/auth/') ||
+      parsed.pathname === '/complete-profile' ||
+      parsed.pathname.startsWith('/complete-profile/')
+    ) return '/'
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return '/'
+  }
 }
 
 function getRedirectBase(request: Request, origin: string) {
@@ -28,12 +40,12 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = getSafeNextPath(searchParams.get('next'))
+  const base = getRedirectBase(request, origin)
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      const base = getRedirectBase(request, origin)
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
@@ -52,5 +64,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(`${base}/auth/auth-code-error`)
 }

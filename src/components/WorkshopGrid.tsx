@@ -4,6 +4,7 @@ import { urlFor } from "@/sanity/image";
 import Image from "next/image";
 import { CSSProperties, memo } from "react";
 import { getLegacyPosterMeta } from "@/lib/legacyPosters";
+import { getWorkshopPath } from "@/lib/workshopRoutes";
 import { useLanguage } from "@/lib/i18n";
 import {
     getLocalizedWorkshopTitle,
@@ -36,10 +37,11 @@ function WorkshopGrid({
         return acc;
     }, {});
     
-    const renderWorkshopPreview = (ws: any) => {
+    const renderWorkshopPreview = (ws: any, index: number) => {
         const isHardcoded = isLegacyWorkshop(ws);
         const id = isHardcoded ? ws.id : ws._id;
         const title = getLocalizedWorkshopTitle(ws, language, t);
+        const workshopPath = isHardcoded ? "" : getWorkshopPath(ws);
         const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
         const capacity = typeof ws.capacity === 'number' ? ws.capacity : 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
@@ -60,13 +62,8 @@ function WorkshopGrid({
             ? legacyPoster?.src
             : (ws.poster ? urlFor(ws.poster).width(600).auto('format').url() : null);
 
-        return (
-            <div 
-                key={id} 
-                className="workshop-item" 
-                onClick={() => onSelectWorkshop(ws)} 
-                style={{ cursor: 'pointer' }}
-            >
+        const content = (
+            <>
                 <div className="intersection-diamond"></div>
                 <div className="color-dots">
                     <span className="dot-yellow">WORKSHOP</span>
@@ -78,9 +75,10 @@ function WorkshopGrid({
                     {imgUrl && (
                         <Image
                             src={imgUrl}
-                            alt={title}
+                            alt={ws.posterAlt || title}
                             width={posterWidth}
                             height={posterHeight}
+                            loading={index < 2 ? "eager" : "lazy"}
                             sizes="(max-width: 900px) 50vw, (max-width: 1400px) 25vw, 300px"
                             style={{
                                 width: '100%',
@@ -103,13 +101,42 @@ function WorkshopGrid({
                     <hr className="blueprint-hr" />
                     <div className="tutor-box">{tutor}</div>
                 </div>
+            </>
+        );
+
+        if (workshopPath) {
+            return (
+                <a
+                    key={id}
+                    className="workshop-item"
+                    href={workshopPath}
+                    onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                        event.preventDefault();
+                        onSelectWorkshop(ws);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                >
+                    {content}
+                </a>
+            );
+        }
+
+        return (
+            <div
+                key={id}
+                className="workshop-item"
+                onClick={() => onSelectWorkshop(ws)}
+                style={{ cursor: 'pointer' }}
+            >
+                {content}
             </div>
         );
     };
 
     return (
         <div className="workshop-grid">
-            {workshops.map(ws => renderWorkshopPreview(ws))}
+            {workshops.map((ws, index) => renderWorkshopPreview(ws, index))}
         </div>
     );
 }

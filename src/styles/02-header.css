@@ -1,3 +1,57 @@
+/* ─── Dynamic Header Variables & State (Desktop Hover Layout) ─── */
+:root {
+    --top-row-1: var(--top-row-1-actual, 5.2rem);
+}
+
+@media (min-width: 769px) {
+    .app-container {
+        /* 평소 데스크톱 상태: 헤더 높이를 0px로 지정하여 가로줄을 최상단으로 밀착 */
+        --top-row-1: 0px;
+    }
+    
+    .app-container.header-hovered {
+        /* 호버 시: 원래 높이 복원 */
+        --top-row-1: var(--top-row-1-actual, 5.2rem);
+    }
+
+    /* 평소 데스크톱 상태에서 헤더 내용 숨김 처리 */
+    .header {
+        pointer-events: none; /* 클릭 차단 */
+    }
+
+    .header-left,
+    .header-right,
+    .btn-sep {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition);
+    }
+
+    /* 호버 시 상호작용 및 내용 복원 */
+    .header-hovered .header {
+        pointer-events: auto;
+    }
+
+    .header-hovered .header-left,
+    .header-hovered .header-right,
+    .header-hovered .btn-sep {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* ─── Hover Trigger Zone ─── */
+.header-trigger {
+    position: fixed;
+    top: 0;
+    left: var(--panel-width);
+    width: calc(100% - var(--panel-width));
+    height: 15px;
+    z-index: 12500; /* 헤더(12000)보다 위에 위치 */
+    background: transparent;
+    pointer-events: auto;
+}
+
 .header-left {
     position: relative !important;
     left: auto !important;
@@ -7,7 +61,7 @@
     flex-shrink: 0;
 
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     overflow: visible;
 }
 
@@ -94,7 +148,8 @@
 
 .header-auth-btn {
     height: 100%;
-    background: var(--intersect);
+    /* background: var(--intersect); */
+    background-color: transparent;
     border: none;
     cursor: pointer;
     display: flex;
@@ -103,7 +158,7 @@
     transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
     border-left: 1px solid var(--line);
-    padding: 0 24px;
+    padding: 0 20px;
     font-family: inherit;
     font-size: 1.4rem;
     font-weight: 700;
@@ -112,7 +167,7 @@
 }
 
 .header-auth-btn:hover {
-    background: #000;
+    /* background: #000; */
     color: var(--intersect);
 }
 
@@ -125,13 +180,12 @@
     letter-spacing: -0.05em;
     padding-right: 20px;
     padding-left: 10px;
-    padding-bottom: 5px;
     padding-top: 0;
     padding-bottom: 0;
     color: #000;
     font-family: 'courier', serif;
     text-transform: uppercase;
-    line-height: 0.8;
+    line-height: 1;
     margin-top: 0;
 }
 
@@ -188,7 +242,7 @@
     padding: 0;
     background: transparent;
     overflow: visible;
-    transition: transform var(--transition), opacity var(--transition);
+    transition: transform var(--transition), opacity var(--transition), height var(--transition), min-height var(--transition);
     box-sizing: border-box;
 }
 

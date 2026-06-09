@@ -9,7 +9,9 @@
     z-index: 12005;
     display: flex;
     flex-direction: column;
+    --side-pad-left: 20px;
     padding: 20px;
+    padding-left: var(--side-pad-left);
     transition: width 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.18s ease;
     cursor: pointer;
     overflow: hidden;
@@ -82,18 +84,24 @@
 
 .sidebar-close-btn {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 12px;
+    right: 12px;
     background: none;
     border: none;
     color: var(--line);
     cursor: pointer;
-    padding: 8px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Adjust SVG icon size */
+.sidebar-close-btn svg {
+    width: 24px;
+    height: 24px;
 }
 
 .sidebar-close-btn:hover {
@@ -147,8 +155,9 @@
     border: none;
     background: transparent;
     font-family: 'courier', serif;
-    padding: 0;
+    padding: 0 15px 0 var(--side-pad-left, 20px);
     margin: 0;
+    margin-left: calc(-1 * var(--side-pad-left, 20px));
     font-size: 3.3rem;
     font-weight: 900;
 
@@ -158,7 +167,7 @@
     letter-spacing: -0.03em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.2s, background 0.2s;
     white-space: nowrap;
 }
 

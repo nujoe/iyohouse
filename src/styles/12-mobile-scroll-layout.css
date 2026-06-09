@@ -1,6 +1,7 @@
 /* Mobile-only scroll and divider policy.
    Desktop grid transitions stay in the earlier files; this file only wins on mobile. */
 @media (max-width: 768px) {
+
     .v-line-center,
     .top-v-center {
         opacity: 0 !important;
@@ -16,16 +17,31 @@
         height: 0 !important;
     }
 
-    .cell-main,
-    .cell-member,
-    .cell-workshop,
-    .cell-diary {
+    .cell-main {
         top: var(--top-row-1) !important;
         left: 0 !important;
         right: 0 !important;
         bottom: auto !important;
         width: auto !important;
         height: calc(100dvh - var(--top-row-1)) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: auto !important;
+        overscroll-behavior: none !important;
+        overscroll-behavior-x: none !important;
+        overscroll-behavior-y: none !important;
+        touch-action: pan-y;
+    }
+
+    .cell-member,
+    .cell-workshop,
+    .cell-diary {
+        top: var(--top-row-2) !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: calc(100dvh - var(--top-row-2)) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: auto !important;
@@ -44,17 +60,21 @@
         overscroll-behavior-y: none !important;
     }
 
-    .preset-member .grid-row-2,
-    .preset-workshop .grid-row-2,
-    .preset-diary .grid-row-2 {
-        opacity: 0 !important;
-        transition: none !important;
-    }
+
+
+
 
     .preset-diary .cell-diary {
-        left: var(--line-gap) !important;
+        left: calc((var(--line-gap) * 2) + var(--line-thickness)) !important;
         right: var(--line-gap) !important;
         width: auto !important;
+        overflow: hidden !important;
+        touch-action: none !important;
+    }
+
+    .preset-diary .diary-wrapper {
+        padding-right: var(--line-gap) !important;
+        box-sizing: border-box !important;
     }
 
     .main-content-layout,
@@ -74,9 +94,58 @@
         display: block !important;
     }
 
+    .preset-diary .diary-wrapper,
+    .preset-diary .calendar-container {
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+    }
+
+    .left-panel.contact-mode,
+    .left-panel.contact-mode.expanded {
+        width: 100dvw !important;
+        max-width: 100dvw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+    }
+
+    .left-panel.contact-mode .contact-sidebar-content,
+    .left-panel.contact-mode .contact-form-classic {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+    }
+
+    .left-panel.contact-mode .contact-main-scroll {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+    }
+
+    .left-panel.contact-mode .form-input-classic,
+    .left-panel.contact-mode .form-textarea-classic,
+    .left-panel.contact-mode .form-submit-btn-classic,
+    .left-panel.contact-mode .sidebar-close-btn {
+        touch-action: manipulation !important;
+    }
+
     .workshop-grid {
         min-height: 100%;
-        padding-top: 12px !important;
+        padding-top: 20px !important;
         box-sizing: border-box;
     }
 
@@ -87,8 +156,41 @@
     .calendar-container {
         width: 100% !important;
         max-width: 100% !important;
-        padding: 8px 0 60px 0 !important;
+        padding: 8px calc((var(--line-gap) * 2) + var(--line-thickness)) 60px var(--line-gap) !important;
         box-sizing: border-box !important;
+    }
+
+    .calendar-header {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto auto !important;
+        row-gap: 8px !important;
+        margin-top: 12px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .month-title {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        justify-self: center !important;
+        text-align: center !important;
+    }
+
+    .calendar-nav {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        justify-self: center !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 4px !important;
+        margin-top: 5px !important;
+        margin-bottom: 0;
+    }
+
+    .calendar-nav .nav-btn {
+        font-size: 12px !important;
+        /* 모바일 전용 크기 조정 */
+        padding: 2px 4px !important;
+        /* 모바일 전용 버튼 내부 패딩 */
     }
 
     .calendar-grid-header,
@@ -99,8 +201,25 @@
         box-sizing: border-box !important;
     }
 
+    .calendar-grid-header {
+        overflow: visible !important;
+    }
+
     .calendar-grid {
-        grid-template-rows: repeat(6, minmax(54px, 1fr)) !important;
+        overflow: hidden !important;
+    }
+
+    .grid-header-cell:not(:last-child)::after {
+        width: var(--line-gap) !important;
+        height: var(--line-gap) !important;
+        right: calc(-1 * var(--line-gap) / 2) !important;
+        bottom: calc(-1 * var(--line-gap) / 2) !important;
+        box-sizing: border-box !important;
+    }
+
+    .calendar-grid {
+        grid-template-rows: repeat(var(--calendar-week-count, 6), minmax(0, 1fr)) !important;
+        row-gap: 16px !important;
         min-height: 0 !important;
     }
 
@@ -111,7 +230,11 @@
 
     .date-marker {
         left: auto !important;
-        right: 3px !important;
+        right: 4px !important;
+        width: 26px !important;
+        min-width: 26px !important;
+        letter-spacing: 0.12em !important;
+        font-variant-numeric: tabular-nums;
     }
 
     .event-box {
@@ -120,6 +243,23 @@
         overflow: hidden !important;
         text-overflow: ellipsis;
         white-space: nowrap;
+        box-sizing: border-box !important;
+    }
+
+    .calendar-popover-card {
+        --mobile-calendar-popover-left: calc(var(--panel-width, 14vw) + (var(--line-gap, 8px) * 2) + var(--line-thickness, 1px) - 1px);
+
+        top: auto !important;
+        left: var(--mobile-calendar-popover-left) !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(58dvh, 420px) !important;
+        overflow-y: auto !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-radius: 10px 0 0 0 !important;
         box-sizing: border-box !important;
     }
 
@@ -153,13 +293,22 @@
         left: auto !important;
         bottom: calc(100% + 8px) !important;
         width: calc(100vw - 50px) !important;
-        max-width: 320px !important;
-        padding: 24px !important;
+        max-width: 270px !important;
+        padding: 16px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
     }
 }
 
 @media (min-width: 769px) {
     .mobile-fixed-info {
         display: none !important;
+    }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+    .preset-member .cell-member.active {
+        animation: none !important;
+        transform: none !important;
     }
 }

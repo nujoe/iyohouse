@@ -171,16 +171,6 @@
     font-weight: 900;
 }
 
-.social-btn.kakao {
-    background: #fee500;
-    border-color: #fee500;
-    color: #000;
-}
-
-.social-btn.kakao:hover {
-    background: #fdd835;
-}
-
 .login-divider {
     display: flex;
     align-items: center;

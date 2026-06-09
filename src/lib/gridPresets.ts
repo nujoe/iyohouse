@@ -9,26 +9,26 @@ export type GridPreset = {
 
 export const gridPresets = {
     main: {
-        line1: "calc(100% - (var(--unit) * 2))",
-        line3: "calc(100% - var(--unit))",
+        line1: "calc(var(--stage-width) - (var(--unit) * 2))",
+        line3: "calc(var(--stage-width) - var(--unit))",
         line4: "32rem",
         top2: "calc(100% - var(--line-gap))"
     },
     member: {
-        line1: "calc(100% - (var(--unit) * 2))",
-        line3: "calc(100% - var(--unit))",
+        line1: "calc(var(--stage-width) - (var(--unit) * 2))",
+        line3: "calc(var(--stage-width) - var(--unit))",
         line4: "32rem",
         top2: "calc(var(--top-row-1) + var(--unit))"
     },
     contact: {
         line1: "0px",
-        line3: "calc(100% - var(--unit))",
+        line3: "calc(var(--stage-width) - var(--unit))",
         line4: "40%",
         top2: "calc(var(--top-row-1) + var(--unit))"
     },
     workshop: {
         line1: "0px",
-        line3: "calc(100% - var(--unit))",
+        line3: "calc(var(--stage-width) - var(--unit))",
         line4: "40%",
         top2: "calc(var(--top-row-1) + var(--unit))"
     },

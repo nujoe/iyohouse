@@ -25,6 +25,7 @@ export default function WorkshopDetailPoster({ workshop }: WorkshopDetailPosterP
     const imgUrl = isSanity
         ? (workshop.poster ? urlFor(workshop.poster).width(1200).auto('format').url() : null)
         : legacyPoster?.src;
+    const imageAlt = workshop.posterAlt || workshop.title || "IYOHOUSE workshop poster";
 
     return (
         <div className="detail-left">
@@ -34,7 +35,7 @@ export default function WorkshopDetailPoster({ workshop }: WorkshopDetailPosterP
                         <Image
                             src={imgUrl}
                             className="detail-main-poster"
-                            alt="Poster"
+                            alt={imageAlt}
                             width={posterWidth}
                             height={posterHeight}
                             sizes="(max-width: 1000px) 100vw, 45vw"

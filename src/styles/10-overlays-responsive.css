@@ -57,9 +57,17 @@
 
 @media (max-width: 768px) {
 
+
+
+    .month-main {
+
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
     /* Calendar Responsive */
     .month-title {
-        font-size: 1.3rem !important;
+        font-size: 1rem !important;
     }
 
     .diary-wrapper {
@@ -73,16 +81,16 @@
     }
 
     .calendar-header {
-        margin-bottom: 4px !important;
+        margin-bottom: 10px !important;
     }
 
     .calendar-grid {
-        min-height: 400px !important;
+        min-height: 500px !important;
         /* Reduced from 500px */
     }
 
     .calendar-grid-header>div {
-        font-size: 10px !important;
+        font-size: 11px !important;
         padding: 5px 0 !important;
     }
 
@@ -114,7 +122,10 @@
         /* Added side padding (3px) to avoid grid line overlap */
         min-height: 60px !important;
         /* Reduced from 80px */
+        margin-top: 10px;
     }
+
+
 
     .grid-header-cell:not(:last-child)::after {
         width: 8px !important;
@@ -204,7 +215,7 @@
         font-size: 7px !important;
         padding: 1px 3px !important;
         margin-top: 0 !important;
-        border-radius: 2px !important;
+        border-radius: 10px !important;
     }
 
     .tag-closed {
@@ -238,6 +249,38 @@
 
     .info-text {
         max-width: 280px !important;
+    }
+
+    /* 모바일 전용 Bottom Sheet 오버라이드 */
+    .calendar-popover-overlay {
+        background: transparent !important;
+        backdrop-filter: none !important;
+    }
+
+    .calendar-popover-card {
+        top: auto !important;
+        left: var(--panel-width, 14vw) !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: calc(100% - var(--panel-width, 14vw)) !important;
+        max-width: 100% !important;
+        border-left: 1px solid #000 !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-top: 1px solid #000 !important;
+        border-radius: 10px 0 0 0 !important;
+        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.1) !important;
+        animation: slideUpBottom 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        z-index: 12501 !important;
+    }
+
+    @keyframes slideUpBottom {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
     }
 }
 

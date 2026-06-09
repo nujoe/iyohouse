@@ -7,6 +7,15 @@
     --intro-bg: #FF3B30;
     /* Premium Red for Intro area */
 
+    /* Curated tag color variables */
+    --tag-yellow: var(--intersect);
+    --tag-green: var(--accent);
+    --tag-red: var(--intro-bg);
+    --tag-blue: #3b82f6;
+    --tag-orange: #f97316;
+    --tag-purple: #8b5cf6;
+    --tag-pink: #ec4899;
+
     --line-thickness: 1px;
     --line-gap: 11px;
     /* 노트북 이상 기기에서 11px로 확장 */
@@ -15,11 +24,12 @@
     --top-row-1: 5.2rem;
     --top-row-2: calc(var(--top-row-1) + var(--unit));
 
-    --line-x-1: calc(100% - (var(--unit) * 2));
-    --line-x-3: calc(100% - var(--unit));
+    --panel-width: 6vw;
+    --stage-width: calc(100vw - var(--panel-width) + 1px);
+    --line-x-1: calc(var(--stage-width) - (var(--unit) * 2));
+    --line-x-3: calc(var(--stage-width) - var(--unit));
 
     --transition: 700ms cubic-bezier(0.22, 1, 0.36, 1);
-    --panel-width: 6%;
 }
 
 ::selection {

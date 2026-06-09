@@ -5,10 +5,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 function getSafeNextPath(next: string | null) {
-    if (!next?.startsWith("/") || next.startsWith("//")) return "/";
-    if (next.startsWith("/auth") || next.startsWith("/complete-profile")) return "/";
+    if (!next?.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
 
-    return next;
+    try {
+        const parsed = new URL(next, "https://iyohouse.local");
+        if (parsed.origin !== "https://iyohouse.local") return "/";
+        if (
+            parsed.pathname === "/auth" ||
+            parsed.pathname.startsWith("/auth/") ||
+            parsed.pathname === "/complete-profile" ||
+            parsed.pathname.startsWith("/complete-profile/")
+        ) return "/";
+
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+        return "/";
+    }
 }
 
 function CompleteProfileContent() {
