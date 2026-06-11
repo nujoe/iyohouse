@@ -8,7 +8,7 @@
         /* 평소 데스크톱 상태: 헤더 높이를 0px로 지정하여 가로줄을 최상단으로 밀착 */
         --top-row-1: 0px;
     }
-    
+
     .app-container.header-hovered {
         /* 호버 시: 원래 높이 복원 */
         --top-row-1: var(--top-row-1-actual, 5.2rem);
@@ -16,7 +16,8 @@
 
     /* 평소 데스크톱 상태에서 헤더 내용 숨김 처리 */
     .header {
-        pointer-events: none; /* 클릭 차단 */
+        pointer-events: none;
+        /* 클릭 차단 */
     }
 
     .header-left,
@@ -47,7 +48,8 @@
     left: var(--panel-width);
     width: calc(100% - var(--panel-width));
     height: 15px;
-    z-index: 12500; /* 헤더(12000)보다 위에 위치 */
+    z-index: 12500;
+    /* 헤더(12000)보다 위에 위치 */
     background: transparent;
     pointer-events: auto;
 }
@@ -166,7 +168,7 @@
 }
 
 .header-auth-btn:hover {
-    background: #000;
+    background: rgba(0, 0, 0, 0.675);
     color: var(--intersect);
 }
 
@@ -217,12 +219,12 @@
 
 .left-panel .sidebar-nav button:hover {
     color: var(--intersect);
-    background: rgba(0, 0, 0, 0.516);
+    background: rgba(0, 0, 0, 0.675);
 }
 
 .left-panel .sidebar-nav button.active {
     color: var(--intersect);
-    background: rgba(0, 0, 0, 0.516);
+    background: rgba(0, 0, 0, 0.864);
 }
 
 /* Redundant style removed to fix spacing */
