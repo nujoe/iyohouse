@@ -264,7 +264,7 @@
     align-items: center;
     z-index: 12000;
     padding: 0;
-    background: linear-gradient(to bottom, var(--intersect), transparent);
+    background: transparent;
     overflow: visible;
     transition: transform var(--transition), opacity var(--transition), height var(--transition), min-height var(--transition);
     box-sizing: border-box;
