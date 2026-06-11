@@ -187,16 +187,20 @@
     }
 
     .calendar-nav .nav-btn {
-        font-size: 12px !important;
-        /* 모바일 전용 크기 조정 */
-        padding: 2px 4px !important;
-        /* 모바일 전용 버튼 내부 패딩 */
+        font-size: 10px !important;
+        min-width: 24px !important;
+        height: 24px !important;
+        padding: 0 8px !important;
+    }
+
+    .calendar-nav .nav-btn:not(.today) {
+        padding: 0 !important;
     }
 
     .calendar-grid-header,
     .calendar-grid {
-        width: min(100%, 256px) !important;
-        max-width: 256px !important;
+        width: min(100%, 310px) !important;
+        max-width: 310px !important;
         margin-left: auto !important;
         margin-right: auto !important;
         min-width: 0 !important;
