@@ -45,6 +45,7 @@
     overflow: hidden;
     /* 내부 MemberVisualStack에서 스크롤 처리 */
     background: #fff;
+    position: relative;
 }
 
 
