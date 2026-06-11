@@ -164,13 +164,13 @@
 .grid-header-cell:not(:last-child)::after {
     content: "";
     position: absolute;
-    bottom: -5.5px;
-    right: -5.5px;
+    bottom: 0;
+    right: 0;
     width: 10px;
     height: 10px;
     background: var(--intersect);
     border: 1px solid #000;
-    transform: rotate(45deg);
+    transform: translate(50%, 50%) rotate(45deg);
     z-index: 10;
 }
 
