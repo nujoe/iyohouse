@@ -182,6 +182,7 @@
         margin: 0 !important;
         align-items: center;
         box-sizing: border-box;
+        padding: 20px 0 !important;
     }
 
     .v-box-v2 {
