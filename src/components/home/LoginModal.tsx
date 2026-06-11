@@ -76,12 +76,17 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
 
         try {
             if (isSignUpMode) {
-                const { error } = await signUpWithEmail(loginEmail, loginPassword);
+                const { data, error } = await signUpWithEmail(loginEmail, loginPassword);
                 if (error) {
                     setLoginError(error.message);
                 } else {
-                    alert(t.auth.signupDone);
-                    onClose();
+                    if (data && !(data as any).session) {
+                        alert((t.auth as any).signupEmailSent || "인증 이메일이 발송되었습니다. 이메일의 링크를 클릭하여 가입을 완료해 주세요.");
+                        onClose();
+                    } else {
+                        onClose();
+                        goToCompleteProfile();
+                    }
                 }
             } else {
                 const { error } = await signInWithEmail(loginEmail, loginPassword);

@@ -40,6 +40,22 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_profile_complete')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile?.is_profile_complete) {
+          const completeProfileUrl = new URL('/complete-profile', base)
+          if (next && next !== '/') {
+            completeProfileUrl.searchParams.set('next', next)
+          }
+          return NextResponse.redirect(completeProfileUrl.toString())
+        }
+      }
       return NextResponse.redirect(`${base}${next}`)
     }
   }

@@ -49,6 +49,7 @@ const ko = {
         emailRequired: "이메일과 비밀번호를 입력해 주세요.",
         passwordMin: "비밀번호는 최소 6자리 이상이어야 합니다.",
         signupDone: "회원가입이 완료되었습니다! 가입하신 정보로 로그인되었습니다.",
+        signupEmailSent: "인증 이메일이 발송되었습니다. 이메일의 링크를 클릭하여 가입을 완료해 주세요.",
         genericError: "오류가 발생했습니다.",
     },
     contact: {
@@ -180,6 +181,7 @@ const en: Translation = {
         emailRequired: "Please enter your email and password.",
         passwordMin: "Password must be at least 6 characters.",
         signupDone: "Sign up is complete. You are now logged in.",
+        signupEmailSent: "A verification email has been sent. Please click the link in the email to complete registration.",
         genericError: "Something went wrong.",
     },
     contact: {
