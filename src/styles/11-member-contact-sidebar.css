@@ -521,6 +521,10 @@
         white-space: nowrap !important;
         display: flex;
         align-items: center;
+        justify-content: center;
+    }
+
+    .header-auth-btn.logged-in {
         justify-content: flex-start;
     }
 
