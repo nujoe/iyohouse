@@ -1,27 +1,15 @@
-/* ─── Dynamic Header Variables & State (Desktop Hover Layout) ─── */
+/* ─── Dynamic Header Variables & State (Header Hidden Globally) ─── */
 :root {
-    --top-row-1: var(--top-row-1-actual, 5.2rem);
+    --top-row-1: 0px !important;
 }
 
-@media (min-width: 769px) {
-    .app-container {
-        /* 평소 데스크톱 상태: 헤더 높이를 0px로 지정하여 가로줄을 최상단으로 밀착 */
-        --top-row-1: 0px;
-    }
+.app-container {
+    --top-row-1: 0px !important;
+}
 
-    /* 평소 데스크톱 상태에서 헤더 내용 숨김 처리 */
-    .header {
-        pointer-events: none;
-        /* 클릭 차단 */
-    }
-
-    .header-left,
-    .header-right,
-    .btn-sep {
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity var(--transition);
-    }
+.header {
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 /* ─── Hover Trigger Zone ─── */
