@@ -68,8 +68,8 @@
         left: calc((var(--line-gap) * 2) + var(--line-thickness)) !important;
         right: var(--line-gap) !important;
         width: auto !important;
-        overflow: hidden !important;
-        touch-action: none !important;
+        overflow-y: auto !important;
+        touch-action: pan-y !important;
     }
 
     .preset-diary .diary-wrapper {
@@ -96,11 +96,11 @@
 
     .preset-diary .diary-wrapper,
     .preset-diary .calendar-container {
-        height: 100% !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
-        overscroll-behavior: none !important;
-        touch-action: none !important;
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
+        overscroll-behavior: auto !important;
+        touch-action: pan-y !important;
     }
 
     .left-panel.contact-mode,
@@ -234,9 +234,11 @@
     .calendar-cell {
         min-width: 0 !important;
         box-sizing: border-box !important;
+        height: auto !important;
+        padding-top: 26px !important;
         min-height: 60px !important;
-        max-height: 96px !important;
-        overflow-y: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     .date-marker {
