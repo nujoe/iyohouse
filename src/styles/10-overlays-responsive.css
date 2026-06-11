@@ -130,8 +130,9 @@
     .grid-header-cell:not(:last-child)::after {
         width: 8px !important;
         height: 8px !important;
-        bottom: -4.5px !important;
-        right: -4.5px !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        transform: translate(50%, 50%) rotate(45deg) !important;
     }
 
     /* Workshop Detail Responsive */
