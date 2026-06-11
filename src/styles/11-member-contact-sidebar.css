@@ -172,10 +172,15 @@
 
 @media (min-width: 769px) {
     .visual-stack-v2 {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
         width: calc(var(--line-x-1) - var(--line-x-center)) !important;
+        height: 100% !important;
         max-width: 100%;
         margin: 0 !important;
         align-items: center;
+        box-sizing: border-box;
     }
 
     .v-box-v2 {
