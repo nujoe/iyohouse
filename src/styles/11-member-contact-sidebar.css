@@ -167,6 +167,21 @@
     /* Firefox */
     -ms-overflow-style: none;
     /* IE and Edge */
+    box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+    .visual-stack-v2 {
+        width: calc(var(--line-x-1) - var(--line-x-center)) !important;
+        max-width: 100%;
+        margin: 0 !important;
+        align-items: center;
+    }
+
+    .v-box-v2 {
+        max-width: 520px;
+        width: 100%;
+    }
 }
 
 .visual-stack-v2::-webkit-scrollbar {
