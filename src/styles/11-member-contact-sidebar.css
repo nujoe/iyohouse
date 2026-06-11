@@ -173,9 +173,9 @@
 @media (min-width: 769px) {
     .visual-stack-v2 {
         position: absolute !important;
-        left: 0 !important;
+        left: var(--line-gap) !important;
         top: 0 !important;
-        width: calc(var(--line-x-1) - var(--line-x-center)) !important;
+        width: calc(var(--line-x-1) - (var(--stage-width) / 2 + var(--line-gap) / 2)) !important;
         height: 100% !important;
         max-width: 100%;
         margin: 0 !important;
