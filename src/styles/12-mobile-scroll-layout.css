@@ -195,8 +195,10 @@
 
     .calendar-grid-header,
     .calendar-grid {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: min(100%, 256px) !important;
+        max-width: 256px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
     }
@@ -210,14 +212,15 @@
     }
 
     .grid-header-cell:not(:last-child)::after {
-        width: var(--line-gap) !important;
-        height: var(--line-gap) !important;
-        right: calc(-1 * var(--line-gap) / 2) !important;
-        bottom: calc(-1 * var(--line-gap) / 2) !important;
+        width: 8px !important;
+        height: 8px !important;
+        right: -4px !important;
+        bottom: -4px !important;
         box-sizing: border-box !important;
     }
 
     .calendar-grid {
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
         grid-template-rows: repeat(var(--calendar-week-count, 6), minmax(0, 1fr)) !important;
         row-gap: 16px !important;
         min-height: 0 !important;
@@ -233,6 +236,8 @@
         right: 4px !important;
         width: 26px !important;
         min-width: 26px !important;
+        height: 18px !important;
+        border-radius: 999px !important;
         letter-spacing: 0.12em !important;
         font-variant-numeric: tabular-nums;
     }

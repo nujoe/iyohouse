@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Gowun_Batang, Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
+import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import {
   SITE_DESCRIPTION,
@@ -99,7 +100,9 @@ export default function RootLayout({
             __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
           }}
         />
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
