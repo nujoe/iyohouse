@@ -492,6 +492,8 @@
         transition: color 0.2s;
         background: transparent !important;
         padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
     }
 
     .header-lang button.active {
