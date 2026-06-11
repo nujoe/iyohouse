@@ -1,6 +1,6 @@
 # Workshop Registration Logic Summary
 
-Last checked: 2026-05-02
+Last checked: 2026-06-10
 
 This document summarizes the current implementation state for auth, workshop registration, payment confirmation, and image-performance changes. The binding contract remains `docs/workshop-registration-contract.md`; this file is an implementation map and handoff note.
 
@@ -28,8 +28,10 @@ Required environment variables:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-TOSS_SECRET_KEY
-NEXT_PUBLIC_TOSS_CLIENT_KEY
+IYO_NICEPAY_ENABLED
+IYO_NICEPAY_MODE
+IYO_NICEPAY_CLIENT_KEY
+IYO_NICEPAY_SECRET_KEY
 ```
 
 ## Auth Flow
@@ -77,7 +79,7 @@ The registration start logic lives in `src/app/page.tsx`.
    - selected workshop has `supabase_workshop_id`
    - workshop is not closed in the UI
    - required schedule is selected
-3. Toss SDK is prepared before creating a pending registration.
+3. The client creates a pending registration first, then asks the server for a NICEPAY checkout payload.
 4. Client calls:
 
 ```ts
@@ -90,11 +92,9 @@ supabase.rpc('create_pending_registration', {
    - `registration_id`
    - `order_id`
    - `amount`
-6. Toss payment starts with:
-   - `orderId = order_id`
-   - `amount = amount`
-   - `successUrl` containing `registration_id`
-   - `failUrl` containing `registration_id`
+6. The client posts `registration_id` to `/api/payment/checkout`.
+7. The server verifies ownership, pending state, expiry, order id, and amount.
+8. The client opens NICEPAY with the server-generated payload.
 
 ## DB RPC Responsibilities
 
@@ -131,27 +131,20 @@ Permissions:
 
 ## Payment Success Flow
 
-1. Toss redirects to `/payment/success`.
-2. The success page reads:
-   - `paymentKey`
-   - `orderId`
-   - `amount`
-   - `registration_id`
-3. The page posts these values to `/api/payment/confirm`.
-4. The server route:
-   - verifies the Supabase session
-   - verifies registration ownership
-   - rejects cancelled or expired registrations
-   - checks idempotency if the registration is already confirmed
-   - verifies `orderId`
-   - verifies `amount`
-   - confirms payment with Toss
+1. NICEPAY posts its server authentication result to `/api/payment/confirm`.
+2. The server route:
+   - finds the pending registration by NICEPAY `orderId`
+   - verifies `authResultCode`
+   - verifies `authToken + clientId + amount + IYO_NICEPAY_SECRET_KEY`
+   - calls the NICEPAY approval API
+   - verifies approval `orderId`, `amount`, and optional result signature
    - calls `confirm_payment_registration` through the service-role client
-5. If DB confirmation fails after Toss approval, the route calls the Toss cancel API as compensation.
+3. After server confirmation, the route redirects to `/payment/success`.
+4. The success page only displays the confirmed result. It does not call the confirmation API.
 
 ## Payment Failure Flow
 
-1. Toss redirects to `/payment/fail` with `registration_id`.
+1. NICEPAY client-side errors stay in the payment window flow, or the server redirects to `/payment/fail` with `registration_id`.
 2. The fail page posts failure details to `/api/payment/fail`.
 3. The server route:
    - verifies the Supabase session
@@ -191,8 +184,10 @@ Build with required env present:
 NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co \
 NEXT_PUBLIC_SUPABASE_ANON_KEY=anon_dummy \
 SUPABASE_SERVICE_ROLE_KEY=service_dummy \
-TOSS_SECRET_KEY=toss_dummy \
-NEXT_PUBLIC_TOSS_CLIENT_KEY=toss_client_dummy \
+IYO_NICEPAY_ENABLED=false \
+IYO_NICEPAY_MODE=test \
+IYO_NICEPAY_CLIENT_KEY=S1_dummy \
+IYO_NICEPAY_SECRET_KEY=secret_dummy \
 npm run build
 ```
 

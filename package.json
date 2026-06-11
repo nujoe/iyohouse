@@ -6,7 +6,8 @@
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:payment": "node scripts/test-nicepay-payment-static.mjs"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0",
@@ -14,8 +15,6 @@
     "@sanity/vision": "^5.20.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.101.1",
-    "@tosspayments/payment-sdk": "^1.9.2",
-    "@tosspayments/payment-widget-sdk": "^0.12.1",
     "animejs": "^4.3.6",
     "next": "16.2.1",
     "next-sanity": "^12.2.2",
