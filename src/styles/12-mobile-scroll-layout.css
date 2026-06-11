@@ -226,7 +226,7 @@
 
     .calendar-grid {
         grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-        grid-template-rows: repeat(var(--calendar-week-count, 6), minmax(0, 1fr)) !important;
+        grid-template-rows: repeat(var(--calendar-week-count, 6), auto) !important;
         row-gap: 16px !important;
         min-height: 0 !important;
     }
@@ -234,6 +234,9 @@
     .calendar-cell {
         min-width: 0 !important;
         box-sizing: border-box !important;
+        min-height: 60px !important;
+        max-height: 96px !important;
+        overflow-y: auto !important;
     }
 
     .date-marker {
