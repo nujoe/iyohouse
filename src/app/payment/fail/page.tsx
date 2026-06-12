@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function FailContent() {
@@ -8,22 +8,6 @@ function FailContent() {
   const router = useRouter();
   const code = searchParams.get("code");
   const message = searchParams.get("message");
-  const registrationId = searchParams.get("registration_id");
-
-  /** Strict Mode 중복 호출 방지 */
-  const calledRef = useRef(false);
-
-  useEffect(() => {
-    if (!registrationId) return;
-    if (calledRef.current) return;
-    calledRef.current = true;
-
-    fetch("/api/payment/fail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ registration_id: registrationId, code, message }),
-    }).catch(console.error);
-  }, [registrationId, code, message]);
 
   return (
     <div style={{

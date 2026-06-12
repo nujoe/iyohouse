@@ -1,65 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [msg, setMsg] = useState("결제 승인 중...");
-
-  /** Strict Mode / 새로고침 / 느린 네트워크 상황에서 중복 confirm 요청 방지 */
-  const confirmedRef = useRef(false);
-
-  const paymentKey = searchParams.get("paymentKey");
-  const orderId = searchParams.get("orderId");
+  const orderId = searchParams.get("order_id");
   const amount = searchParams.get("amount");
   const registrationId = searchParams.get("registration_id");
-
-  useEffect(() => {
-    if (confirmedRef.current) return;
-
-    const confirmPayment = async () => {
-      if (!paymentKey || !orderId || !amount || !registrationId) {
-        setStatus("error");
-        setMsg("결제 정보가 부족합니다.");
-        return;
-      }
-
-      // 즉시 플래그를 세워 동일 mount 내 재진입 차단
-      confirmedRef.current = true;
-
-      try {
-        const response = await fetch("/api/payment/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentKey,
-            orderId,
-            amount,
-            registration_id: registrationId,
-          }),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          setStatus("success");
-          setMsg("결제가 성공적으로 확인되었습니다!");
-        } else {
-          setStatus("error");
-          setMsg(result.error || "결제 승인 과정에서 오류가 발생했습니다.");
-        }
-      } catch {
-        setStatus("error");
-        setMsg("서버와 통신 중 오류가 발생했습니다.");
-        // 네트워크 에러 시 재시도 가능하도록 플래그 복원
-        confirmedRef.current = false;
-      }
-    };
-
-    confirmPayment();
-  }, [paymentKey, orderId, amount, registrationId]);
 
   return (
     <div style={{
@@ -72,15 +21,12 @@ function SuccessContent() {
       padding: "20px",
       textAlign: "center",
     }}>
-      <h1 style={{ color: status === "success" ? "#2563eb" : (status === "error" ? "#dc2626" : "#000") }}>
-        {msg}
+      <h1 style={{ color: "#2563eb" }}>
+        결제 확인이 완료되었습니다.
       </h1>
-      {status === "success" && (
-        <>
-          <p>주문 번호: {orderId}</p>
-          <p>결제 금액: {Number(amount).toLocaleString()}원</p>
-        </>
-      )}
+      <p>신청 번호: {registrationId || "-"}</p>
+      <p>주문 번호: {orderId || "-"}</p>
+      {amount && <p>결제 금액: {Number(amount).toLocaleString()}원</p>}
       <button
         onClick={() => router.push("/")}
         style={{
