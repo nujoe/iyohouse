@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'next-sanity'
 import { apiVersion, dataset, projectId } from '@/sanity/env'
 import { getSupabaseServerClient } from '@/lib/supabase/admin'
+import { createClient as createSupabaseSessionClient } from '@/lib/supabase/server'
 
 const sanityWriteClient = createClient({
   projectId,
@@ -13,12 +14,17 @@ const sanityWriteClient = createClient({
 
 type SanityWorkshop = {
   _id: string
+  _updatedAt?: string
   title?: string
   number?: number
   price?: number
   capacity?: number
   isClosed?: boolean
   supabase_workshop_id?: string
+}
+
+type SyncRequestBody = {
+  documentId?: string
 }
 
 function normalizeInteger(value: unknown) {
@@ -35,38 +41,101 @@ function getFallbackEndAt() {
   return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString()
 }
 
-// ---------------------------------------------------------------------------
-// Auth helper – validates Bearer token against ADMIN_SYNC_SECRET env var
-// ---------------------------------------------------------------------------
-function verifyAdminSecret(request: NextRequest):
-  | { ok: true }
-  | { ok: false; response: NextResponse } {
-  const secret = process.env.ADMIN_SYNC_SECRET
+function getPublishedId(id: string) {
+  return id.replace(/^drafts\./, '')
+}
 
-  if (!secret) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, error: 'ADMIN_SYNC_SECRET is not configured on the server.' },
-        { status: 500 },
-      ),
+function getDraftId(id: string) {
+  return id.startsWith('drafts.') ? id : `drafts.${id}`
+}
+
+function getSyncDocumentIds(documentId: string) {
+  const publishedId = getPublishedId(documentId)
+  return [publishedId, getDraftId(publishedId)]
+}
+
+function dedupeWorkshopsPreferDraft(workshops: SanityWorkshop[]) {
+  const byPublishedId = new Map<string, SanityWorkshop>()
+
+  for (const workshop of workshops) {
+    const publishedId = getPublishedId(workshop._id)
+    const existing = byPublishedId.get(publishedId)
+    const isDraft = workshop._id.startsWith('drafts.')
+    const existingIsDraft = existing?._id.startsWith('drafts.')
+
+    if (!existing || (isDraft && !existingIsDraft)) {
+      byPublishedId.set(publishedId, workshop)
     }
   }
+
+  return Array.from(byPublishedId.values())
+}
+
+async function parseSyncRequestBody(request: NextRequest): Promise<SyncRequestBody> {
+  const contentType = request.headers.get('content-type') || ''
+
+  if (!contentType.includes('application/json')) return {}
+
+  return request.json().catch(() => ({}))
+}
+
+function hasValidBearerToken(request: NextRequest) {
+  const secret = process.env.ADMIN_SYNC_SECRET
+  if (!secret) return false
 
   const authHeader = request.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
 
-  if (!token || token !== secret) {
+  return Boolean(token && token === secret)
+}
+
+// ---------------------------------------------------------------------------
+// Auth helper – allows server token or active Supabase super admin session.
+// ---------------------------------------------------------------------------
+async function verifyAdminAccess(request: NextRequest):
+  Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (hasValidBearerToken(request)) return { ok: true }
+
+  try {
+    const supabase = await createSupabaseSessionClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { success: false, error: 'Unauthorized – admin session or Bearer token is required.' },
+          { status: 401 },
+        ),
+      }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError || !profile?.is_super_admin) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { success: false, error: 'Forbidden – super admin access is required.' },
+          { status: 403 },
+        ),
+      }
+    }
+
+    return { ok: true }
+  } catch (error) {
     return {
       ok: false,
       response: NextResponse.json(
-        { success: false, error: 'Unauthorized – invalid or missing Bearer token.' },
+        { success: false, error: error instanceof Error ? error.message : 'Admin auth failed.' },
         { status: 401 },
       ),
     }
   }
-
-  return { ok: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -83,29 +152,56 @@ export function GET() {
 // POST /api/admin/sync-workshops  (protected)
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
-  const auth = verifyAdminSecret(request)
+  const auth = await verifyAdminAccess(request)
   if (!auth.ok) return auth.response
 
   try {
+    const body = await parseSyncRequestBody(request)
     const supabase = getSupabaseServerClient()
+    const documentId = typeof body.documentId === 'string' ? body.documentId.trim() : ''
+    const documentIds = documentId ? getSyncDocumentIds(documentId) : []
+    const query = documentId
+      ? `*[_type == "workshop" && _id in $documentIds] {
+          _id,
+          _updatedAt,
+          title,
+          number,
+          price,
+          capacity,
+          isClosed,
+          supabase_workshop_id
+        }`
+      : `*[_type == "workshop"] {
+          _id,
+          _updatedAt,
+          title,
+          number,
+          price,
+          capacity,
+          isClosed,
+          supabase_workshop_id
+        }`
 
-    const sanityWorkshops = await sanityWriteClient.fetch<SanityWorkshop[]>(`*[_type == "workshop"] {
-      _id,
-      title,
-      number,
-      price,
-      capacity,
-      isClosed,
-      supabase_workshop_id
-    }`)
+    const sanityWorkshops = dedupeWorkshopsPreferDraft(
+      await sanityWriteClient.fetch<SanityWorkshop[]>(query, { documentIds }),
+    )
 
     const results = {
       total: sanityWorkshops.length,
       created: 0,
       updated: 0,
       skipped: 0,
+      syncedIds: [] as string[],
+      patchedSanityIds: [] as string[],
       warnings: [] as string[],
       errors: [] as string[],
+    }
+
+    if (documentId && sanityWorkshops.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Sanity workshop document was not found.', results },
+        { status: 404 },
+      )
     }
 
     for (const ws of sanityWorkshops) {
@@ -151,6 +247,7 @@ export async function POST(request: NextRequest) {
 
         if (updatedWs) {
           results.updated++
+          results.syncedIds.push(updatedWs.id)
           continue
         }
       }
@@ -184,6 +281,8 @@ export async function POST(request: NextRequest) {
           .commit()
 
         results.created++
+        results.syncedIds.push(newWs.id)
+        results.patchedSanityIds.push(ws._id)
       } catch (sanityError: any) {
         results.errors.push(`Sanity patch error for ${title}: ${sanityError.message}`)
       }
