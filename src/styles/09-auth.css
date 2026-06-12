@@ -39,6 +39,11 @@
     padding: 40px;
 }
 
+.login-modal-card button,
+.login-modal-card input {
+    font-family: inherit;
+}
+
 .login-overlay-wrapper.active .login-modal-card {
     transform: translateY(0);
 }
