@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { isLanguage, LANGUAGE_STORAGE_KEY, TEXT, type Language, type Translation } from "./translations";
+import { TEXT, type Language, type Translation } from "./translations";
 
 type LanguageContextValue = {
     language: Language;
@@ -15,27 +15,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const [language, setLanguageState] = useState<Language>("ko");
 
     useEffect(() => {
-        try {
-            const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-            if (isLanguage(savedLanguage)) {
-                setLanguageState(savedLanguage);
-            }
-        } catch {
-            // Keep the default language when browser storage is unavailable.
-        }
-    }, []);
-
-    useEffect(() => {
         document.documentElement.lang = language;
     }, [language]);
 
     const setLanguage = useCallback((nextLanguage: Language) => {
         setLanguageState(nextLanguage);
-        try {
-            window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
-        } catch {
-            // Language still changes in memory if browser storage is unavailable.
-        }
     }, []);
 
     const value = useMemo(
