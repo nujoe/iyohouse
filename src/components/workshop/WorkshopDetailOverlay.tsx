@@ -459,9 +459,9 @@ export default function WorkshopDetailOverlay({
                                 </div>
                             )}
                             {isRegistered ? (
-                                <div className="registered-status-text">
+                                <button className="action-btn registered-status-btn" disabled>
                                     {t.workshop.alreadyApplied}
-                                </div>
+                                </button>
                             ) : (
                                 <button
                                     className={`action-btn fill-btn ${hasSelectableSchedule(workshop) && !selectedSession ? 'locked' : ''}`}

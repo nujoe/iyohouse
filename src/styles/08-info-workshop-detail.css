@@ -643,18 +643,17 @@
     filter: brightness(1.1);
 }
 
-.registered-status-text {
-    width: 100%;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #888;
-    background: transparent;
+.action-btn.registered-status-btn {
+    background: #000;
+    color: #fff;
     border: none;
-    text-align: center;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.action-btn.registered-status-btn:hover {
+    transform: none;
+    filter: none;
 }
 
 @media (max-width: 1000px) {
