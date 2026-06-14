@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/context/ToastContext";
+import { TEXT } from "@/lib/i18n/translations";
 
 interface ContactSidebarProps {
     isOpen: boolean;
@@ -19,7 +20,7 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
     const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !message) {
-            setValidationError(t.contact.required);
+            setValidationError(TEXT.ko.contact.required);
             return;
         }
         setValidationError(null);
@@ -32,18 +33,18 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
             });
             const result = await response.json();
             if (result.success) {
-                showToast("success", t.contact.success);
+                showToast("success", TEXT.ko.contact.success);
                 setContactData({ email: '', subject: '', message: '' });
             } else {
                 throw new Error(result.error);
             }
         } catch (error: any) {
             console.error('이메일 전송 실패:', error);
-            showToast("error", t.contact.error);
+            showToast("error", TEXT.ko.contact.error);
         } finally {
             setIsSending(false);
         }
-    }, [email, message, subject, t, showToast]);
+    }, [email, message, subject, showToast]);
 
     if (!isOpen) return null;
 

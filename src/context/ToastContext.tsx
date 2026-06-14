@@ -32,18 +32,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         }, 3000);
     }, [removeToast]);
 
-    const getIcon = (type: ToastType) => {
-        switch (type) {
-            case "success":
-                return "✓";
-            case "error":
-                return "✖";
-            case "info":
-                default:
-                return "ℹ";
-        }
-    };
-
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
@@ -54,7 +42,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         className={`toast-card toast-${toast.type}`}
                         onClick={() => removeToast(toast.id)}
                     >
-                        <span className="toast-icon">{getIcon(toast.type)}</span>
                         <span className="toast-message">{toast.message}</span>
                     </div>
                 ))}
@@ -70,3 +57,4 @@ export function useToast() {
     }
     return context;
 }
+
