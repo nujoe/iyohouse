@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
+import { useToast } from "@/context/ToastContext";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
 import {
@@ -155,6 +156,7 @@ export default function WorkshopDetailOverlay({
 }: WorkshopDetailOverlayProps) {
     const { user, isProfileComplete, supabase } = useAuth();
     const { goToCompleteProfile } = useProfileNavigation();
+    const { showToast } = useToast();
 
     const [showSchedule, setShowSchedule] = useState(false);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -228,17 +230,17 @@ export default function WorkshopDetailOverlay({
 
         const dbWorkshopId = ws.supabase_workshop_id;
         if (!dbWorkshopId) {
-            alert(t.workshop.missingDbId);
+            showToast("error", t.workshop.missingDbId);
             return;
         }
 
         if (isWorkshopClosedForPayment(ws)) {
-            alert(t.workshop.closedAlert);
+            showToast("error", t.workshop.closedAlert);
             return;
         }
 
         if (hasSelectableSchedule(ws) && !selectedSession) {
-            alert(t.workshop.scheduleRequired);
+            showToast("error", t.workshop.scheduleRequired);
             setShowSchedule(true);
             return;
         }
@@ -298,13 +300,13 @@ export default function WorkshopDetailOverlay({
             window.AUTHNICE.requestPay({
                 ...checkout.payload,
                 fnError: (result: unknown) => {
-                    alert(nicepayErrorMessage(result));
+                    showToast("error", nicepayErrorMessage(result));
                     setIsPaymentStarting(false);
                 },
             });
         } catch (error: any) {
             console.error("신청/결제 요청 에러:", error);
-            alert(getUserFacingPaymentError(error.message, `${t.workshop.requestError}: ${t.auth.genericError}`));
+            showToast("error", getUserFacingPaymentError(error.message, `${t.workshop.requestError}: ${t.auth.genericError}`));
         } finally {
             setIsPaymentStarting(false);
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useToast } from "@/context/ToastContext";
 
 interface ContactSidebarProps {
     isOpen: boolean;
@@ -9,16 +10,19 @@ interface ContactSidebarProps {
 }
 
 export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarProps) {
+    const { showToast } = useToast();
     const [contactData, setContactData] = useState({ email: '', subject: '', message: '' });
     const [isSending, setIsSending] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const { email, subject, message } = contactData;
 
     const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !message) {
-            alert(t.contact.required);
+            setValidationError(t.contact.required);
             return;
         }
+        setValidationError(null);
         setIsSending(true);
         try {
             const response = await fetch('/api/send-email', {
@@ -28,18 +32,18 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
             });
             const result = await response.json();
             if (result.success) {
-                alert(t.contact.success);
+                showToast("success", t.contact.success);
                 setContactData({ email: '', subject: '', message: '' });
             } else {
                 throw new Error(result.error);
             }
         } catch (error: any) {
             console.error('이메일 전송 실패:', error);
-            alert(t.contact.error);
+            showToast("error", t.contact.error);
         } finally {
             setIsSending(false);
         }
-    }, [email, message, subject, t]);
+    }, [email, message, subject, t, showToast]);
 
     if (!isOpen) return null;
 
@@ -57,7 +61,10 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
                             placeholder={t.contact.email}
                             className="form-input-classic"
                             value={contactData.email}
-                            onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
+                            onChange={(e) => {
+                                setContactData({ ...contactData, email: e.target.value });
+                                if (validationError) setValidationError(null);
+                            }}
                             required
                         />
                     </div>
@@ -75,11 +82,20 @@ export default function ContactSidebar({ isOpen, onClose, t }: ContactSidebarPro
                             placeholder={t.contact.message}
                             className="form-textarea-classic"
                             value={contactData.message}
-                            onChange={(e) => setContactData({ ...contactData, message: e.target.value })}
+                            onChange={(e) => {
+                                setContactData({ ...contactData, message: e.target.value });
+                                if (validationError) setValidationError(null);
+                            }}
                             required
                         ></textarea>
                     </div>
                 </div>
+
+                {validationError && (
+                    <div className="form-validation-error-msg" style={{ padding: "0 20px" }}>
+                        {validationError}
+                    </div>
+                )}
 
                 <div className="form-submit-row">
                     <button type="submit" className="form-submit-btn-classic" disabled={isSending}>

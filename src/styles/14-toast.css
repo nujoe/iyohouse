@@ -1,0 +1,73 @@
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 16000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+    width: calc(100vw - 48px);
+    pointer-events: none;
+}
+
+.toast-card {
+    background: #ffffff;
+    border: 1px solid #000000;
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+    cursor: pointer;
+    box-shadow: none; /* 플랫 디자인: 그림자 없음 */
+    animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-card:hover {
+    transform: translateY(-2px);
+}
+
+.toast-icon {
+    font-size: 1.1rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.toast-success .toast-icon {
+    color: #34c759; /* success green */
+}
+
+.toast-error .toast-icon {
+    color: #ff3b30; /* error red */
+}
+
+.toast-info .toast-icon {
+    color: #007aff; /* info blue */
+}
+
+.toast-message {
+    font-size: 13.5px;
+    line-height: 1.5;
+    font-weight: 700;
+    color: #000000;
+    font-family: var(--font-gowun-batang), 'Gowun Batang', serif;
+}
+
+@keyframes toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

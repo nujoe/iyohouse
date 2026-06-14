@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/context/ToastContext";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -25,6 +26,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     } = useAuth();
     const { goToCompleteProfile } = useProfileNavigation();
     const { t } = useLanguage();
+    const { showToast } = useToast();
 
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
@@ -81,7 +83,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                     setLoginError(error.message);
                 } else {
                     if (data && !(data as any).session) {
-                        alert((t.auth as any).signupEmailSent || "인증 이메일이 발송되었습니다. 이메일의 링크를 클릭하여 가입을 완료해 주세요.");
+                        showToast("success", (t.auth as any).signupEmailSent || "인증 이메일이 발송되었습니다. 이메일의 링크를 클릭하여 가입을 완료해 주세요.");
                         onClose();
                     } else {
                         onClose();
@@ -101,7 +103,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
         } finally {
             setIsLoginSubmitting(false);
         }
-    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, t, onClose]);
+    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, t, onClose, showToast]);
 
     if (!isOpen) return null;
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Gowun_Batang, Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import { ToastProvider } from "@/context/ToastContext";
 import {
   SITE_DESCRIPTION,
   SITE_EMAIL,
@@ -11,6 +12,7 @@ import {
   SITE_URL,
 } from "@/lib/site";
 import "./globals.css";
+import "@/styles/14-toast.css";
 
 const gowunBatang = Gowun_Batang({
   variable: "--font-gowun-batang",
@@ -101,7 +103,9 @@ export default function RootLayout({
           }}
         />
         <LanguageProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>
