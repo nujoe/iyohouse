@@ -212,7 +212,7 @@
 .main-pola-wrapper {
     padding: 24px 40px 16px 10px;
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
 }
 
 .main-pola-img {
@@ -223,6 +223,7 @@
     border-radius: 4px;
     box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.06);
     pointer-events: none; /* 아무 인터랙션이 없게 하기 위해 마우스 이벤트 차단 */
+    transform: rotate(3deg); /* 폴라로이드 사진 느낌으로 살짝 기울임 */
 }
 
 /* ─── End of File ─── */
