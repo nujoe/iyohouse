@@ -151,3 +151,12 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.form-validation-error-msg {
+    color: #ff3b30;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    margin-top: 5px;
+    font-family: var(--font-gowun-batang), 'Gowun Batang', serif;
+}

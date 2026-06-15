@@ -170,6 +170,37 @@
   overflow-wrap: anywhere;
 }
 
+.iyo-chatbot-faqs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.iyo-chatbot-faq-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--iyo-chatbot-ink);
+  border-radius: 6px;
+  background: var(--iyo-chatbot-paper);
+  color: var(--iyo-chatbot-ink);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: background 160ms ease, transform 100ms ease;
+  outline: none;
+}
+
+.iyo-chatbot-faq-btn:hover {
+  background: var(--iyo-chatbot-highlight);
+}
+
+.iyo-chatbot-faq-btn:active {
+  transform: scale(0.98);
+}
+
 .iyo-chatbot-form {
   display: grid;
   grid-template-columns: 1fr auto;

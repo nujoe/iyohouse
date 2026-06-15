@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
+import { useToast } from "@/context/ToastContext";
+import { TEXT } from "@/lib/i18n/translations";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
 import {
@@ -127,16 +129,17 @@ function nicepayErrorMessage(result: unknown) {
 
 function getUserFacingPaymentError(message: string, fallback: string) {
     if (!message) return fallback;
-    if (message.toLowerCase().includes("active registration")) {
+    const lower = message.toLowerCase();
+    if (lower.includes("active registration") || lower.includes("already registered") || lower.includes("already applied")) {
         return "이미 신청한 워크숍입니다.";
     }
-    if (message.includes("DB UUID")) {
+    if (lower.includes("db uuid") || lower.includes("uuid missing")) {
         return "아직 신청 준비 중인 워크숍입니다. 잠시 후 다시 시도하거나 문의해 주세요.";
     }
-    if (message.includes("NICEPAY") || message.includes("환경 변수")) {
+    if (lower.includes("nicepay") || lower.includes("환경 변수")) {
         return "결제창을 열지 못했습니다. 잠시 후 다시 시도하거나 문의해 주세요.";
     }
-    return message;
+    return "신청/결제 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
 function shouldFallbackToLegacyRegistrationRpc(error: any) {
@@ -155,6 +158,7 @@ export default function WorkshopDetailOverlay({
 }: WorkshopDetailOverlayProps) {
     const { user, isProfileComplete, supabase } = useAuth();
     const { goToCompleteProfile } = useProfileNavigation();
+    const { showToast } = useToast();
 
     const [showSchedule, setShowSchedule] = useState(false);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -228,17 +232,17 @@ export default function WorkshopDetailOverlay({
 
         const dbWorkshopId = ws.supabase_workshop_id;
         if (!dbWorkshopId) {
-            alert(t.workshop.missingDbId);
+            showToast("error", TEXT.ko.workshop.missingDbId);
             return;
         }
 
         if (isWorkshopClosedForPayment(ws)) {
-            alert(t.workshop.closedAlert);
+            showToast("error", TEXT.ko.workshop.closedAlert);
             return;
         }
 
         if (hasSelectableSchedule(ws) && !selectedSession) {
-            alert(t.workshop.scheduleRequired);
+            showToast("error", TEXT.ko.workshop.scheduleRequired);
             setShowSchedule(true);
             return;
         }
@@ -298,13 +302,13 @@ export default function WorkshopDetailOverlay({
             window.AUTHNICE.requestPay({
                 ...checkout.payload,
                 fnError: (result: unknown) => {
-                    alert(nicepayErrorMessage(result));
+                    showToast("error", nicepayErrorMessage(result));
                     setIsPaymentStarting(false);
                 },
             });
         } catch (error: any) {
             console.error("신청/결제 요청 에러:", error);
-            alert(getUserFacingPaymentError(error.message, `${t.workshop.requestError}: ${t.auth.genericError}`));
+            showToast("error", getUserFacingPaymentError(error.message, "신청/결제 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         } finally {
             setIsPaymentStarting(false);
         }

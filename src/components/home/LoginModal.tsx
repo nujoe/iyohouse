@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/context/ToastContext";
+import { TEXT } from "@/lib/i18n/translations";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -12,6 +14,27 @@ interface LoginModalProps {
 }
 
 type SocialProvider = "google";
+
+function getKoreanAuthError(message: string) {
+    if (!message) return "오류가 발생했습니다.";
+    const lower = message.toLowerCase();
+    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+        return "이메일 또는 비밀번호가 올바르지 않습니다.";
+    }
+    if (lower.includes("user already exists") || lower.includes("already registered")) {
+        return "이미 가입된 이메일입니다.";
+    }
+    if (lower.includes("rate limit")) {
+        return "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.";
+    }
+    if (lower.includes("email address is invalid") || lower.includes("invalid email")) {
+        return "올바른 이메일 주소를 입력해 주세요.";
+    }
+    if (lower.includes("password should be")) {
+        return "비밀번호는 최소 6자리 이상이어야 합니다.";
+    }
+    return message;
+}
 
 export default function LoginModal({ isOpen, onClose, initialMode = "login" }: LoginModalProps) {
     const {
@@ -25,6 +48,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     } = useAuth();
     const { goToCompleteProfile } = useProfileNavigation();
     const { t } = useLanguage();
+    const { showToast } = useToast();
 
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
@@ -52,10 +76,10 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
         const { error } = await signInWithGoogle();
 
         if (error) {
-            setLoginError(error.message || t.auth.genericError);
+            setLoginError(getKoreanAuthError(error.message || TEXT.ko.auth.genericError));
             setSocialLoginProvider(null);
         }
-    }, [signInWithGoogle, t.auth.genericError]);
+    }, [signInWithGoogle]);
 
     const handleEmailAuthSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,13 +87,13 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
         setIsLoginSubmitting(true);
 
         if (!loginEmail || !loginPassword) {
-            setLoginError(t.auth.emailRequired);
+            setLoginError(TEXT.ko.auth.emailRequired);
             setIsLoginSubmitting(false);
             return;
         }
 
         if (loginPassword.length < 6) {
-            setLoginError(t.auth.passwordMin);
+            setLoginError(TEXT.ko.auth.passwordMin);
             setIsLoginSubmitting(false);
             return;
         }
@@ -78,10 +102,10 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
             if (isSignUpMode) {
                 const { data, error } = await signUpWithEmail(loginEmail, loginPassword);
                 if (error) {
-                    setLoginError(error.message);
+                    setLoginError(getKoreanAuthError(error.message));
                 } else {
                     if (data && !(data as any).session) {
-                        alert((t.auth as any).signupEmailSent || "인증 이메일이 발송되었습니다. 이메일의 링크를 클릭하여 가입을 완료해 주세요.");
+                        showToast("success", TEXT.ko.auth.signupEmailSent);
                         onClose();
                     } else {
                         onClose();
@@ -91,17 +115,17 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
             } else {
                 const { error } = await signInWithEmail(loginEmail, loginPassword);
                 if (error) {
-                    setLoginError(error.message);
+                    setLoginError(getKoreanAuthError(error.message));
                 } else {
                     onClose();
                 }
             }
         } catch (err: any) {
-            setLoginError(err.message || t.auth.genericError);
+            setLoginError(getKoreanAuthError(err.message || TEXT.ko.auth.genericError));
         } finally {
             setIsLoginSubmitting(false);
         }
-    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, t, onClose]);
+    }, [isSignUpMode, loginEmail, loginPassword, signInWithEmail, signUpWithEmail, onClose, showToast]);
 
     if (!isOpen) return null;
 
