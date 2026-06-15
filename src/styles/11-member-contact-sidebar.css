@@ -161,7 +161,7 @@
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 40px 10px;
+    padding: 40px;
     scrollbar-width: none;
     /* Firefox */
     -ms-overflow-style: none;
@@ -180,7 +180,7 @@
         margin: 0 !important;
         align-items: center;
         box-sizing: border-box;
-        padding: 40px 10px !important;
+        padding: 40px !important;
     }
 
     .v-box-v2 {
@@ -675,8 +675,8 @@
     .visual-stack-v2 {
         height: auto !important;
         overflow-y: visible !important;
-        padding: 0 25px 50px 10px !important;
-        /* 하단에 info 버튼이 들어갈 50px 여백 확보 */
+        padding: 24px !important;
+        gap: 24px !important;
         box-sizing: border-box !important;
     }
 
