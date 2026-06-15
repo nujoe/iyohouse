@@ -36,6 +36,24 @@ const movementViewportPadding = 16;
 const infoBoundaryGap = 12;
 const rightGridBoundaryGap = 14;
 
+const FAQ_TEMPLATES = [
+  {
+    id: "faq-1",
+    question: "워크숍을 신청했는데 제대로 신청이 된 건지 모르겠어요.",
+    answer: "워크숍 신청이 열리면 2영업일 내로 구글폼을 작성하신 모든 분들께 입금/대기 안내 메일을 보내드립니다. 선착순으로 정원 내에 신청하신 분들께는 입금 안내 메일을, 그 후에 신청하신 분들께는 대기 안내 메일을 보내드립니다."
+  },
+  {
+    id: "faq-2",
+    question: "워크숍을 신청했는데, 일이 생겨서 참여가 어려울 것 같아요. 환불 가능한가요?",
+    answer: "워크숍 오픈 3일 전까지 환불이 가능합니다. 예를 들어 워크숍 오픈일이 6월 5일이라면, 3일 전인 6월 2일 자정까지 이요하우스 인스타그램 DM(@iyohouse) 또는 메일(goyangiyoram@gmail.com)로 연락 주시면 전액 환불을 도와드립니다. 튜터와 다른 대기자 분들을 고려하여 그 이후로는 환불이 어려운 점 안내드립니다. 또한, 이요하우스의 모든 활동은 부분 환불이 불가능하다는 점 안내드립니다."
+  },
+  {
+    id: "faq-3",
+    question: "워크숍 이수를 증명할 수 있는 수료증 혹은 그에 준하는 서류를 발급 받을 수 있나요?",
+    answer: "이요하우스는 교육기관이 아닌 독립 창작자 커뮤니티 및 워크숍 운영 공간으로, 별도의 공식 수료증이나 교육 이수증은 발급하고 있지 않습니다."
+  }
+];
+
 const initialAssistantMessage: ChatMessage = {
   id: "hello",
   role: "assistant",
@@ -227,6 +245,20 @@ export default function ChatbotWidget() {
     }
   };
 
+  const handleFaqClick = (faq: typeof FAQ_TEMPLATES[0]) => {
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      text: faq.question,
+    };
+    const assistantMessage: ChatMessage = {
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      text: faq.answer,
+    };
+    setMessages((current) => [...current, userMessage, assistantMessage]);
+  };
+
   const chatbotStyle: ChatbotStyle = {
     "--iyo-chatbot-left": position.x === null ? "calc(53vw - 124px)" : `${position.x}px`,
     "--iyo-chatbot-y": `${position.y}px`,
@@ -239,7 +271,15 @@ export default function ChatbotWidget() {
         type="button"
         aria-label="이요하우스 챗봇 열기"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((value) => !value)}
+        onClick={() => {
+          setIsOpen((value) => {
+            const nextValue = !value;
+            if (nextValue) {
+              setMessages([initialAssistantMessage]);
+            }
+            return nextValue;
+          });
+        }}
       >
         <div className="iyo-chatbot-inner-avatar">
           <span className="iyo-chatbot-face">(=ˆ ･ ˆ=)</span>
@@ -256,9 +296,19 @@ export default function ChatbotWidget() {
               <p>iyohouse wiki</p>
               <strong>{statusText}</strong>
             </div>
-            <button type="button" onClick={() => setIsOpen(false)} aria-label="챗봇 닫기">
-              ×
-            </button>
+            {messages.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setMessages([initialAssistantMessage])}
+                aria-label="처음 화면으로 돌아가기"
+              >
+                ←
+              </button>
+            ) : (
+              <button type="button" onClick={() => setIsOpen(false)} aria-label="챗봇 닫기">
+                ×
+              </button>
+            )}
           </div>
 
           <div className="iyo-chatbot-messages" aria-live="polite">
@@ -281,6 +331,20 @@ export default function ChatbotWidget() {
                 )}
               </div>
             ))}
+            {messages.length === 1 && (
+              <div className="iyo-chatbot-faqs">
+                {FAQ_TEMPLATES.map((faq) => (
+                  <button
+                    key={faq.id}
+                    type="button"
+                    className="iyo-chatbot-faq-btn"
+                    onClick={() => handleFaqClick(faq)}
+                  >
+                    {faq.question}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <form className="iyo-chatbot-form" onSubmit={submitQuestion}>
