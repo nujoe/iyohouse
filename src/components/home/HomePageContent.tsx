@@ -59,6 +59,8 @@ export default function HomePageContent() {
     } = useHomeModalState();
     const {
         activePreset,
+        gridTransitionPhase,
+        gridTransitionPreset,
         handlePresetChange,
         handleSelectWorkshop,
         isContactOpen,
@@ -79,16 +81,18 @@ export default function HomePageContent() {
     });
 
     const handleScroll = noopScrollHandler;
+    const gridLayoutPreset = gridTransitionPhase === "pull" ? gridTransitionPreset : "main";
 
     const { containerStyle, rootGridStyle } = useGridLayout({
         activePreset,
+        gridPreset: gridLayoutPreset,
         logoWidth,
         logoHeight,
         dynamicColor,
     });
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isBooting ? 'is-booting' : ''} ${isHeaderHovered ? 'header-hovered' : ''}`}>
+        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} grid-preset-${gridTransitionPreset} grid-phase-${gridTransitionPhase} ${isBooting ? 'is-booting' : ''} ${isHeaderHovered ? 'header-hovered' : ''}`}>
             <style>{rootGridStyle}</style>
 
             <div 

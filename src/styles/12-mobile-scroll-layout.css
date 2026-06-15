@@ -2,21 +2,6 @@
    Desktop grid transitions stay in the earlier files; this file only wins on mobile. */
 @media (max-width: 768px) {
 
-    .v-line-center,
-    .top-v-center {
-        opacity: 0 !important;
-        height: 0 !important;
-        transition: none !important;
-        pointer-events: none !important;
-    }
-
-    .preset-workshop .v-line-center,
-    .preset-club .v-line-center,
-    .preset-diary .v-line-center,
-    .preset-contact .v-line-center {
-        height: 0 !important;
-    }
-
     .cell-main {
         top: var(--top-row-1) !important;
         left: 0 !important;

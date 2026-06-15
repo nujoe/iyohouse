@@ -4,10 +4,9 @@ import Image from "next/image";
 
 export default function MemberVisualStack() {
   const images = [
-    { src: "/member/_ (16).jpeg", width: 736, height: 736 },
-    { src: "/member/_ (19).jpeg", width: 736, height: 414 },
-    { src: "/member/_ (23).jpeg", width: 736, height: 736 },
-    { src: "/member/_ (25).jpeg", width: 736, height: 414 },
+    { src: "/member/2.JPG", width: 736, height: 736 },
+    { src: "/member/3.JPG", width: 736, height: 736 },
+    { src: "/member/4.JPG", width: 736, height: 736 },
   ];
 
   return (
