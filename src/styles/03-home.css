@@ -211,6 +211,7 @@
 
 .main-pola-wrapper {
     padding: 24px 40px 16px 10px;
+    margin-top: 36px; /* 텍스트와 너무 붙지 않고 아래로 배치되도록 여백 추가 */
     display: flex;
     justify-content: flex-end;
 }
