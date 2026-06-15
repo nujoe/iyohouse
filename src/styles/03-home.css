@@ -209,6 +209,22 @@
     opacity: 0.5;
 }
 
+.main-pola-wrapper {
+    padding: 24px 40px 16px 10px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.main-pola-img {
+    max-width: min(280px, 100%);
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.06);
+    pointer-events: none; /* 아무 인터랙션이 없게 하기 위해 마우스 이벤트 차단 */
+}
+
 /* ─── End of File ─── */
 
 .mobile-menu-btn {

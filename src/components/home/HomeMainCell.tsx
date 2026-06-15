@@ -21,6 +21,9 @@ export default function HomeMainCell({ activePreset, t }: HomeMainCellProps) {
                     <div className="main-intro-text">
                         {t.mainIntro}
                     </div>
+                    <div className="main-pola-wrapper">
+                        <img src="/main-img/pola.jpeg" alt="Iyohouse Pola" className="main-pola-img" />
+                    </div>
                     <HomeInfoButton className="main-inline-info" t={t} />
                 </div>
                 <div className="mobile-main-divider"></div>
