@@ -157,11 +157,11 @@
 .visual-stack-v2 {
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: calc(var(--unit) + var(--line-gap));
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 40px;
+    padding: calc(var(--unit) + var(--line-gap));
     scrollbar-width: none;
     /* Firefox */
     -ms-overflow-style: none;
@@ -180,7 +180,7 @@
         margin: 0 !important;
         align-items: center;
         box-sizing: border-box;
-        padding: 40px !important;
+        padding: calc(var(--unit) + var(--line-gap)) !important;
     }
 
     .v-box-v2 {
@@ -675,8 +675,8 @@
     .visual-stack-v2 {
         height: auto !important;
         overflow-y: visible !important;
-        padding: 24px !important;
-        gap: 24px !important;
+        padding: calc(var(--unit) + var(--line-gap)) !important;
+        gap: calc(var(--unit) + var(--line-gap)) !important;
         box-sizing: border-box !important;
     }
 
