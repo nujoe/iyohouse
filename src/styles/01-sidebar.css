@@ -179,14 +179,15 @@
     height: auto;
     border: none;
     background: transparent;
+    font-family: var(--font-noto-sans), 'Noto Sans KR', system-ui, sans-serif;
     padding: 6px 0;
     margin: 0;
     line-height: 1.1;
-    font-weight: 900;
+    font-weight: 800; /* 고딕체 굵게 적용 */
     line-height: 1.2;
     color: var(--line);
     text-align: left;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.02em; /* 고딕체 가독성을 위해 자간 보정 */
     text-transform: uppercase;
     cursor: pointer;
     transition: color 0.2s;
