@@ -88,7 +88,7 @@ export default function HomePageContent() {
     });
 
     return (
-        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isContactOpen ? 'contact-open' : ''} ${isBooting ? 'is-booting' : ''} ${isHeaderHovered ? 'header-hovered' : ''}`}>
+        <div ref={containerRef} style={containerStyle} className={`app-container preset-${activePreset} ${isBooting ? 'is-booting' : ''} ${isHeaderHovered ? 'header-hovered' : ''}`}>
             <style>{rootGridStyle}</style>
 
             <div 

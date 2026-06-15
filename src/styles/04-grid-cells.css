@@ -296,14 +296,6 @@
     z-index: 10;
 }
 
-.contact-open .cell-workshop.active {
-    left: 0;
-    right: 0;
-    width: auto;
-    height: auto;
-    bottom: 0;
-}
-
 .cell-contact {
     top: var(--top-row-1);
     height: calc(var(--top-row-2) - var(--top-row-1));
@@ -331,12 +323,6 @@
     z-index: 10;
 }
 
-.contact-open .cell-diary.active {
-    left: 0;
-    bottom: 0;
-}
-
-
 .cell-main {
     position: absolute;
     top: var(--top-row-1);
@@ -363,7 +349,6 @@
     background: var(--bg);
     z-index: -1;
 }
-
 
 
 
