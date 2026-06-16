@@ -121,7 +121,7 @@ function CalendarView({
         const todayMonth = today?.getMonth();
         const todayDate = today?.getDate();
 
-        const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
+        const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const prevMonthDays = new Date(year, month, 0).getDate();
         const weekCount = Math.ceil((firstDay + daysInMonth) / 7);
@@ -155,7 +155,7 @@ function CalendarView({
     }, [currentMonth, calendarEvents, today]);
 
     const todayDayIndex = useMemo(() => {
-        return today ? (today.getDay() + 6) % 7 : null;
+        return today ? today.getDay() : null;
     }, [today]);
 
     const handleEventClick = (e: React.MouseEvent, evt: any, clickedDate: string) => {
@@ -179,7 +179,7 @@ function CalendarView({
             </header>
 
             <div className="calendar-grid-header">
-                {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day, index) => (
+                {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((day, index) => (
                     <div
                         key={day}
                         className={`grid-header-cell ${index === todayDayIndex ? 'is-today-day' : ''}`}

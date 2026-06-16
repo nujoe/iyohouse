@@ -14,7 +14,6 @@ import { useLogoMetrics } from "@/hooks/useLogoMetrics";
 import { useHomeNavigationState } from "@/hooks/useHomeNavigationState";
 import { useHomeModalState } from "@/hooks/useHomeModalState";
 import HomeHeader from "@/components/home/HomeHeader";
-import HomeInfoButton from "@/components/home/HomeInfoButton";
 import HomeSidebar from "@/components/home/HomeSidebar";
 import HomeStage from "@/components/home/HomeStage";
 import MobileMenu from "@/components/home/MobileMenu";
@@ -153,8 +152,6 @@ export default function HomePageContent() {
                 t={t}
                 visited={visited}
             />
-
-            <HomeInfoButton className="mobile-fixed-info" t={t} />
 
             <MobileMenu
                 isOpen={isMenuOpen}

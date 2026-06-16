@@ -123,106 +123,24 @@
     will-change: top;
 }
 
-/* ─── 컨텐츠 영역 세로선 ─────────────── */
-/* height transition 추가 → top-row-2 변화 시 끊김 없이 이어짐 */
-.top-v-1,
-.top-v-2,
-.top-v-3 {
+/* ─── 교차점 마커 ─────────────────────── */
+.grid-intersection-marker {
     position: absolute;
     width: var(--line-gap);
-    top: var(--top-row-1);
-    height: calc(var(--grid-top-row-2) - var(--top-row-1) + var(--line-gap));
-    transition:
-        left var(--grid-transition, var(--transition)),
-        top var(--grid-transition, var(--transition)),
-        height var(--grid-transition, var(--transition));
-    z-index: 11001;
-    pointer-events: none;
-    background: transparent;
-    will-change: left, top, height;
-    transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-}
-
-/* 교차점 마커 (상/하) */
-.top-v-1::before,
-.top-v-1::after,
-.top-v-2::before,
-.top-v-2::after,
-.top-v-3::before,
-.top-v-3::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    width: 100%;
     height: var(--line-gap);
     background: var(--intersect);
     border: var(--line-thickness) solid var(--line);
     box-sizing: border-box;
-}
-
-.top-v-1::before,
-.top-v-2::before,
-.top-v-3::before {
-    top: 0;
-}
-
-.top-v-1::after,
-.top-v-2::after,
-.top-v-3::after {
-    bottom: 0;
-}
-
-.top-v-1 {
-    left: var(--grid-line-x-1);
-}
-
-.top-v-2 {
-    left: var(--grid-line-x-2);
-}
-
-.top-v-3 {
-    left: var(--grid-line-x-3);
-}
-
-.top-v-center {
-    position: absolute;
-    width: var(--line-gap);
-    left: var(--grid-line-x-center);
-    top: var(--top-row-1);
-    height: calc(var(--grid-top-row-2) - var(--top-row-1) + var(--line-gap));
-    /* 가로선 grid-row-2 위치까지 확장하여 교차점 마커 표시 */
     transition:
         left var(--grid-transition, var(--transition)),
         top var(--grid-transition, var(--transition)),
-        height var(--grid-transition, var(--transition)),
         opacity var(--grid-transition, var(--transition));
     z-index: 11001;
     pointer-events: none;
     opacity: 1;
-    will-change: left, top, height, opacity;
+    will-change: left, top, opacity;
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
-}
-
-.top-v-center::before,
-.top-v-center::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: var(--line-gap);
-    background: var(--intersect);
-    border: var(--line-thickness) solid var(--line);
-    box-sizing: border-box;
-}
-
-.top-v-center::before {
-    top: 0;
-}
-
-.top-v-center::after {
-    bottom: 0;
 }
 
 .v-line-center {
@@ -231,13 +149,13 @@
 }
 
 .preset-workshop .v-line-center,
-.preset-workshop .top-v-center,
+.preset-workshop .grid-intersection-marker-center,
 .preset-diary .v-line-center,
-.preset-diary .top-v-center,
+.preset-diary .grid-intersection-marker-center,
 .grid-preset-workshop .v-line-center,
-.grid-preset-workshop .top-v-center,
+.grid-preset-workshop .grid-intersection-marker-center,
 .grid-preset-diary .v-line-center,
-.grid-preset-diary .top-v-center {
+.grid-preset-diary .grid-intersection-marker-center {
     opacity: 0;
     visibility: hidden;
 }
@@ -254,11 +172,9 @@
     height: var(--line-gap);
 }
 
-.grid-phase-pull .top-v-1,
-.grid-phase-pull .top-v-2,
-.grid-phase-pull .top-v-3,
-.grid-phase-pull .top-v-center {
-    height: var(--line-gap);
+.grid-phase-pull .grid-intersection-marker-center.grid-intersection-marker-bottom {
+    opacity: 0;
+    visibility: hidden;
 }
 
 /* ─── 콘텐츠 셀 ──────────────────────── */

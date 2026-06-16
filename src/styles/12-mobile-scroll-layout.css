@@ -270,7 +270,7 @@
 
     .preset-main .main-content-layout {
         position: relative !important;
-        padding-bottom: 60px !important;
+        padding-bottom: 0 !important;
     }
 
     .mobile-fixed-info {

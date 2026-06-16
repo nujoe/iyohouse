@@ -32,7 +32,7 @@ type AuthContextValue = AuthState & {
   signInWithEmail: (email: string, password: string) => EmailAuthResult
   signUpWithEmail: (email: string, password: string) => EmailAuthResult
   signOut: () => Promise<void>
-  updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => Promise<{ error: string | null }>
+  updateProfile: (updates: Partial<Pick<Profile, 'email' | 'full_name' | 'phone' | 'bio'>>) => Promise<{ error: string | null }>
   supabase: SupabaseBrowserClient
 }
 
@@ -198,13 +198,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { data, error }
   }, [supabase])
 
-  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'full_name' | 'phone' | 'bio'>>) => {
+  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'email' | 'full_name' | 'phone' | 'bio'>>) => {
     if (!authState.user) return { error: 'Not authenticated' }
 
+    const fullName = updates.full_name ?? authState.profile?.full_name ?? ''
+    const phone = updates.phone ?? authState.profile?.phone ?? ''
+    const email = updates.email ?? authState.profile?.email ?? authState.user.email ?? ''
+    const hasBioUpdate = Object.prototype.hasOwnProperty.call(updates, 'bio')
+    const bio = hasBioUpdate ? updates.bio ?? '' : authState.profile?.bio ?? null
+    const clearBio = hasBioUpdate && !(bio ?? '').trim()
+
     const { data, error } = await supabase.rpc('complete_profile', {
-      p_full_name: updates.full_name || '',
-      p_phone: updates.phone || '',
-      p_bio: updates.bio || null,
+      p_full_name: fullName,
+      p_phone: phone,
+      p_bio: bio,
+      p_email: email,
+      p_clear_bio: clearBio,
     })
 
     if (!error) {
@@ -226,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { error: error?.message || null }
-  }, [authState.user, fetchProfile, supabase])
+  }, [authState.profile, authState.user, fetchProfile, supabase])
 
   const value: AuthContextValue = {
     ...authState,

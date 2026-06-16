@@ -21,7 +21,7 @@
 .member-text-masonry {
     flex: 0 0 var(--line-x-center);
     height: 100%;
-    padding: 20px;
+    padding: 0px 20px 20px calc(var(--line-gap) + 24px);
     box-sizing: border-box;
     overflow-y: auto;
     /* 스크롤은 여기서 */
@@ -60,17 +60,16 @@
 
 
 .card-header {
-    margin-bottom: 25px;
+    margin-bottom: 12px;
     width: 100%;
 }
 
 .card-name {
     font-size: 26px;
-    background: linear-gradient(to right, var(--intersect), transparent);
+    border-bottom: 5px solid var(--intersect);
     color: black;
-    padding: 0 0px 0px 10px;
-    display: block;
-    width: 100%;
+    padding: 0 0px 4px 10px;
+    display: inline-block;
     box-sizing: border-box;
     letter-spacing: -0.02em;
     font-weight: 700;
@@ -416,8 +415,12 @@
 @media (max-width: 768px) {
     :root {
         --line-gap: 8px;
-        --panel-width: 14vw;
-        /* 모바일에서 사이드바 크기 확대 */
+        --mobile-sidebar-touch-size: clamp(42px, 11vw, 54px);
+        --mobile-sidebar-marker-size: clamp(28px, 7.6vw, 36px);
+        --mobile-sidebar-hamburger-width: clamp(13px, 3.8vw, 17px);
+        --mobile-sidebar-edge-offset: 20px;
+        --panel-width: 0px;
+        --stage-width: 100vw;
     }
 
     .logo-main-text {
@@ -429,10 +432,165 @@
         padding: 20px var(--side-pad-left) !important;
     }
 
+    .stage {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) {
+        top: var(--mobile-sidebar-edge-offset) !important;
+        left: auto !important;
+        right: var(--mobile-sidebar-edge-offset) !important;
+        width: var(--mobile-sidebar-touch-size) !important;
+        min-width: var(--mobile-sidebar-touch-size) !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        background: transparent !important;
+        border: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .sidebar-nav {
+        display: none !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-panel-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: calc(var(--line-gap) + 2px) !important;
+        width: var(--mobile-sidebar-touch-size) !important;
+    }
+
     .panel-icon {
         width: 22px !important;
         height: 15px !important;
         margin: 0 auto 20px auto !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-panel-action,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        width: var(--mobile-sidebar-touch-size) !important;
+        height: var(--mobile-sidebar-touch-size) !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-direction: column !important;
+        gap: 3px !important;
+        background: transparent !important;
+        border: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        transform: none !important;
+        transform-origin: center !important;
+        cursor: pointer !important;
+        color: var(--line, #000) !important;
+        isolation: isolate !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon::before,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-panel-action::before,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: var(--mobile-sidebar-marker-size);
+        height: var(--mobile-sidebar-marker-size);
+        background: var(--intersect);
+        border: var(--line-thickness, 1px) solid var(--line, #000);
+        box-sizing: border-box;
+        transform: translate(-50%, -50%) rotate(45deg);
+        z-index: -1;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon:hover,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-panel-action:hover,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info:hover {
+        transform: scale(1.06) !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon span {
+        display: block !important;
+        width: var(--mobile-sidebar-hamburger-width) !important;
+        height: 1px !important;
+        border-radius: 0 !important;
+        background: var(--line, #000) !important;
+        transform: none !important;
+        transform-origin: center !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon:hover span:nth-child(1),
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon:hover span:nth-child(2),
+    .left-panel:not(.expanded):not(.contact-mode) .panel-icon:hover span:nth-child(3) {
+        width: var(--mobile-sidebar-hamburger-width) !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-home-glyph,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-mail-glyph,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info .info-bottom-text {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-family: 'courier', serif;
+        font-size: clamp(17px, 4.9vw, 22px);
+        font-weight: 900;
+        line-height: 1;
+        color: var(--line, #000);
+        opacity: 1;
+        text-transform: lowercase;
+        letter-spacing: 0;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-home-glyph {
+        font-size: clamp(19px, 5.2vw, 24px);
+        transform: translateY(-1px);
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-mail-glyph {
+        font-size: clamp(15px, 4.5vw, 20px);
+        transform: translateY(-1px);
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info .business-info-overlay {
+        top: 50% !important;
+        right: calc(100% + 12px) !important;
+        bottom: auto !important;
+        left: auto !important;
+        width: min(270px, calc(100vw - 88px)) !important;
+        max-width: min(270px, calc(100vw - 88px)) !important;
+        padding: 16px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
+        text-align: left !important;
+        transform: translate(8px, -50%) !important;
+        z-index: 13000 !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info:hover .business-info-overlay,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info.is-pinned .business-info-overlay {
+        transform: translate(0, -50%) !important;
+    }
+
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info:hover .info-bottom-text,
+    .left-panel:not(.expanded):not(.contact-mode) .mobile-sidebar-info.is-pinned .info-bottom-text {
+        opacity: 1 !important;
     }
 
     .panel-icon span {
@@ -601,9 +759,6 @@
 
     /* 모바일 전용 가로 구분선 (더블 라인 + 마름모 교차 마커) */
     .mobile-main-divider {
-        --mobile-divider-line-x-1: calc(100% - (var(--unit) * 2));
-        --mobile-divider-line-x-3: calc(100% - var(--unit));
-
         display: block;
         position: relative;
         width: 100% !important;
@@ -613,7 +768,7 @@
         border-top: var(--line-thickness, 1px) solid var(--line, #000);
         border-bottom: var(--line-thickness, 1px) solid var(--line, #000);
         box-sizing: border-box;
-        margin: 30px 0 !important;
+        margin: 30px 0 0 !important;
     }
 
     .mobile-main-divider::before,
@@ -626,15 +781,17 @@
         border: var(--line-thickness, 1px) solid var(--line, #000);
         z-index: 11001;
         box-sizing: border-box;
-        top: calc(-1 * var(--line-thickness, 1px));
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .mobile-main-divider::before {
-        left: var(--mobile-divider-line-x-1) !important;
+        left: 0 !important;
     }
 
     .mobile-main-divider::after {
-        left: var(--mobile-divider-line-x-3) !important;
+        right: 0 !important;
+        left: auto !important;
     }
 
     /* 메인 뷰 스크롤 해제 및 단일 스크롤 활성화 */
@@ -649,8 +806,7 @@
     .main-content-layout {
         flex-direction: column !important;
         height: auto !important;
-        padding-bottom: 60px;
-        /* 최하단 여백 */
+        padding-bottom: 0 !important;
         position: relative !important;
         /* info 버튼 absolute 배치의 기준점 */
     }
@@ -701,8 +857,7 @@
     .member-main-content {
         flex-direction: column !important;
         height: auto !important;
-        padding-bottom: 60px;
-        /* 아래 여백 */
+        padding-bottom: 0 !important;
     }
 
     .member-text-masonry {
@@ -710,8 +865,8 @@
         flex: none !important;
         width: 100% !important;
         overflow-y: visible !important;
-        padding: 0px 25px 20px 10px !important;
-        /* 우측 25px 격자선 침범 방지 */
+        padding: 10px 25px 20px 25px !important;
+        /* 좌우 패딩을 25px로 통일하여 격자 제외 영역 내 중앙 정렬 */
         box-sizing: border-box !important;
     }
 
@@ -738,7 +893,7 @@
     }
 
     /* info 버튼 모바일 여백 및 정렬 조정 (사진 밑 우측 하단으로 절대 배치) */
-    .info-bottom-text-wrapper {
+    .info-bottom-text-wrapper:not(.mobile-sidebar-info) {
         position: absolute !important;
         bottom: 15px !important;
         right: 25px !important;
@@ -751,7 +906,7 @@
     }
 
     /* 모바일에서 사업자 정보 레이어가 화면 오른쪽 밖으로 삐져나가지 않도록 우측 기준 정렬 */
-    .business-info-overlay {
+    .info-bottom-text-wrapper:not(.mobile-sidebar-info) .business-info-overlay {
         right: 0 !important;
         left: auto !important;
         width: calc(100vw - 50px) !important;
@@ -760,5 +915,12 @@
         bottom: calc(100% + 8px) !important;
         font-size: 11px !important;
         line-height: 1.5 !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .v-line-center,
+    .grid-intersection-marker-center {
+        display: none !important;
     }
 }

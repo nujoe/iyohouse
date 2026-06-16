@@ -60,6 +60,7 @@ export default async function AdminWorkshopApplicantsPage({
                       <th>이름</th>
                       <th>이메일</th>
                       <th>연락처</th>
+                      <th>자기소개</th>
                       <th>신청일</th>
                     </tr>
                   </thead>
@@ -70,6 +71,7 @@ export default async function AdminWorkshopApplicantsPage({
                         <td>{applicant.snapshot_name || "-"}</td>
                         <td>{applicant.snapshot_email || "-"}</td>
                         <td>{applicant.snapshot_phone || "-"}</td>
+                        <td>{applicant.snapshot_bio || "-"}</td>
                         <td>{formatAdminDateTime(applicant.created_at)}</td>
                       </tr>
                     ))}

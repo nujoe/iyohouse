@@ -37,6 +37,7 @@ export type AdminApplicantRow = {
   snapshot_name: string | null;
   snapshot_email: string | null;
   snapshot_phone: string | null;
+  snapshot_bio?: string | null;
   created_at: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
@@ -226,7 +227,8 @@ export async function getAdminWorkshopApplicants(workshopId: string) {
     return null;
   }
 
-  const baseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, created_at";
+  const baseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, snapshot_bio, created_at";
+  const fallbackBaseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, created_at";
   const scheduleSelect = `${baseSelect}, schedule_key, schedule_label, schedule_date, schedule_time`;
   let applicantRows: AdminApplicantRow[] = [];
 
@@ -240,13 +242,13 @@ export async function getAdminWorkshopApplicants(workshopId: string) {
   if (withSchedule.error) {
     const message = withSchedule.error.message ?? "";
 
-    if (!message.includes("schedule_")) {
+    if (!message.includes("schedule_") && !message.includes("snapshot_bio")) {
       throw new Error(`신청자 목록을 불러오지 못했습니다: ${message}`);
     }
 
     const fallback = await adminClient
       .from("workshop_registrations_v2")
-      .select(baseSelect)
+      .select(fallbackBaseSelect)
       .eq("workshop_id", workshopId)
       .eq("status", "confirmed")
       .order("created_at", { ascending: true });

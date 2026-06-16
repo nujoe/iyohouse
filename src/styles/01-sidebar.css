@@ -42,7 +42,25 @@
     width: 60%;
 }
 
+.mobile-panel-actions {
+    display: contents;
+}
+
+.left-panel.expanded .mobile-panel-actions,
+.left-panel.contact-mode .mobile-panel-actions {
+    display: none;
+}
+
+.mobile-panel-action,
+.mobile-sidebar-info {
+    display: none;
+}
+
 .panel-icon {
+    appearance: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
     width: 50px;
     height: 32px;
     display: flex;
@@ -198,6 +216,3 @@
 .left-panel .user-signup-btn:hover {
     color: var(--intersect) !important;
 }
-
-
-

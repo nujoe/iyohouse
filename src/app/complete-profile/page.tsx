@@ -28,8 +28,10 @@ function CompleteProfileContent() {
     const searchParams = useSearchParams();
     const { user, profile, isLoading, isProfileComplete, updateProfile, signOut } = useAuth();
     const nextPath = useMemo(() => getSafeNextPath(searchParams.get("next")), [searchParams]);
+    const [email, setEmail] = useState("");
     const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
+    const [bio, setBio] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -46,25 +48,27 @@ function CompleteProfileContent() {
     }, [isLoading, isProfileComplete, nextPath, router, user]);
 
     useEffect(() => {
-        if (!profile) return;
-
-        setFullName(profile.full_name || "");
-        setPhone(profile.phone || "");
-    }, [profile]);
+        setEmail(profile?.email || user?.email || "");
+        setFullName(profile?.full_name || "");
+        setPhone(profile?.phone || "");
+        setBio(profile?.bio || "");
+    }, [profile, user]);
 
     const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setErrorMessage("");
 
-        if (!fullName.trim() || !phone.trim()) {
-            setErrorMessage("이름과 전화번호를 입력해 주세요.");
+        if (!email.trim() || !fullName.trim() || !phone.trim()) {
+            setErrorMessage("이메일, 이름, 전화번호를 입력해 주세요.");
             return;
         }
 
         setSubmitting(true);
         const { error } = await updateProfile({
+            email: email.trim(),
             full_name: fullName.trim(),
             phone: phone.trim(),
+            bio: bio.trim(),
         });
         setSubmitting(false);
 
@@ -74,7 +78,7 @@ function CompleteProfileContent() {
         }
 
         router.replace(nextPath);
-    }, [fullName, nextPath, phone, router, updateProfile]);
+    }, [bio, email, fullName, nextPath, phone, router, updateProfile]);
 
     const handleSignOut = useCallback(async () => {
         await signOut();
@@ -107,8 +111,10 @@ function CompleteProfileContent() {
                                 id="complete-profile-email"
                                 className="login-input"
                                 type="email"
-                                value={user?.email || profile?.email || ""}
-                                disabled
+                                placeholder="이메일 주소"
+                                value={email}
+                                onChange={(event) => setEmail(event.target.value)}
+                                required
                             />
                         </div>
 
@@ -140,6 +146,23 @@ function CompleteProfileContent() {
                                 onChange={(event) => setPhone(event.target.value)}
                                 required
                             />
+                        </div>
+
+                        <div className="form-row">
+                            <label className="complete-profile-label" htmlFor="complete-profile-bio">
+                                자기소개
+                            </label>
+                            <textarea
+                                id="complete-profile-bio"
+                                className="login-input login-textarea"
+                                placeholder="간단한 자기소개를 입력해 주세요"
+                                value={bio}
+                                onChange={(event) => setBio(event.target.value)}
+                                rows={4}
+                            />
+                            <p className="profile-helper-text">
+                                워크숍 신청시 입력되는 간단한 자기소개문구입니다.
+                            </p>
                         </div>
 
                         {errorMessage && (

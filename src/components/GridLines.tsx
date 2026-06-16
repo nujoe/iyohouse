@@ -1,18 +1,35 @@
 import { memo } from "react";
+import {
+    GRID_HORIZONTAL_LINES,
+    GRID_INTERSECTIONS,
+    GRID_VERTICAL_LINES,
+} from "@/lib/gridIntersections";
 
 function GridLines() {
     return (
         <>
-            <div className="h-line grid-row-1"></div><div className="h-line grid-row-2"></div>
+            {GRID_HORIZONTAL_LINES.map((line) => (
+                <div key={line.id} className={`h-line ${line.className}`}></div>
+            ))}
 
-            {/* 풀 사이즈 수직선 */}
-            <div className="v-line" style={{ left: 'var(--grid-line-x-1)' }}></div>
-            <div className="v-line" style={{ left: 'var(--grid-line-x-3)' }}></div>
-            <div className="v-line v-line-center" style={{ left: 'var(--grid-line-x-center)' }}></div>
+            {GRID_VERTICAL_LINES.map((line) => (
+                <div
+                    key={line.id}
+                    className={`v-line ${line.className ?? ""}`}
+                    style={{ left: line.left }}
+                ></div>
+            ))}
 
-            {/* 교차점 마커 (색상 블록) */}
-            <div className="top-v-1"></div><div className="top-v-3"></div>
-            <div className="top-v-center"></div>
+            {GRID_INTERSECTIONS.map((intersection) => (
+                <div
+                    key={intersection.id}
+                    className={intersection.className}
+                    style={{
+                        left: intersection.left,
+                        top: intersection.top,
+                    }}
+                ></div>
+            ))}
         </>
     );
 }

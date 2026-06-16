@@ -30,6 +30,8 @@
     position: relative;
     width: 100%;
     max-width: 420px;
+    max-height: min(760px, calc(100vh - 32px));
+    overflow-y: auto;
     background: #ffffff;
     z-index: 10;
     transform: translateY(20px);
@@ -40,7 +42,8 @@
 }
 
 .login-modal-card button,
-.login-modal-card input {
+.login-modal-card input,
+.login-modal-card textarea {
     font-family: inherit;
 }
 
@@ -215,6 +218,46 @@
 
 .login-input:focus {
     border-color: #000;
+}
+
+.login-textarea {
+    min-height: 104px;
+    line-height: 1.55;
+    resize: vertical;
+}
+
+.profile-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.profile-edit-form .email-submit-btn {
+    margin-top: 4px;
+}
+
+.profile-helper-text {
+    margin: -2px 0 4px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #777;
+}
+
+.profile-form-status {
+    margin: 2px 0;
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.profile-form-status.error {
+    color: #c80000;
+}
+
+.profile-form-status.success {
+    color: #006b2e;
 }
 
 .email-submit-btn {

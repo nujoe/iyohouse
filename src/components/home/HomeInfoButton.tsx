@@ -5,10 +5,11 @@ import type { Translation } from "@/lib/i18n";
 
 interface HomeInfoButtonProps {
     className?: string;
+    label?: string;
     t: Translation;
 }
 
-export default function HomeInfoButton({ className = "", t }: HomeInfoButtonProps) {
+export default function HomeInfoButton({ className = "", label = "info", t }: HomeInfoButtonProps) {
     const [isPinned, setIsPinned] = useState(false);
 
     useEffect(() => {
@@ -30,7 +31,7 @@ export default function HomeInfoButton({ className = "", t }: HomeInfoButtonProp
                 setIsPinned((prev) => !prev);
             }}
         >
-            <div className="info-bottom-text">info</div>
+            <div className="info-bottom-text">{label}</div>
             <div className="business-info-overlay" onClick={(e) => e.stopPropagation()}>
                 <strong>{t.footer.company}</strong><br />
                 {t.footer.address}<br />

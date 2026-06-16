@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import ContactSidebar from "@/components/home/ContactSidebar";
+import HomeInfoButton from "@/components/home/HomeInfoButton";
 import type { Translation } from "@/lib/i18n";
 
 interface HomeSidebarProps {
@@ -66,19 +67,54 @@ export default function HomeSidebar({
 
     return (
         <div className={`left-panel ${isPanelOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && onToggleSidebar()}>
-            <div
-                className="panel-icon"
-                style={{ opacity: shouldShowPanelIcon ? 1 : 0, pointerEvents: shouldShowPanelIcon ? 'auto' : 'none' }}
-                onClick={(e) => { if (isContactOpen) { e.stopPropagation(); onCloseContact(); } }}
-            >
-                <span></span>
-                <span></span>
-                <span></span>
+            <div className="mobile-panel-actions" style={{ opacity: shouldShowPanelIcon ? 1 : 0, pointerEvents: shouldShowPanelIcon ? 'auto' : 'none' }}>
+                <button
+                    type="button"
+                    className="panel-icon"
+                    aria-label={isPanelOpen ? "메뉴 닫기" : "메뉴 열기"}
+                    aria-expanded={isPanelOpen}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (isContactOpen) {
+                            onCloseContact();
+                        } else {
+                            onToggleSidebar();
+                        }
+                    }}
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <button
+                    type="button"
+                    className="mobile-panel-action mobile-home-action"
+                    aria-label="홈으로 이동"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPresetChange("main");
+                    }}
+                >
+                    <span className="mobile-home-glyph">⌂</span>
+                </button>
+                <button
+                    type="button"
+                    className="mobile-panel-action mobile-contact-action"
+                    aria-label="컨택트 열기"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPresetChange("contact");
+                    }}
+                >
+                    <span className="mobile-mail-glyph">✉</span>
+                </button>
+                <HomeInfoButton className="mobile-sidebar-info" label="i" t={t} />
             </div>
 
             {isPanelOpen && (
                 <button
                     className="sidebar-close-btn"
+                    aria-label="메뉴 닫기"
                     onClick={(e) => {
                         e.stopPropagation();
                         if (isContactOpen) {
