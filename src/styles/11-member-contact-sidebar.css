@@ -715,8 +715,8 @@
         flex: none !important;
         width: 100% !important;
         overflow-y: visible !important;
-        padding: 0px 25px 20px 10px !important;
-        /* 우측 25px 격자선 침범 방지 */
+        padding: 10px 25px 20px 25px !important;
+        /* 좌우 패딩을 25px로 통일하여 격자 제외 영역 내 중앙 정렬 */
         box-sizing: border-box !important;
     }
 
