@@ -623,7 +623,6 @@
         z-index: 11001;
         box-sizing: border-box;
         top: 0;
-        transform: translateX(-50%);
     }
 
     .mobile-main-divider::before {
