@@ -679,11 +679,10 @@
         box-sizing: border-box !important;
     }
 
-    /* 모바일 메인 뷰 활성화 시 수직 중앙 나눔선 가림 */
-    .preset-main .v-line-center,
-    .preset-main .top-v-center {
-        opacity: 0 !important;
-        pointer-events: none !important;
+    /* 모바일에서는 수직 중앙 나눔선(중앙선)을 완전히 제거 */
+    .v-line-center,
+    .top-v-center {
+        display: none !important;
     }
 
     /* 멤버 페이지 모바일 최적화 (글 = 위, 사진 = 아래 세로 배치) */
@@ -743,12 +742,7 @@
         display: block !important;
     }
 
-    /* 모바일 멤버 뷰 활성화 시 수직 중앙 나눔선 가림 */
-    .preset-member .v-line-center,
-    .preset-member .top-v-center {
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
+    /* 모바일 멤버 뷰 활성화 시 수직 중앙선 제거 (위 공통 스타일로 커버됨) */
 
     /* info 버튼 모바일 여백 및 정렬 조정 (사진 밑 우측 하단으로 절대 배치) */
     .info-bottom-text-wrapper {
@@ -773,5 +767,12 @@
         bottom: calc(100% + 8px) !important;
         font-size: 11px !important;
         line-height: 1.5 !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .v-line-center,
+    .top-v-center {
+        display: none !important;
     }
 }
