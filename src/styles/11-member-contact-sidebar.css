@@ -600,9 +600,6 @@
 
     /* 모바일 전용 가로 구분선 (더블 라인 + 마름모 교차 마커) */
     .mobile-main-divider {
-        --mobile-divider-line-x-1: calc(100% - (var(--unit) * 2));
-        --mobile-divider-line-x-3: calc(100% - var(--unit));
-
         display: block;
         position: relative;
         width: 100% !important;
@@ -625,15 +622,16 @@
         border: var(--line-thickness, 1px) solid var(--line, #000);
         z-index: 11001;
         box-sizing: border-box;
-        top: calc(-1 * var(--line-thickness, 1px));
+        top: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
     }
 
     .mobile-main-divider::before {
-        left: var(--mobile-divider-line-x-1) !important;
+        left: var(--grid-line-x-1) !important;
     }
 
     .mobile-main-divider::after {
-        left: var(--mobile-divider-line-x-3) !important;
+        left: var(--grid-line-x-3) !important;
     }
 
     /* 메인 뷰 스크롤 해제 및 단일 스크롤 활성화 */
