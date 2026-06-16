@@ -173,9 +173,9 @@
     .visual-stack-v2 {
         position: absolute !important;
         left: var(--line-gap) !important;
-        top: 0 !important;
+        top: var(--line-gap) !important;
         width: calc(var(--line-x-1) - (var(--stage-width) / 2 + var(--line-gap) / 2)) !important;
-        height: 100% !important;
+        height: calc(100% - var(--line-gap)) !important;
         max-width: 100%;
         margin: 0 !important;
         align-items: center;
