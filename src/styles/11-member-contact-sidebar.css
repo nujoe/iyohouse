@@ -622,8 +622,8 @@
         border: var(--line-thickness, 1px) solid var(--line, #000);
         z-index: 11001;
         box-sizing: border-box;
-        top: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
+        top: 0;
+        transform: translateX(-50%);
     }
 
     .mobile-main-divider::before {
