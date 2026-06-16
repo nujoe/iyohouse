@@ -74,6 +74,18 @@
     letter-spacing: -0.02em;
     font-weight: 700;
     line-height: 1.1;
+    position: relative;
+}
+
+.member-author-dot {
+    position: absolute;
+    left: 0;
+    bottom: 0px;
+    width: 8px;
+    height: 8px;
+    border: 0.5px solid #000;
+    border-radius: 0;
+    transform: translateY(2px);
 }
 
 .link-row-v2:hover {
