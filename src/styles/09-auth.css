@@ -38,7 +38,13 @@
     font-family: 'Courier New', Courier, monospace;
 
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.login-modal-frame {
+    position: relative;
     padding: 40px;
+    min-height: 100%;
+    background: #ffffff;
 }
 
 .login-modal-card button,
@@ -52,7 +58,8 @@
 }
 
 /* Grid Frame Styling for Modal */
-.login-modal-card::before {
+.login-modal-frame::before,
+.complete-profile-card::before {
     --t: 1px;
     content: '';
     position: absolute;
@@ -65,7 +72,8 @@
     z-index: 1;
 }
 
-.login-modal-card::after {
+.login-modal-frame::after,
+.complete-profile-card::after {
     --t: 1px;
     --s: var(--line-gap);
     content: '';
@@ -297,6 +305,7 @@
 
 .complete-profile-card {
     transform: none;
+    padding: 40px;
 }
 
 .complete-profile-card .login-input:disabled {
@@ -334,6 +343,10 @@
 @media (max-width: 600px) {
     .login-modal-card {
         max-width: 90%;
+    }
+
+    .login-modal-frame,
+    .complete-profile-card {
         padding: 30px 20px;
     }
 }

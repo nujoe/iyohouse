@@ -182,10 +182,11 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
         <div className={`login-overlay-wrapper ${isOpen ? 'active' : ''}`}>
             <div className="login-dimmer" onClick={onClose}></div>
             <div className="login-modal-card">
-                <div className="login-modal-header">
-                    <button className="login-close-btn" onClick={onClose}>&times;</button>
-                </div>
-                <div className="login-modal-body">
+                <div className="login-modal-frame">
+                    <div className="login-modal-header">
+                        <button className="login-close-btn" onClick={onClose}>&times;</button>
+                    </div>
+                    <div className="login-modal-body">
                     {user ? (
                         /* 로그인 상태 */
                         <div className="login-intro">
@@ -392,6 +393,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                             </div>
                         </>
                     )}
+                    </div>
                 </div>
             </div>
         </div>
