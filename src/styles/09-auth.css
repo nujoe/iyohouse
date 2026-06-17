@@ -234,6 +234,27 @@
     resize: vertical;
 }
 
+.profile-welcome-container {
+    margin-top: 8px;
+}
+
+.profile-welcome-container .profile-edit-form {
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.profile-welcome-container .complete-profile-label {
+    margin-bottom: 2px;
+}
+
+.profile-welcome-container .login-input {
+    padding: 11px 12px;
+}
+
+.profile-welcome-container .login-textarea {
+    min-height: 84px;
+}
+
 .profile-edit-form {
     display: flex;
     flex-direction: column;
@@ -247,7 +268,7 @@
 }
 
 .profile-helper-text {
-    margin: -2px 0 4px;
+    margin: -4px 0 2px;
     font-size: 11px;
     line-height: 1.45;
     color: #777;

@@ -217,7 +217,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                                 </div>
                             ) : (
                                 /* 프로필 완성: 일반 로그인 상태 */
-                                <div className="profile-welcome-container" style={{ marginTop: '24px' }}>
+                                <div className="profile-welcome-container">
                                     <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{t.auth.editProfile}</div>
                                     <div style={{ marginTop: '8px', fontSize: '13px', opacity: 0.6 }}>
                                         {t.auth.welcome(profile?.full_name)}
@@ -297,13 +297,6 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                                         </button>
                                     </form>
 
-                                    <button
-                                        className="email-submit-btn"
-                                        style={{ marginTop: '12px' }}
-                                        onClick={async () => { await signOut(); onClose(); }}
-                                    >
-                                        {t.auth.logout}
-                                    </button>
                                 </div>
                             )}
                         </div>
