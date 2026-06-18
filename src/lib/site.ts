@@ -7,7 +7,7 @@ export const SITE_URL = normalizeSiteUrl(
   process.env.NEXT_PUBLIC_SITE_URL || "https://iyohouse.com",
 );
 
-export const SITE_OG_IMAGE = "/opengraph-image";
+export const SITE_OG_IMAGE = "/opengraph/iyohouse%20opengraph.png";
 export const SITE_LOGO = "/logo.png";
 export const SITE_EMAIL = "goyangiyoram@gmail.com";
 

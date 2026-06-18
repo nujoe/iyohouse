@@ -1,4 +1,4 @@
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
 import { getWorkshopPath } from "@/lib/workshopRoutes";
 import { urlFor } from "@/sanity/image";
 
@@ -99,7 +99,7 @@ export function getWorkshopImageAlt(workshop: WorkshopSeoDocument) {
 export function getWorkshopOgImageUrl(workshop: WorkshopSeoDocument) {
   const image = workshop.seo?.image || workshop.poster;
 
-  if (!image) return `${SITE_URL}/opengraph-image`;
+  if (!image) return `${SITE_URL}${SITE_OG_IMAGE}`;
 
   return urlFor(image).width(1200).height(630).fit("crop").auto("format").url();
 }
