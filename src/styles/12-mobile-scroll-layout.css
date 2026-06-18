@@ -227,8 +227,9 @@
     }
 
     .date-marker {
-        left: auto !important;
-        right: 4px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
         width: 26px !important;
         min-width: 26px !important;
         height: 18px !important;
@@ -244,6 +245,9 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         box-sizing: border-box !important;
+        justify-content: center !important;
+        text-align: center !important;
+        margin: 0 auto !important;
     }
 
     .calendar-popover-card {
