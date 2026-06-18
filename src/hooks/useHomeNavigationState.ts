@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { createLegacyWorkshop } from "@/lib/home/pageConfig";
+import { resetHomeScrollPosition } from "@/hooks/useHomeScrollReset";
 
 interface UseHomeNavigationStateOptions {
     sanityWorkshops: any[];
@@ -104,6 +105,7 @@ export function useHomeNavigationState({ sanityWorkshops }: UseHomeNavigationSta
 
     const handleSelectWorkshop = useCallback((workshop: any) => {
         const id = workshop._id || workshop.id;
+        resetHomeScrollPosition();
         router.push(`${pathname}?${createQueryString('workshop', id.toString())}`, { scroll: false });
     }, [createQueryString, pathname, router]);
 
@@ -113,11 +115,13 @@ export function useHomeNavigationState({ sanityWorkshops }: UseHomeNavigationSta
             return;
         }
         setIsContactOpen(false);
+        resetHomeScrollPosition();
         setVisited(v => v[preset] ? v : { ...v, [preset]: true });
         const params = new URLSearchParams(createQueryString('preset', preset === 'main' ? null : preset));
         params.delete('workshop');
         const nextPath = `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
         transitionToPreset(preset, null, () => {
+            resetHomeScrollPosition();
             router.push(nextPath, { scroll: false });
         });
     }, [createQueryString, pathname, router, transitionToPreset]);

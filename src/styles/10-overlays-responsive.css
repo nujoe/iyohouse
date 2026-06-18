@@ -168,22 +168,31 @@
         justify-content: center !important;
         align-items: flex-start !important;
         background: #fff;
-        padding-bottom: 20px !important;
+        padding-bottom: 0 !important;
     }
 
     .detail-poster-wrapper {
         width: 100% !important;
         height: auto !important;
         aspect-ratio: auto !important;
+        overflow: hidden !important;
         display: block !important;
+    }
+
+    .detail-poster-aspect-box {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: var(--aspect-ratio, 1080 / 1350) !important;
+        background: #fff !important;
+        overflow: hidden !important;
     }
 
     .detail-main-poster {
         width: 100% !important;
-        height: auto !important;
-        max-height: 60vh !important;
-        object-fit: contain !important;
-        object-position: top !important;
+        height: 100% !important;
+        max-height: none !important;
+        object-fit: cover !important;
+        object-position: center top !important;
         display: block !important;
     }
 
