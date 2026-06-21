@@ -3,7 +3,7 @@
   --iyo-chatbot-paper: #ffffff;
   --iyo-chatbot-line: rgba(17, 17, 17, 0.22);
   --iyo-chatbot-soft: #f7f3ec;
-  --iyo-chatbot-highlight: #fff15a;
+  --iyo-chatbot-highlight: var(--intersect);
   --iyo-chatbot-left: calc(53vw - 124px);
   --iyo-chatbot-y: 0px;
   position: fixed;
@@ -61,9 +61,8 @@
   min-height: 40px;
   place-items: center;
   border: 1px solid var(--iyo-chatbot-ink);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--iyo-chatbot-paper);
-  box-shadow: 4px 4px 0 var(--iyo-chatbot-highlight);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.05rem;
 }
@@ -82,10 +81,9 @@
   display: grid;
   gap: 10px;
   border: 1px solid var(--iyo-chatbot-ink);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 12px;
   background: var(--iyo-chatbot-paper);
-  box-shadow: 5px 5px 0 var(--iyo-chatbot-highlight);
 }
 
 .iyo-chatbot-header {
@@ -113,7 +111,7 @@
   width: 28px;
   height: 28px;
   border: 1px solid var(--iyo-chatbot-line);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--iyo-chatbot-paper);
   cursor: pointer;
 }
@@ -130,7 +128,7 @@
   width: fit-content;
   max-width: 94%;
   border: 1px solid var(--iyo-chatbot-line);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 9px 10px;
   background: var(--iyo-chatbot-paper);
   line-height: 1.55;
@@ -161,7 +159,7 @@
 
 .iyo-chatbot-sources a {
   border: 1px solid var(--iyo-chatbot-line);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 3px 6px;
   color: #426b48;
   font-size: 0.76rem;
@@ -173,28 +171,34 @@
 .iyo-chatbot-faqs {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 10px;
   width: 100%;
 }
 
 .iyo-chatbot-faq-btn {
-  width: 100%;
+  width: fit-content;
+  max-width: 94%;
+  align-self: flex-start;
+  margin-left: 0;
+  margin-right: 0;
   text-align: left;
-  border: 1px solid var(--iyo-chatbot-ink);
-  border-radius: 6px;
+  border: 1px solid var(--iyo-chatbot-line);
+  border-radius: 0;
   background: var(--iyo-chatbot-paper);
   color: var(--iyo-chatbot-ink);
-  padding: 10px 12px;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  padding: 9px 10px;
+  font-size: 0.86rem;
+  line-height: 1.55;
   cursor: pointer;
-  transition: background 160ms ease, transform 100ms ease;
+  transition: background 160ms ease, border-color 160ms ease, transform 100ms ease;
   outline: none;
 }
 
 .iyo-chatbot-faq-btn:hover {
   background: var(--iyo-chatbot-highlight);
+  border-color: var(--iyo-chatbot-ink);
 }
 
 .iyo-chatbot-faq-btn:active {
@@ -213,7 +217,7 @@
   min-width: 0;
   min-height: 40px;
   border: 1px solid var(--iyo-chatbot-line);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 0 11px;
   background: var(--iyo-chatbot-soft);
   color: var(--iyo-chatbot-ink);
@@ -224,7 +228,7 @@
 .iyo-chatbot-settings-toggle {
   min-height: 40px;
   border: 1px solid var(--iyo-chatbot-ink);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 0 12px;
   background: var(--iyo-chatbot-ink);
   color: var(--iyo-chatbot-paper);
@@ -253,10 +257,9 @@
   display: grid;
   gap: 10px;
   border: 1px solid var(--iyo-chatbot-ink);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 12px;
   background: var(--iyo-chatbot-paper);
-  box-shadow: 5px 5px 0 var(--iyo-chatbot-highlight);
 }
 
 @media (max-width: 560px) {
@@ -278,7 +281,12 @@
   }
 
   .iyo-chatbot-popover {
-    width: min(340px, calc(100vw - 24px));
+    position: fixed !important;
+    left: 50% !important;
+    bottom: 80px !important;
+    transform: translateX(-50%) !important;
+    width: min(340px, calc(100vw - 24px)) !important;
+    right: auto !important;
   }
 }
 

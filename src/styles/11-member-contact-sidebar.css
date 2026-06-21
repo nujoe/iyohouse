@@ -763,7 +763,7 @@
     }
 
     .contact-sidebar-header .modal-title {
-        font-size: clamp(0.85rem, 3.8vw, 1.15rem) !important;
+        font-size: 1.3rem !important;
         white-space: nowrap !important;
         letter-spacing: -0.04em !important;
         text-overflow: ellipsis !important;
@@ -851,6 +851,33 @@
         padding: calc(var(--unit) + var(--line-gap)) !important;
         gap: calc(var(--unit) + var(--line-gap)) !important;
         box-sizing: border-box !important;
+    }
+
+    .main-visual-column .visual-stack-v2,
+    .member-visual-aside .visual-stack-v2 {
+        height: auto !important;
+        overflow-y: visible !important;
+        overflow-x: hidden !important;
+        padding: 0 var(--line-gap) var(--line-gap) var(--line-gap) !important;
+        gap: var(--line-gap) !important;
+        box-sizing: border-box !important;
+        align-items: stretch !important;
+    }
+
+    .main-visual-column .v-box-v2,
+    .member-visual-aside .v-box-v2 {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        border: 0 !important;
+        flex: 0 0 auto !important;
+    }
+
+    .main-visual-column .v-box-v2 img,
+    .member-visual-aside .v-box-v2 img {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
     }
 
     /* 멤버 페이지 모바일 최적화 (글 = 위, 사진 = 아래 세로 배치) */

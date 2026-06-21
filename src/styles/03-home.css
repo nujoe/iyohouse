@@ -180,6 +180,15 @@
         width: 100%;
     }
 
+    .main-pola-wrapper {
+        padding: 16px var(--line-gap) 8px 0;
+        margin-top: 24px;
+    }
+
+    .main-pola-img {
+        max-width: min(180px, 56vw) !important;
+    }
+
 
 
     .main-intro-text {
