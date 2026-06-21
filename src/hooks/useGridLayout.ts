@@ -25,6 +25,7 @@ export function useGridLayout({
                 top2: "calc(100% - var(--line-gap))",
             }
             : getGridPreset(gridPreset);
+        const topRow1 = "0px";
         const intersectColor = dynamicColor;
         const lineX4 = activePreset === 'main' ? logoWidth : currentPreset.line4;
 
@@ -37,13 +38,14 @@ export function useGridLayout({
             "--grid-line-x-3": currentGridPreset.line3,
             "--grid-line-x-center": "calc(50% - var(--line-gap) / 2)",
             "--grid-top-row-2": currentGridPreset.top2,
+            "--top-row-1": topRow1,
             "--top-row-1-actual": logoHeight,
             "--top-row-2": currentPreset.top2,
             "--line-x-center": "calc(50% - var(--line-gap) / 2)",
             "--intersect": intersectColor,
         } as CSSProperties;
 
-        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc(50% - var(--line-gap) / 2); --grid-line-x-1: ${currentGridPreset.line1}; --grid-line-x-2: calc(50% - var(--line-gap) / 2); --grid-line-x-3: ${currentGridPreset.line3}; --grid-line-x-center: calc(50% - var(--line-gap) / 2); --grid-top-row-2: ${currentGridPreset.top2}; --top-row-1-actual: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
+        const rootGridStyle = `:root { --line-x-1: ${currentPreset.line1}; --line-x-3: ${currentPreset.line3}; --line-x-4: ${lineX4}; --line-x-center: calc(50% - var(--line-gap) / 2); --grid-line-x-1: ${currentGridPreset.line1}; --grid-line-x-2: calc(50% - var(--line-gap) / 2); --grid-line-x-3: ${currentGridPreset.line3}; --grid-line-x-center: calc(50% - var(--line-gap) / 2); --grid-top-row-2: ${currentGridPreset.top2}; --top-row-1: ${topRow1}; --top-row-1-actual: ${logoHeight}; --top-row-2: ${currentPreset.top2}; --intersect: ${intersectColor}; --accent-fixed: ${dynamicColor}; --scroll-hue: 220; }`;
 
         return {
             currentPreset,

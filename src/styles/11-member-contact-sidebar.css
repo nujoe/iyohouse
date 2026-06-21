@@ -1,7 +1,7 @@
 /* ─── 멤버 페이지 (Member View) v2 ──────────────── */
 .member-view-container {
     width: 100%;
-    height: calc(100vh - var(--top-row-1));
+    height: 100%;
     background: #fff;
     color: #000;
     overflow: hidden;
@@ -66,8 +66,9 @@
 
 .card-name {
     font-size: 26px;
+    border-bottom: 5px solid var(--intersect);
     color: black;
-    padding: 0;
+    padding: 0 0px 4px 10px;
     display: inline-block;
     box-sizing: border-box;
     letter-spacing: -0.02em;
@@ -100,8 +101,6 @@
     margin: 0;
     word-break: keep-all;
     color: #333;
-    border-left: 5px solid var(--intersect);
-    padding-left: 12px;
 }
 
 .card-links {
@@ -170,21 +169,37 @@
 }
 
 @media (min-width: 769px) {
-    .visual-stack-v2 {
+    .main-visual-column .visual-stack-v2,
+    .member-visual-aside .visual-stack-v2 {
         position: absolute !important;
-        left: var(--line-gap) !important;
-        top: var(--line-gap) !important;
-        width: calc(var(--line-x-1) - (var(--stage-width) / 2 + var(--line-gap) / 2)) !important;
-        height: calc(100% - var(--line-gap)) !important;
+        inset: var(--line-gap) !important;
+        display: flex !important;
+        flex-direction: column;
+        gap: var(--line-gap) !important;
+        width: auto !important;
+        height: auto !important;
         max-width: 100%;
         margin: 0 !important;
-        align-items: center;
+        align-items: stretch;
         box-sizing: border-box;
-        padding: calc(var(--unit) + var(--line-gap)) !important;
+        padding: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
 
-    .v-box-v2 {
+    .main-visual-column .v-box-v2,
+    .member-visual-aside .v-box-v2 {
         width: 100%;
+        height: auto;
+        min-height: 0;
+        border: 0;
+        flex: 0 0 auto;
+    }
+
+    .main-visual-column .v-box-v2 img,
+    .member-visual-aside .v-box-v2 img {
+        width: 100% !important;
+        height: auto !important;
     }
 }
 
@@ -197,7 +212,7 @@
     width: 100%;
     flex-shrink: 0;
     /* 부모 컨테이너 크기에 맞춰 수축되지 않도록 설정 */
-    border: 1px solid #000;
+    border: 0;
     position: relative;
     overflow: hidden;
     background: transparent;
