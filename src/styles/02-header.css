@@ -3,10 +3,6 @@
     --top-row-1: 0px !important;
 }
 
-.app-container {
-    --top-row-1: 0px !important;
-}
-
 .header {
     opacity: 0 !important;
     pointer-events: none !important;
@@ -40,7 +36,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0px 0px 0px 100px;
+    padding: 0px var(--unit) 0px 100px;
 
     z-index: 13000;
     overflow: hidden;
@@ -147,7 +143,7 @@
     justify-content: center;
     transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
-    padding: 0 20px;
+    padding: 0 15px;
     font-family: inherit;
     font-size: 1.4rem;
     font-weight: 700;
