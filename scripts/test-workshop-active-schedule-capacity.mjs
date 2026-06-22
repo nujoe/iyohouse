@@ -27,6 +27,18 @@ function requireIncludes(relativePath, needles) {
   return content;
 }
 
+function requireExcludes(relativePath, needles) {
+  const content = read(relativePath);
+
+  for (const needle of needles) {
+    if (content.includes(needle)) {
+      failures.push(`${relativePath} must not contain "${needle}".`);
+    }
+  }
+
+  return content;
+}
+
 function requireMatches(relativePath, checks) {
   const content = read(relativePath);
 
@@ -100,6 +112,23 @@ requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "isScheduleFull",
   "getScheduleKey",
   "disabled={isFull}",
+]);
+
+requireExcludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
+  "s-capacity",
+  "const sessionPaidCount = getSchedulePaidCount(workshop, session)",
+  "const sessionCapacity = getSessionCapacity(workshop, session)",
+]);
+
+requireMatches("src/styles/10-overlays-responsive.css", [
+  [/\.schedule-option\s*\{[\s\S]*?flex-direction:\s*row;/, "schedule options must lay out date and time on one line."],
+  [/\.schedule-option\s*\{[\s\S]*?align-items:\s*center;/, "schedule options must vertically align one-line schedule content."],
+  [/\.schedule-option\s*\{[\s\S]*?white-space:\s*nowrap;/, "schedule options must keep weekday, date, and time on one line."],
+]);
+
+requireExcludes("src/styles/10-overlays-responsive.css", [
+  ".schedule-option .s-capacity",
+  ".s-capacity",
 ]);
 
 requireMatches("src/sanity/workshops.ts", [

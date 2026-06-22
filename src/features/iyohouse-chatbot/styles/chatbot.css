@@ -228,21 +228,25 @@
   opacity: 0.45;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .iyo-chatbot {
-    --iyo-chatbot-left: calc(100vw - 124px);
-    left: min(calc(100vw - 108px), max(12px, var(--iyo-chatbot-left)));
-    right: auto;
-    bottom: min(calc(100vh - 98px), max(16px, calc(16px + var(--iyo-chatbot-y))));
+    left: auto !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    transition: none !important;
   }
 
   .iyo-chatbot-popover {
     position: fixed !important;
     left: 50% !important;
-    bottom: 80px !important;
+    bottom: 112px !important;
     transform: translateX(-50%) !important;
-    width: min(340px, calc(100vw - 24px)) !important;
+    width: min(310px, calc(100vw - 32px)) !important;
     right: auto !important;
+  }
+
+  .iyo-chatbot-messages {
+    max-height: 200px !important;
   }
 }
 

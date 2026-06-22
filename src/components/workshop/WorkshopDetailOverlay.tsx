@@ -534,8 +534,6 @@ export default function WorkshopDetailOverlay({
                                             {getWorkshopSchedule(workshop).map((session: any, index: number) => {
                                                 const localizedSession = getLocalizedScheduleSession(session, language);
                                                 const isFull = isScheduleFull(workshop, session);
-                                                const sessionCapacity = getSessionCapacity(workshop, session);
-                                                const sessionPaidCount = getSchedulePaidCount(workshop, session);
                                                 return (
                                                     <button
                                                         type="button"
@@ -549,9 +547,6 @@ export default function WorkshopDetailOverlay({
                                                     >
                                                         {localizedSession.date && <span className="s-date">{localizedSession.date}</span>}
                                                         {localizedSession.time && <span className="s-time">{localizedSession.time}</span>}
-                                                        <span className="s-capacity">
-                                                            {isFull ? t.workshop.closed : `${sessionPaidCount}/${sessionCapacity}`}
-                                                        </span>
                                                     </button>
                                                 );
                                             })}

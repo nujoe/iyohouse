@@ -131,6 +131,24 @@ export default function ChatbotWidget() {
   }, []);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    const handleOutsideAction = (event: MouseEvent | TouchEvent) => {
+      if (chatbotRef.current && !chatbotRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideAction);
+    document.addEventListener("touchstart", handleOutsideAction);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideAction);
+      document.removeEventListener("touchstart", handleOutsideAction);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isMounted || !chatbotConfig.enabled) return;
 
     fetch("/api/chatbot/health", { cache: "no-store" })

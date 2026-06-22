@@ -335,8 +335,10 @@
     padding: 12px 20px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
     border: 1px solid transparent;
     border-radius: 4px;
     transition: all 0.2s ease;
@@ -399,19 +401,13 @@
 .schedule-option .s-time {
     font-size: 13px;
     color: #666;
-}
-
-.schedule-option .s-capacity {
-    font-size: 12px;
-    color: #777;
+    flex: 0 0 auto;
 }
 
 .schedule-option.is-full .s-date,
 .schedule-option.is-full .s-time,
-.schedule-option.is-full .s-capacity,
 .schedule-option:disabled .s-date,
-.schedule-option:disabled .s-time,
-.schedule-option:disabled .s-capacity {
+.schedule-option:disabled .s-time {
     color: #777;
 }
 
