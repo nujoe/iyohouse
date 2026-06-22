@@ -80,6 +80,15 @@ requireIncludes("supabase/migrations/20260622000000_add_workshop_schedule_capaci
   "status <> 'active'",
 ]);
 
+requireIncludes("supabase/migrations/20260622001000_backfill_registration_schedule_columns.sql", [
+  "ALTER TABLE public.workshop_registrations_v2",
+  "ADD COLUMN IF NOT EXISTS schedule_key TEXT",
+  "ADD COLUMN IF NOT EXISTS schedule_label TEXT",
+  "ADD COLUMN IF NOT EXISTS schedule_date TEXT",
+  "ADD COLUMN IF NOT EXISTS schedule_time TEXT",
+  "ADD COLUMN IF NOT EXISTS snapshot_bio TEXT",
+]);
+
 requireIncludes("src/hooks/useWorkshopData.ts", [
   "scheduleCounts",
   "setScheduleCounts",
