@@ -462,7 +462,9 @@ a.workshop-item {
     }
 
     .workshop-item:nth-child(2n)::after,
-    .workshop-item:nth-child(2n) .intersection-diamond {
+    .workshop-item:nth-child(2n) .intersection-diamond,
+    .workshop-item.is-mobile-row-end::after,
+    .workshop-item.is-mobile-row-end .intersection-diamond {
         display: none !important;
     }
 
@@ -471,7 +473,9 @@ a.workshop-item {
     .workshop-item:nth-child(2n+1):nth-last-child(2)::before,
     .workshop-item:nth-child(2n+1):nth-last-child(2) .intersection-diamond,
     .workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item::before,
-    .workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item .intersection-diamond {
+    .workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item .intersection-diamond,
+    .workshop-item.is-mobile-last-row::before,
+    .workshop-item.is-mobile-last-row .intersection-diamond {
         display: none !important;
     }
 }

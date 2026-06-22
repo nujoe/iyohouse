@@ -47,6 +47,10 @@ function expectDisplayNone(atRules, selector) {
 
 const workshopCss = parseCss("src/styles/06-workshop-calendar.css");
 const mobileCss = parseCss("src/styles/12-mobile-scroll-layout.css");
+const workshopGridSource = readFileSync(
+  resolve(rootDir, "src/components/WorkshopGrid.tsx"),
+  "utf8",
+);
 const workshopMobile = mediaRules(workshopCss, "max-width: 800px");
 const mobileLayout = mediaRules(mobileCss, "max-width: 768px");
 
@@ -59,6 +63,10 @@ for (const selector of [
   ".workshop-item:nth-child(2n+1):nth-last-child(2) .intersection-diamond",
   ".workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item::before",
   ".workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item .intersection-diamond",
+  ".workshop-item.is-mobile-row-end::after",
+  ".workshop-item.is-mobile-row-end .intersection-diamond",
+  ".workshop-item.is-mobile-last-row::before",
+  ".workshop-item.is-mobile-last-row .intersection-diamond",
 ]) {
   expectDisplayNone(workshopMobile, selector);
 }
@@ -66,6 +74,10 @@ for (const selector of [
 for (const selector of [
   ".preset-workshop .grid-intersection-marker-left",
   ".preset-workshop .grid-intersection-marker-right",
+  ".preset-workshop .grid-intersection-marker-bottom",
+  ".grid-preset-workshop .grid-intersection-marker-left",
+  ".grid-preset-workshop .grid-intersection-marker-right",
+  ".grid-preset-workshop .grid-intersection-marker-bottom",
 ]) {
   const declarations = declarationsFor(mobileLayout, selector);
   assert.deepEqual(
@@ -77,6 +89,19 @@ for (const selector of [
     declarations.visibility,
     { value: "hidden", important: true },
     `${selector} should not reserve visible edge markers`,
+  );
+}
+
+for (const needle of [
+  "visibleWorkshops",
+  "isMobileRowEnd",
+  "isMobileLastRow",
+  "is-mobile-row-end",
+  "is-mobile-last-row",
+]) {
+  assert.ok(
+    workshopGridSource.includes(needle),
+    `WorkshopGrid should include ${needle} for deterministic mobile marker classes`,
   );
 }
 

@@ -27,6 +27,7 @@ function WorkshopGrid({
     getTagColor
 }: WorkshopGridProps) {
     const { language, t } = useLanguage();
+    const visibleWorkshops = workshops.filter((ws) => ws?.isActive !== false);
     const counts = registrationCounts || registrations.reduce<Record<string, number>>((acc, registration) => {
         const workshopId = registration?.workshop_id;
         if (typeof workshopId === 'string' || typeof workshopId === 'number') {
@@ -38,6 +39,15 @@ function WorkshopGrid({
     
     const renderWorkshopPreview = (ws: any, index: number) => {
         const id = ws._id || ws.id;
+        const mobileColumns = 2;
+        const lastRowStart = Math.floor((visibleWorkshops.length - 1) / mobileColumns) * mobileColumns;
+        const isMobileRowEnd = (index + 1) % mobileColumns === 0;
+        const isMobileLastRow = index >= lastRowStart;
+        const itemClassName = [
+            "workshop-item",
+            isMobileRowEnd ? "is-mobile-row-end" : "",
+            isMobileLastRow ? "is-mobile-last-row" : "",
+        ].filter(Boolean).join(" ");
         const title = getLocalizedWorkshopTitle(ws, language, t);
         const workshopPath = getWorkshopPath(ws);
         const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
@@ -97,7 +107,7 @@ function WorkshopGrid({
             return (
                 <a
                     key={id}
-                    className="workshop-item"
+                    className={itemClassName}
                     href={workshopPath}
                     onClick={(event) => {
                         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -114,7 +124,7 @@ function WorkshopGrid({
         return (
             <div
                 key={id}
-                className="workshop-item"
+                className={itemClassName}
                 onClick={() => onSelectWorkshop(ws)}
                 style={{ cursor: 'pointer' }}
             >
@@ -125,9 +135,7 @@ function WorkshopGrid({
 
     return (
         <div className="workshop-grid">
-            {workshops
-                .filter((ws) => ws?.isActive !== false)
-                .map((ws, index) => renderWorkshopPreview(ws, index))}
+            {visibleWorkshops.map((ws, index) => renderWorkshopPreview(ws, index))}
         </div>
     );
 }
