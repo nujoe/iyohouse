@@ -28,9 +28,29 @@ function mobileRules(root, selector) {
     return rules;
 }
 
-function declarationsFor(root, selector) {
+function desktopRules(root, selector) {
+    const rules = [];
+
+    root.walkAtRules("media", (atRule) => {
+        if (!atRule.params.includes("min-width")) {
+            return;
+        }
+
+        atRule.walkRules((rule) => {
+            if (rule.selectors?.includes(selector)) {
+                rules.push(rule);
+            }
+        });
+    });
+
+    return rules;
+}
+
+function declarationsFor(root, selector, mode = "mobile") {
+    const rules = mode === "desktop" ? desktopRules(root, selector) : mobileRules(root, selector);
+
     return Object.fromEntries(
-        mobileRules(root, selector).flatMap((rule) =>
+        rules.flatMap((rule) =>
             rule.nodes
                 .filter((node) => node.type === "decl")
                 .map((decl) => [decl.prop, { value: decl.value, important: decl.important }]),
@@ -45,6 +65,21 @@ function expectImportantDeclaration(declarations, property, value) {
         `${property} should be ${value} !important`,
     );
 }
+
+test("desktop main and member visual stacks touch the top and bottom edges while keeping side grid spacing", () => {
+    const css = parseCss("src/styles/11-member-contact-sidebar.css");
+    const stackSelectors = [
+        ".main-visual-column .visual-stack-v2",
+        ".member-visual-aside .visual-stack-v2",
+    ];
+
+    for (const selector of stackSelectors) {
+        const declarations = declarationsFor(css, selector, "desktop");
+        expectImportantDeclaration(declarations, "inset", "0 var(--line-gap)");
+        expectImportantDeclaration(declarations, "padding", "0");
+        expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
+    }
+});
 
 test("mobile main and member visual stacks use grid-gap spacing with original image ratio", () => {
     const css = parseCss("src/styles/11-member-contact-sidebar.css");
@@ -63,7 +98,7 @@ test("mobile main and member visual stacks use grid-gap spacing with original im
 
     for (const selector of stackSelectors) {
         const declarations = declarationsFor(css, selector);
-        expectImportantDeclaration(declarations, "padding", "0 var(--line-gap) var(--line-gap) var(--line-gap)");
+        expectImportantDeclaration(declarations, "padding", "0 var(--line-gap)");
         expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
         expectImportantDeclaration(declarations, "height", "auto");
         expectImportantDeclaration(declarations, "overflow-y", "visible");

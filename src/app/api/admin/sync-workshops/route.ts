@@ -3,6 +3,7 @@ import { createClient } from 'next-sanity'
 import { apiVersion, dataset, projectId } from '@/sanity/env'
 import { getSupabaseServerClient } from '@/lib/supabase/admin'
 import { createClient as createSupabaseSessionClient } from '@/lib/supabase/server'
+import { parseCapacity } from '@/lib/workshopUtils'
 
 const sanityWriteClient = createClient({
   projectId,
@@ -25,7 +26,7 @@ type SanityWorkshop = {
   title?: string
   number?: number
   price?: number
-  capacity?: number
+  capacity?: string | number
   isActive?: boolean
   isClosed?: boolean
   schedule?: SanityScheduleSession[]
@@ -299,7 +300,7 @@ export async function POST(request: NextRequest) {
 
     for (const ws of sanityWorkshops) {
       const price = normalizeInteger(ws.price)
-      const capacity = normalizeInteger(ws.capacity)
+      const capacity = parseCapacity(ws.capacity, ws.schedule)
       const title = ws.title || `Workshop #${ws.number || ws._id}`
       const hasValidPrice = price !== null && price >= 0
       const hasValidCapacity = capacity !== null && capacity > 0

@@ -7,6 +7,7 @@ import { useToast } from "@/context/ToastContext";
 import { TEXT } from "@/lib/i18n/translations";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
+import { parseCapacity } from "@/lib/workshopUtils";
 import {
     getLocalizedCurriculumItem,
     getLocalizedScheduleSession,
@@ -228,7 +229,7 @@ export default function WorkshopDetailOverlay({
     }, [user, workshop?.supabase_workshop_id, supabase]);
 
     const getWorkshopCapacity = useCallback((ws: any) =>
-        typeof ws?.capacity === 'number' ? ws.capacity : 8, []);
+        parseCapacity(ws?.capacity, ws?.schedule) ?? 8, []);
 
     const getWorkshopPaidCount = useCallback((ws: any) => {
         const dbId = ws?.supabase_workshop_id;
@@ -468,7 +469,7 @@ export default function WorkshopDetailOverlay({
                         )}
 
                         {/* 정원 */}
-                        {typeof workshop.capacity === 'number' && (
+                        {workshop.capacity && (
                             <div className="detail-capacity">
                                 {t.workshop.capacityLabel(workshop.capacity)}
                             </div>

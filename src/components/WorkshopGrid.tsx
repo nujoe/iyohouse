@@ -9,6 +9,7 @@ import {
     getLocalizedWorkshopTitle,
     getLocalizedWorkshopTutor,
 } from "@/lib/i18n/workshopLocalization";
+import { parseCapacity } from "@/lib/workshopUtils";
 
 interface WorkshopGridProps {
     workshops: any[];
@@ -40,7 +41,7 @@ function WorkshopGrid({
         const title = getLocalizedWorkshopTitle(ws, language, t);
         const workshopPath = getWorkshopPath(ws);
         const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
-        const capacity = typeof ws.capacity === 'number' ? ws.capacity : 8;
+        const capacity = parseCapacity(ws.capacity, ws.schedule) ?? 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
         const isClosed = ws.isClosed || registeredCount >= capacity;
 

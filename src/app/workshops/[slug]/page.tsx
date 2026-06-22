@@ -203,10 +203,10 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
                     <dd>{scheduleLabel}</dd>
                   </div>
                 )}
-                {typeof workshop.capacity === "number" && (
+                {workshop.capacity && (
                   <div>
                     <dt>정원</dt>
-                    <dd>{workshop.capacity}명</dd>
+                    <dd>{typeof workshop.capacity === "number" ? `${workshop.capacity}명` : workshop.capacity}</dd>
                   </div>
                 )}
                 {typeof workshop.price === "number" && (

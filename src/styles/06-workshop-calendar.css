@@ -460,6 +460,20 @@ a.workshop-item {
         right: -0.5rem;
         bottom: -1.5rem;
     }
+
+    .workshop-item:nth-child(2n)::after,
+    .workshop-item:nth-child(2n) .intersection-diamond {
+        display: none !important;
+    }
+
+    .workshop-item:last-child:nth-child(2n+1)::before,
+    .workshop-item:last-child:nth-child(2n+1) .intersection-diamond,
+    .workshop-item:nth-child(2n+1):nth-last-child(2)::before,
+    .workshop-item:nth-child(2n+1):nth-last-child(2) .intersection-diamond,
+    .workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item::before,
+    .workshop-item:nth-child(2n+1):nth-last-child(2) + .workshop-item .intersection-diamond {
+        display: none !important;
+    }
 }
 
 .workshop-item * {

@@ -229,8 +229,9 @@ export const workshopType = defineType({
     defineField({
       name: 'capacity',
       title: '정원 (명)',
-      type: 'number',
-      validation: (Rule) => Rule.required().integer().min(1),
+      type: 'string',
+      description: '예: 24 또는 목요반 12명 금요반 12명',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'price',

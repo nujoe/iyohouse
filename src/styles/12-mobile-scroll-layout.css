@@ -138,6 +138,12 @@
         padding-top: 10px !important;
     }
 
+    .preset-workshop .grid-intersection-marker-left,
+    .preset-workshop .grid-intersection-marker-right {
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+
     .calendar-container {
         width: 100% !important;
         max-width: 100% !important;
