@@ -80,7 +80,7 @@ function expectImportantDeclaration(declarations, property, value) {
     );
 }
 
-test("desktop main and member visual stacks touch the top and bottom edges while keeping side grid spacing", () => {
+test("desktop main and member visual stacks keep one grid-gap padding around images", () => {
     const css = parseCss("src/styles/11-member-contact-sidebar.css");
     const stackSelectors = [
         ".main-visual-column .visual-stack-v2",
@@ -89,8 +89,8 @@ test("desktop main and member visual stacks touch the top and bottom edges while
 
     for (const selector of stackSelectors) {
         const declarations = declarationsFor(css, selector, "desktop");
-        expectImportantDeclaration(declarations, "inset", "0 var(--line-gap)");
-        expectImportantDeclaration(declarations, "padding", "0");
+        expectImportantDeclaration(declarations, "inset", "0");
+        expectImportantDeclaration(declarations, "padding", "var(--line-gap)");
         expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
     }
 });
@@ -112,7 +112,7 @@ test("mobile main and member visual stacks use grid-gap spacing with original im
 
     for (const selector of stackSelectors) {
         const declarations = declarationsFor(css, selector);
-        expectImportantDeclaration(declarations, "padding", "0 var(--line-gap)");
+        expectImportantDeclaration(declarations, "padding", "var(--line-gap)");
         expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
         expectImportantDeclaration(declarations, "height", "auto");
         expectImportantDeclaration(declarations, "overflow-y", "visible");

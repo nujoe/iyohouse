@@ -172,7 +172,7 @@
     .main-visual-column .visual-stack-v2,
     .member-visual-aside .visual-stack-v2 {
         position: absolute !important;
-        inset: 0 var(--line-gap) !important;
+        inset: 0 !important;
         display: flex !important;
         flex-direction: column;
         gap: var(--line-gap) !important;
@@ -182,7 +182,7 @@
         margin: 0 !important;
         align-items: stretch;
         box-sizing: border-box;
-        padding: 0 !important;
+        padding: var(--line-gap) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
     }
@@ -857,7 +857,7 @@
         height: auto !important;
         overflow-y: visible !important;
         overflow-x: hidden !important;
-        padding: 0 var(--line-gap) !important;
+        padding: var(--line-gap) !important;
         gap: var(--line-gap) !important;
         box-sizing: border-box !important;
         align-items: stretch !important;
