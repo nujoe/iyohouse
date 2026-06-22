@@ -43,6 +43,7 @@
   outline: none;
 }
 
+.iyo-chatbot-inner-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
