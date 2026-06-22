@@ -62,6 +62,16 @@ function requireMatches(relativePath, checks) {
 requireIncludes("src/sanity/schemaTypes/workshop.ts", [
   "name: 'isActive'",
   "initialValue: true",
+  "name: 'targetAudience'",
+  "title: '대상'",
+  "name: 'materials'",
+  "title: '준비물'",
+  "name: 'location'",
+  "title: '장소'",
+  "name: 'applicationGuide'",
+  "title: '신청 안내'",
+  "name: 'inquiry'",
+  "title: '문의'",
   "title: '정원 표시 문구'",
   "type: 'string'",
   "사이트 상세에 그대로 표시되는 문구입니다",
@@ -132,6 +142,9 @@ requireExcludes("src/hooks/useWorkshopData.ts", [
 
 requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "workshop.displayCapacity ?? workshop.capacity",
+  "WORKSHOP_INFO_FIELDS",
+  "detail-info-section",
+  "detail-info-row",
 ]);
 
 requireExcludes("src/hooks/useHomeNavigationState.ts", [

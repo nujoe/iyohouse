@@ -18,6 +18,14 @@ import {
     getScheduleSessionLabel,
 } from "@/lib/i18n/workshopLocalization";
 
+const WORKSHOP_INFO_FIELDS = [
+    { key: "targetAudience", label: "대상" },
+    { key: "materials", label: "준비물" },
+    { key: "location", label: "장소" },
+    { key: "applicationGuide", label: "신청 안내" },
+    { key: "inquiry", label: "문의" },
+] as const;
+
 interface WorkshopDetailOverlayProps {
     workshop: any;
     t: any;
@@ -242,6 +250,12 @@ export default function WorkshopDetailOverlay({
             : [], []);
 
     const hasSelectableSchedule = useCallback((ws: any) => getWorkshopSchedule(ws).length > 0, [getWorkshopSchedule]);
+    const workshopInfoItems = WORKSHOP_INFO_FIELDS
+        .map((field) => ({
+            ...field,
+            value: typeof workshop?.[field.key] === "string" ? workshop[field.key].trim() : "",
+        }))
+        .filter((item) => item.value);
 
     const getSessionCapacity = useCallback((ws: any, session: any) => {
         const sessionCapacity = getPositiveInteger(session?.capacity);
@@ -439,6 +453,17 @@ export default function WorkshopDetailOverlay({
                                 <p key={i}>{block.children?.map((c: any) => c.text).join('')}</p>
                             ))}
                         </div>
+
+                        {workshopInfoItems.length > 0 && (
+                            <div className="detail-info-section">
+                                {workshopInfoItems.map((item) => (
+                                    <div className="detail-info-row" key={item.key}>
+                                        <div className="detail-section-label">{item.label}</div>
+                                        <div className="detail-info-content">{item.value}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* 튜터 정보 */}
                         {(getLocalizedWorkshopTutor(workshop, language) || getLocalizedWorkshopTutorBio(workshop, language)) && (
