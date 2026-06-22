@@ -65,6 +65,11 @@
   background: transparent;
   -webkit-user-drag: none;
   user-select: none;
+  transition: transform 160ms ease;
+}
+
+.iyo-chatbot.is-facing-right .iyo-chatbot-logo-img {
+  transform: scaleX(-1);
 }
 
 .iyo-chatbot-avatar:hover .iyo-chatbot-logo-img,
@@ -243,10 +248,6 @@
 
 @media (max-width: 768px) {
   .iyo-chatbot {
-    left: auto !important;
-    top: auto !important;
-    right: 16px !important;
-    bottom: 16px !important;
     transition: none !important;
   }
 

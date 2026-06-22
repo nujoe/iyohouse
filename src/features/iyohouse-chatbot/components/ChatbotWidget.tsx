@@ -82,14 +82,24 @@ function getChatbotBounds(chatbotElement: HTMLElement | null): ChatbotBounds {
   const rect = chatbotElement?.getBoundingClientRect();
   const chatbotWidth = rect?.width || defaultChatbotSize;
   const chatbotHeight = rect?.height || defaultChatbotSize;
+  const stageRect = document.querySelector(".stage")?.getBoundingClientRect();
   const sidebarRect = document.querySelector(".left-panel")?.getBoundingClientRect();
-  const sidebarRight = sidebarRect && sidebarRect.width > 0
+  const rootStyle = getComputedStyle(document.documentElement);
+  const lineGap = Number.parseFloat(rootStyle.getPropertyValue("--line-gap")) || movementViewportPadding;
+  const topRow = Number.parseFloat(rootStyle.getPropertyValue("--top-row-1")) || 0;
+  const stageLeft = stageRect?.left ?? 0;
+  const stageRight = stageRect?.right ?? window.innerWidth;
+  const sidebarIsRightSide = Boolean(sidebarRect && sidebarRect.left > window.innerWidth / 2);
+  const sidebarLeftLimit = sidebarRect && sidebarRect.width > 0 && !sidebarIsRightSide
     ? sidebarRect.right + sidebarBoundaryGap
     : movementViewportPadding;
-  const minX = Math.max(movementViewportPadding, sidebarRight);
-  const maxX = Math.max(minX, window.innerWidth - chatbotWidth - movementViewportPadding);
-  const minY = movementViewportPadding;
-  const maxY = Math.max(minY, window.innerHeight - chatbotHeight - movementViewportPadding);
+  const sidebarRightLimit = sidebarRect && sidebarRect.width > 0 && sidebarIsRightSide
+    ? sidebarRect.left - sidebarBoundaryGap - chatbotWidth
+    : window.innerWidth - chatbotWidth - movementViewportPadding;
+  const minX = Math.max(movementViewportPadding, stageLeft + lineGap, sidebarLeftLimit);
+  const maxX = Math.max(minX, Math.min(stageRight - chatbotWidth - lineGap, sidebarRightLimit));
+  const minY = Math.max(movementViewportPadding, topRow + lineGap);
+  const maxY = Math.max(minY, window.innerHeight - chatbotHeight - lineGap);
 
   return { minX, maxX, minY, maxY };
 }
@@ -127,6 +137,7 @@ export default function ChatbotWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([initialAssistantMessage]);
   const [position, setPosition] = useState<ChatbotPosition | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFacingRight, setFacingRight] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -198,6 +209,11 @@ export default function ChatbotWidget() {
       const deltaY = event.clientY - dragState.startClientY;
       if (Math.abs(deltaX) > dragThresholdPx || Math.abs(deltaY) > dragThresholdPx) {
         hasDraggedRef.current = true;
+      }
+      if (deltaX > dragThresholdPx) {
+        setFacingRight(true);
+      } else if (deltaX < -dragThresholdPx) {
+        setFacingRight(false);
       }
 
       setPosition(
@@ -343,7 +359,11 @@ export default function ChatbotWidget() {
     "--iyo-chatbot-x": position ? `${position.x}px` : "calc(53vw - 124px)",
     "--iyo-chatbot-y": position ? `${position.y}px` : "calc(100vh - 128px)",
   };
-  const chatbotClassName = isDragging ? "iyo-chatbot is-dragging" : "iyo-chatbot";
+  const chatbotClassName = [
+    "iyo-chatbot",
+    isDragging ? "is-dragging" : "",
+    isFacingRight ? "is-facing-right" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <div className={chatbotClassName} ref={chatbotRef} style={chatbotStyle}>
