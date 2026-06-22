@@ -136,7 +136,9 @@ function WorkshopGrid({
 
     return (
         <div className="workshop-grid">
-            {workshops.map((ws, index) => renderWorkshopPreview(ws, index))}
+            {workshops
+                .filter((ws) => ws?.isActive !== false)
+                .map((ws, index) => renderWorkshopPreview(ws, index))}
         </div>
     );
 }

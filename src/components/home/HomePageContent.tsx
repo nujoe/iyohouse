@@ -30,6 +30,7 @@ export default function HomePageContent() {
     const {
         sanityWorkshops,
         registrationCounts,
+        scheduleCounts,
         calendarEvents,
         allWorkshops,
     } = useWorkshopData();
@@ -148,6 +149,7 @@ export default function HomePageContent() {
                 onWorkshopScroll={handleScroll}
                 onSelectWorkshop={handleSelectWorkshop}
                 registrationCounts={registrationCounts}
+                scheduleCounts={scheduleCounts}
                 selectedWorkshop={selectedWorkshop}
                 t={t}
                 visited={visited}

@@ -34,10 +34,12 @@ const workshopSeoProjection = `{
   schedule[]{
     ...,
     dateEn,
-    timeEn
+    timeEn,
+    capacity
   },
   capacity,
   price,
+  isActive,
   isClosed,
   supabase_workshop_id,
   "posterMeta": poster.asset->metadata.dimensions
@@ -45,7 +47,7 @@ const workshopSeoProjection = `{
 
 export async function getPublishedWorkshopsForSeo() {
   return sanityServerClient.fetch<WorkshopSeoDocument[]>(
-    `*[_type == "workshop" && defined(slug.current) && !(_id in path("drafts.**"))] | order(number desc) ${workshopSeoProjection}`,
+    `*[_type == "workshop" && isActive != false && defined(slug.current) && !(_id in path("drafts.**"))] | order(number desc) ${workshopSeoProjection}`,
     {},
     { next: { revalidate: 3600 } },
   );
@@ -53,7 +55,7 @@ export async function getPublishedWorkshopsForSeo() {
 
 export async function getWorkshopBySlug(slug: string) {
   return sanityServerClient.fetch<WorkshopSeoDocument | null>(
-    `*[_type == "workshop" && slug.current == $slug && !(_id in path("drafts.**"))][0] ${workshopSeoProjection}`,
+    `*[_type == "workshop" && isActive != false && slug.current == $slug && !(_id in path("drafts.**"))][0] ${workshopSeoProjection}`,
     { slug },
     { next: { revalidate: 3600 } },
   );

@@ -17,27 +17,50 @@ type WorkshopRuntimeData = {
   price: number
   capacity: number
   status: string | null
+  schedule_capacities?: Record<string, number> | null
 }
 
-async function getRegistrationCounts() {
+type RegistrationAvailability = {
+  counts: Record<string, number>
+  scheduleCounts: Record<string, Record<string, number>>
+}
+
+function isActiveRegistration(row: { status?: string | null; expires_at?: string | null }) {
+  if (row.status === 'confirmed') return true
+  if (row.status !== 'pending') return false
+  if (!row.expires_at) return false
+
+  return new Date(row.expires_at).getTime() > Date.now()
+}
+
+async function getRegistrationAvailability(): Promise<RegistrationAvailability> {
   try {
     const supabase = getSupabaseServerClient()
     const { data, error } = await supabase
-      .from('workshop_registration_counts')
-      .select('workshop_id, confirmed_count')
+      .from('workshop_registrations_v2')
+      .select('workshop_id, schedule_key, status, expires_at')
+      .in('status', ['confirmed', 'pending'])
 
     if (error) throw error
 
-    return (data || []).reduce<Record<string, number>>((acc, row) => {
-      if (typeof row.workshop_id === 'string' && row.workshop_id) {
-        acc[row.workshop_id] = Number(row.confirmed_count)
+    return (data || []).reduce<RegistrationAvailability>((acc, row) => {
+      if (!isActiveRegistration(row)) return acc
+      if (typeof row.workshop_id !== 'string' || !row.workshop_id) return acc
+
+      acc.counts[row.workshop_id] = (acc.counts[row.workshop_id] || 0) + 1
+
+      if (typeof row.schedule_key === 'string' && row.schedule_key.trim()) {
+        const scheduleKey = row.schedule_key.trim()
+        acc.scheduleCounts[row.workshop_id] = acc.scheduleCounts[row.workshop_id] || {}
+        acc.scheduleCounts[row.workshop_id][scheduleKey] =
+          (acc.scheduleCounts[row.workshop_id][scheduleKey] || 0) + 1
       }
 
       return acc
-    }, {})
+    }, { counts: {}, scheduleCounts: {} })
   } catch (error) {
-    console.error('Workshop counts fetch failed:', error)
-    return {}
+    console.error('Workshop availability fetch failed:', error)
+    return { counts: {}, scheduleCounts: {} }
   }
 }
 
@@ -46,10 +69,22 @@ async function getWorkshopRuntimeData(workshopIds: string[]) {
 
   try {
     const supabase = getSupabaseServerClient()
-    const { data, error } = await supabase
+    const primary = await supabase
       .from('workshops')
-      .select('id, price, capacity, status')
+      .select('id, price, capacity, status, schedule_capacities')
       .in('id', workshopIds)
+    let data = primary.data as WorkshopRuntimeData[] | null
+    let error = primary.error
+
+    if (error && String(error.message || '').includes('schedule_capacities')) {
+      const fallback = await supabase
+        .from('workshops')
+        .select('id, price, capacity, status')
+        .in('id', workshopIds)
+
+      data = fallback.data as WorkshopRuntimeData[] | null
+      error = fallback.error
+    }
 
     if (error) throw error
 
@@ -68,8 +103,8 @@ async function getWorkshopRuntimeData(workshopIds: string[]) {
 
 export async function GET() {
   try {
-    const [workshops, events, counts] = await Promise.all([
-      sanityServerClient.fetch(`*[_type == "workshop"] | order(number desc) {
+    const [workshops, hiddenWorkshopNumbers, events, availability] = await Promise.all([
+      sanityServerClient.fetch(`*[_type == "workshop" && isActive != false] | order(number desc) {
         ...,
         titleEn,
         tutorEn,
@@ -83,13 +118,15 @@ export async function GET() {
         schedule[]{
           ...,
           dateEn,
-          timeEn
+          timeEn,
+          capacity
         },
         supabase_workshop_id,
         "posterMeta": poster.asset->metadata.dimensions
       }`),
+      sanityServerClient.fetch(`*[_type == "workshop" && isActive == false && defined(number)].number`),
       sanityServerClient.fetch(`*[_type == "event"] | order(date asc)`),
-      getRegistrationCounts(),
+      getRegistrationAvailability(),
     ])
 
     const workshopIds = workshops
@@ -106,6 +143,7 @@ export async function GET() {
         ...workshop,
         price: runtime.price,
         capacity: runtime.capacity,
+        scheduleCapacities: runtime.schedule_capacities || {},
         isClosed: runtime.status !== 'active',
         supabase_status: runtime.status,
       }
@@ -114,8 +152,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       workshops: mergedWorkshops,
+      hiddenWorkshopNumbers,
       events,
-      counts,
+      counts: availability.counts,
+      scheduleCounts: availability.scheduleCounts,
     })
   } catch (error) {
     console.error('Workshop data API error:', error)
@@ -124,8 +164,10 @@ export async function GET() {
       {
         success: false,
         workshops: [],
+        hiddenWorkshopNumbers: [],
         events: [],
         counts: {},
+        scheduleCounts: {},
         error: 'Unable to load workshop data',
       },
       { status: 500 }

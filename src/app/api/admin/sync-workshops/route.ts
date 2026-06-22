@@ -12,6 +12,13 @@ const sanityWriteClient = createClient({
   useCdn: false,
 })
 
+type SanityScheduleSession = {
+  _key?: string
+  date?: string
+  time?: string
+  capacity?: number
+}
+
 type SanityWorkshop = {
   _id: string
   _updatedAt?: string
@@ -19,7 +26,9 @@ type SanityWorkshop = {
   number?: number
   price?: number
   capacity?: number
+  isActive?: boolean
   isClosed?: boolean
+  schedule?: SanityScheduleSession[]
   supabase_workshop_id?: string
   _syncTargetIds?: string[]
 }
@@ -53,6 +62,31 @@ function getDraftId(id: string) {
 function getSyncDocumentIds(documentId: string) {
   const publishedId = getPublishedId(documentId)
   return [publishedId, getDraftId(publishedId)]
+}
+
+function getScheduleKey(session: SanityScheduleSession) {
+  const explicitKey = typeof session?._key === 'string' ? session._key.trim() : ''
+  if (explicitKey) return explicitKey
+
+  return [session?.date, session?.time]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean)
+    .join('-')
+}
+
+function buildScheduleCapacities(schedule: SanityScheduleSession[] | undefined) {
+  if (!Array.isArray(schedule)) return {}
+
+  return schedule.reduce<Record<string, number>>((acc, session) => {
+    const key = getScheduleKey(session)
+    const capacity = normalizeInteger(session?.capacity)
+
+    if (key && capacity !== null && capacity > 0) {
+      acc[key] = capacity
+    }
+
+    return acc
+  }, {})
 }
 
 function dedupeWorkshopsPreferDraft(workshops: SanityWorkshop[]) {
@@ -213,7 +247,14 @@ export async function POST(request: NextRequest) {
           number,
           price,
           capacity,
+          isActive,
           isClosed,
+          schedule[]{
+            _key,
+            date,
+            time,
+            capacity
+          },
           supabase_workshop_id
         }`
       : `*[_type == "workshop"] {
@@ -223,7 +264,14 @@ export async function POST(request: NextRequest) {
           number,
           price,
           capacity,
+          isActive,
           isClosed,
+          schedule[]{
+            _key,
+            date,
+            time,
+            capacity
+          },
           supabase_workshop_id
         }`
 
@@ -255,6 +303,8 @@ export async function POST(request: NextRequest) {
       const title = ws.title || `Workshop #${ws.number || ws._id}`
       const hasValidPrice = price !== null && price >= 0
       const hasValidCapacity = capacity !== null && capacity > 0
+      const scheduleCapacities = buildScheduleCapacities(ws.schedule)
+      const status = ws.isActive === false ? 'inactive' : ws.isClosed ? 'closed' : 'active'
 
       if (!hasValidPrice) {
         results.errors.push(`${title}: Sanity price is required and must be 0 or greater.`)
@@ -266,7 +316,8 @@ export async function POST(request: NextRequest) {
         title,
         description: `Sanity Workshop #${ws.number || ws._id}`,
         price,
-        status: ws.isClosed ? 'closed' : 'active',
+        status,
+        schedule_capacities: scheduleCapacities,
       }
       const updatePayload = {
         ...workshopPayload,

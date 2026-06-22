@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:admin-security": "node --test scripts/test-admin-api-security.mjs",
-    "test:payment": "node scripts/test-nicepay-payment-static.mjs"
+    "test:payment": "node scripts/test-nicepay-payment-static.mjs",
+    "test:workshop-schedule-capacity": "node scripts/test-workshop-active-schedule-capacity.mjs"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0",

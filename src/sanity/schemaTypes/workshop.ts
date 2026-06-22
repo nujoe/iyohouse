@@ -101,10 +101,18 @@ export const workshopType = defineType({
       validation: (Rule) => Rule.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { name: 'uuid', invert: false }),
     }),
     defineField({
+      name: 'isActive',
+      title: '사이트 노출',
+      type: 'boolean',
+      initialValue: true,
+      description: '끄면 WORKSHOP 탭과 워크숍 상세/SEO 페이지에서 완전히 숨겨집니다.',
+    }),
+    defineField({
       name: 'isClosed',
       title: '마감 여부',
       type: 'boolean',
       initialValue: false,
+      description: '사이트에는 노출하되 신청 버튼만 마감으로 표시합니다.',
     }),
     defineField({
       name: 'poster',
@@ -265,6 +273,13 @@ export const workshopType = defineType({
               title: '시간 (영문)',
               type: 'string',
               description: '예: 2 PM - 6 PM',
+            }),
+            defineField({
+              name: 'capacity',
+              title: '일정별 정원 (명)',
+              type: 'number',
+              description: '목요반/일요반처럼 각 일정마다 받을 수 있는 인원입니다. 비워두면 워크숍 전체 정원을 사용합니다.',
+              validation: (Rule) => Rule.integer().min(1),
             }),
           ],
         }),

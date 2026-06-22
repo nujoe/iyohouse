@@ -16,6 +16,7 @@ interface HomeWorkshopCellProps {
     onScroll: UIEventHandler<HTMLDivElement>;
     onSelectWorkshop: (workshop: any) => void;
     registrationCounts: Record<string, number>;
+    scheduleCounts: Record<string, Record<string, number>>;
     selectedWorkshop: any | null;
     t: Translation;
 }
@@ -30,6 +31,7 @@ export default function HomeWorkshopCell({
     onScroll,
     onSelectWorkshop,
     registrationCounts,
+    scheduleCounts,
     selectedWorkshop,
     t,
 }: HomeWorkshopCellProps) {
@@ -45,6 +47,7 @@ export default function HomeWorkshopCell({
                             t={t}
                             language={language}
                             registrationCounts={registrationCounts}
+                            scheduleCounts={scheduleCounts}
                             onRequireLogin={onRequireLogin}
                         />
                     ) : (

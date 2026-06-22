@@ -22,6 +22,7 @@ interface WorkshopDetailOverlayProps {
     t: any;
     language: "ko" | "en";
     registrationCounts: Record<string, number>;
+    scheduleCounts: Record<string, Record<string, number>>;
     onRequireLogin: () => void;
 }
 
@@ -149,6 +150,20 @@ function shouldFallbackToLegacyRegistrationRpc(error: any) {
     return code === "PGRST202" || message.includes("p_schedule_") || message.includes("Could not find the function");
 }
 
+function getPositiveInteger(value: unknown) {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+}
+
+function getScheduleKey(session: any) {
+    const explicitKey = typeof session?._key === 'string' ? session._key.trim() : '';
+    if (explicitKey) return explicitKey;
+
+    return [session?.date, session?.time]
+        .map((part) => (typeof part === 'string' ? part.trim() : ''))
+        .filter(Boolean)
+        .join('-');
+}
+
 async function cancelPendingPaymentRegistration(registrationId: string | null | undefined) {
     if (!registrationId) return;
 
@@ -172,6 +187,7 @@ export default function WorkshopDetailOverlay({
     t,
     language,
     registrationCounts,
+    scheduleCounts,
     onRequireLogin
 }: WorkshopDetailOverlayProps) {
     const { user, isProfileComplete, supabase } = useAuth();
@@ -226,14 +242,52 @@ export default function WorkshopDetailOverlay({
 
     const hasSelectableSchedule = useCallback((ws: any) => getWorkshopSchedule(ws).length > 0, [getWorkshopSchedule]);
 
+    const getSessionCapacity = useCallback((ws: any, session: any) => {
+        const sessionCapacity = getPositiveInteger(session?.capacity);
+        if (sessionCapacity !== null) return sessionCapacity;
+
+        const scheduleKey = getScheduleKey(session);
+        const runtimeCapacity = scheduleKey ? getPositiveInteger(ws?.scheduleCapacities?.[scheduleKey]) : null;
+
+        return runtimeCapacity ?? getWorkshopCapacity(ws);
+    }, [getWorkshopCapacity]);
+
+    const hasExplicitSessionCapacity = useCallback((ws: any, session: any) => {
+        const scheduleKey = getScheduleKey(session);
+
+        return getPositiveInteger(session?.capacity) !== null ||
+            (scheduleKey ? getPositiveInteger(ws?.scheduleCapacities?.[scheduleKey]) !== null : false);
+    }, []);
+
+    const getSchedulePaidCount = useCallback((ws: any, session: any) => {
+        const dbId = ws?.supabase_workshop_id;
+        const scheduleKey = getScheduleKey(session);
+
+        if (!dbId || !scheduleKey || !hasExplicitSessionCapacity(ws, session)) {
+            return getWorkshopPaidCount(ws);
+        }
+
+        return scheduleCounts[dbId]?.[scheduleKey] || 0;
+    }, [getWorkshopPaidCount, hasExplicitSessionCapacity, scheduleCounts]);
+
+    const isScheduleFull = useCallback((ws: any, session: any) =>
+        getSchedulePaidCount(ws, session) >= getSessionCapacity(ws, session),
+        [getSchedulePaidCount, getSessionCapacity]);
+
     const isWorkshopClosedForPayment = useCallback((ws: any) => {
         const isLegacyClosed = !ws?.isSanity && Number(ws?.id) <= 11;
+        const schedule = getWorkshopSchedule(ws);
+
+        if (ws?.isClosed || isLegacyClosed) return true;
+
+        if (schedule.length > 0) {
+            return schedule.every((session: any) => isScheduleFull(ws, session));
+        }
+
         return Boolean(
-            ws?.isClosed ||
-            isLegacyClosed ||
             getWorkshopPaidCount(ws) >= getWorkshopCapacity(ws)
         );
-    }, [getWorkshopCapacity, getWorkshopPaidCount]);
+    }, [getWorkshopCapacity, getWorkshopPaidCount, getWorkshopSchedule, isScheduleFull]);
 
     const handleWorkshopPayment = useCallback(async (ws: any) => {
         if (isPaymentStarting) return;
@@ -262,6 +316,11 @@ export default function WorkshopDetailOverlay({
         if (hasSelectableSchedule(ws) && !selectedSession) {
             showToast("error", TEXT.ko.workshop.scheduleRequired);
             setShowSchedule(true);
+            return;
+        }
+
+        if (selectedSession && isScheduleFull(ws, selectedSession)) {
+            showToast("error", TEXT.ko.workshop.closedAlert);
             return;
         }
 
@@ -345,6 +404,7 @@ export default function WorkshopDetailOverlay({
         t,
         isWorkshopClosedForPayment,
         hasSelectableSchedule,
+        isScheduleFull,
         selectedSession,
         nicepayScriptUrl,
         onRequireLogin,
@@ -352,6 +412,10 @@ export default function WorkshopDetailOverlay({
         supabase,
         language
     ]);
+
+    const selectedScheduleFull = selectedSession ? isScheduleFull(workshop, selectedSession) : false;
+    const workshopClosedForPayment = isWorkshopClosedForPayment(workshop);
+    const isApplyDisabled = isPaymentStarting || workshopClosedForPayment || selectedScheduleFull;
 
     return (
         <div className="workshop-detail-container">
@@ -469,11 +533,15 @@ export default function WorkshopDetailOverlay({
                                         <div className="schedule-dropdown">
                                             {getWorkshopSchedule(workshop).map((session: any, index: number) => {
                                                 const localizedSession = getLocalizedScheduleSession(session, language);
+                                                const isFull = isScheduleFull(workshop, session);
+                                                const sessionCapacity = getSessionCapacity(workshop, session);
+                                                const sessionPaidCount = getSchedulePaidCount(workshop, session);
                                                 return (
                                                     <button
                                                         type="button"
                                                         key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
-                                                        className="schedule-option"
+                                                        className={`schedule-option ${isFull ? 'is-full' : ''}`}
+                                                        disabled={isFull}
                                                         onClick={() => {
                                                             setSelectedSession(session);
                                                             setShowSchedule(false);
@@ -481,6 +549,9 @@ export default function WorkshopDetailOverlay({
                                                     >
                                                         {localizedSession.date && <span className="s-date">{localizedSession.date}</span>}
                                                         {localizedSession.time && <span className="s-time">{localizedSession.time}</span>}
+                                                        <span className="s-capacity">
+                                                            {isFull ? t.workshop.closed : `${sessionPaidCount}/${sessionCapacity}`}
+                                                        </span>
                                                     </button>
                                                 );
                                             })}
@@ -495,11 +566,11 @@ export default function WorkshopDetailOverlay({
                             ) : (
                                 <button
                                     className={`action-btn fill-btn ${hasSelectableSchedule(workshop) && !selectedSession ? 'locked' : ''}`}
-                                    disabled={isPaymentStarting || isWorkshopClosedForPayment(workshop)}
+                                    disabled={isApplyDisabled}
                                     aria-busy={isPaymentStarting}
                                     onClick={() => handleWorkshopPayment(workshop)}
                                 >
-                                    {isWorkshopClosedForPayment(workshop)
+                                    {workshopClosedForPayment || selectedScheduleFull
                                         ? t.workshop.closed
                                         : t.workshop.apply}
                                 </button>

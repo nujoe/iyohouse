@@ -21,6 +21,7 @@ interface HomeStageProps {
     onWorkshopScroll: UIEventHandler<HTMLDivElement>;
     onSelectWorkshop: (workshop: any) => void;
     registrationCounts: Record<string, number>;
+    scheduleCounts: Record<string, Record<string, number>>;
     selectedWorkshop: any | null;
     t: Translation;
     visited: Record<string, boolean>;
@@ -38,6 +39,7 @@ export default function HomeStage({
     onWorkshopScroll,
     onSelectWorkshop,
     registrationCounts,
+    scheduleCounts,
     selectedWorkshop,
     t,
     visited,
@@ -55,6 +57,7 @@ export default function HomeStage({
                     onScroll={onWorkshopScroll}
                     onSelectWorkshop={onSelectWorkshop}
                     registrationCounts={registrationCounts}
+                    scheduleCounts={scheduleCounts}
                     selectedWorkshop={selectedWorkshop}
                     t={t}
                 />

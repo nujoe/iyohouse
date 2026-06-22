@@ -370,6 +370,21 @@
     color: #000;
 }
 
+.schedule-option.is-full,
+.schedule-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    background: #f5f5f5;
+    color: #777;
+}
+
+.schedule-option.is-full:hover,
+.schedule-option:disabled:hover {
+    background: #f5f5f5;
+    border-color: transparent;
+    color: #777;
+}
+
 .schedule-option:hover .s-date,
 .schedule-option:hover .s-time {
     color: #000;
@@ -384,6 +399,20 @@
 .schedule-option .s-time {
     font-size: 13px;
     color: #666;
+}
+
+.schedule-option .s-capacity {
+    font-size: 12px;
+    color: #777;
+}
+
+.schedule-option.is-full .s-date,
+.schedule-option.is-full .s-time,
+.schedule-option.is-full .s-capacity,
+.schedule-option:disabled .s-date,
+.schedule-option:disabled .s-time,
+.schedule-option:disabled .s-capacity {
+    color: #777;
 }
 
 .action-btn.outline-btn.selected {

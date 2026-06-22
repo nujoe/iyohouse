@@ -4,6 +4,8 @@ export function useWorkshopData() {
     const [sanityWorkshops, setSanityWorkshops] = useState<any[]>([]);
     const [registrations, setRegistrations] = useState<any[]>([]);
     const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
+    const [scheduleCounts, setScheduleCounts] = useState<Record<string, Record<string, number>>>({});
+    const [hiddenWorkshopNumbers, setHiddenWorkshopNumbers] = useState<number[]>([]);
     const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -19,10 +21,15 @@ export function useWorkshopData() {
                 if (dataResponse.ok) {
                     const workshopData = await dataResponse.json();
                     const counts = workshopData.counts || {};
+                    const nextHiddenWorkshopNumbers = Array.isArray(workshopData.hiddenWorkshopNumbers)
+                        ? workshopData.hiddenWorkshopNumbers.filter((number: unknown): number is number => typeof number === 'number')
+                        : [];
 
                     setSanityWorkshops(workshopData.workshops || []);
                     setCalendarEvents(workshopData.events || []);
                     setRegistrationCounts(counts);
+                    setScheduleCounts(workshopData.scheduleCounts || {});
+                    setHiddenWorkshopNumbers(nextHiddenWorkshopNumbers);
                     setRegistrations(
                         Object.entries(counts).map(([workshop_id, count]) => ({
                             workshop_id,
@@ -38,6 +45,8 @@ export function useWorkshopData() {
                 setSanityWorkshops([]);
                 setCalendarEvents([]);
                 setRegistrationCounts({});
+                setScheduleCounts({});
+                setHiddenWorkshopNumbers([]);
                 setRegistrations([]);
             } finally {
                 setLoading(false);
@@ -51,19 +60,20 @@ export function useWorkshopData() {
     const allWorkshops = useMemo(() => [
         ...sanityWorkshops.map(ws => ({ ...ws, isSanity: true, sortNum: ws.number || 0 })),
         ...Array.from({ length: 24 }, (_, i) => 24 - i)
-            .filter(id => !sanityWorkshops.find(sws => sws.number === id))
+            .filter(id => !sanityWorkshops.find(sws => sws.number === id) && !hiddenWorkshopNumbers.includes(id))
             .map(id => ({
                 id,
                 isSanity: false,
                 sortNum: id,
                 supabase_workshop_id: null,
             }))
-    ].sort((a, b) => b.sortNum - a.sortNum), [sanityWorkshops]);
+    ].sort((a, b) => b.sortNum - a.sortNum), [sanityWorkshops, hiddenWorkshopNumbers]);
 
     return {
         sanityWorkshops,
         registrations,
         registrationCounts,
+        scheduleCounts,
         calendarEvents,
         allWorkshops,
         loading

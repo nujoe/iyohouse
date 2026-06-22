@@ -50,9 +50,11 @@ export type WorkshopSeoDocument = {
     dateEn?: string;
     time?: string;
     timeEn?: string;
+    capacity?: number;
   }>;
   capacity?: number;
   price?: number;
+  isActive?: boolean;
   isClosed?: boolean;
 };
 
