@@ -228,9 +228,9 @@ export const workshopType = defineType({
     }),
     defineField({
       name: 'capacity',
-      title: '정원 (명)',
+      title: '정원 표시 문구',
       type: 'string',
-      description: '예: 24 또는 목요반 12명 금요반 12명',
+      description: '사이트 상세에 그대로 표시되는 문구입니다. 예: 24명 또는 목요반 12명 / 금요반 12명. 실제 마감 계산은 아래 일정별 정원 숫자를 사용합니다.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

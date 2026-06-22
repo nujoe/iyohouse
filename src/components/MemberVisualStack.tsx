@@ -1,25 +1,23 @@
 "use client";
 
-import Image from "next/image";
 
 export default function MemberVisualStack() {
   const images = [
-    { src: "/member/member_2.png", width: 736, height: 736 },
-    { src: "/member/member_3.png", width: 736, height: 736 },
-    { src: "/member/member_4.png", width: 736, height: 736 },
+    { src: "/member/member_2.png?v=1", width: 736, height: 736 },
+    { src: "/member/member_3.png?v=1", width: 736, height: 736 },
+    { src: "/member/member_4.png?v=1", width: 736, height: 736 },
   ];
 
   return (
     <div className="visual-stack-v2">
       {images.map((img, idx) => (
         <div key={idx} className="v-box-v2">
-          <Image
+          <img
             src={imgUrl(img.src)}
             alt={`Member Visual ${idx + 1}`}
             width={img.width}
             height={img.height}
-            priority={idx === 0}
-            sizes="(max-width: 768px) 100vw, 33vw"
+            loading={idx === 0 ? "eager" : "lazy"}
             style={{
               width: '100%',
               height: 'auto',

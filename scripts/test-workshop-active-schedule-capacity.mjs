@@ -62,7 +62,11 @@ function requireMatches(relativePath, checks) {
 requireIncludes("src/sanity/schemaTypes/workshop.ts", [
   "name: 'isActive'",
   "initialValue: true",
+  "title: '정원 표시 문구'",
+  "type: 'string'",
+  "사이트 상세에 그대로 표시되는 문구입니다",
   "일정별 정원 (명)",
+  "type: 'number'",
 ]);
 
 requireIncludes("src/sanity/actions/toggleWorkshopActiveAction.tsx", [
