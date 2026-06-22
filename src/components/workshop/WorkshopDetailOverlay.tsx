@@ -214,7 +214,7 @@ export default function WorkshopDetailOverlay({
                     .select('id')
                     .eq('workshop_id', workshop.supabase_workshop_id)
                     .eq('user_id', user.id)
-                    .in('status', ['pending', 'confirmed'])
+                    .eq('status', 'confirmed')
                     .maybeSingle();
 
                 if (error) throw error;

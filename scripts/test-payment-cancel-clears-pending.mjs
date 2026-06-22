@@ -37,6 +37,19 @@ assert.match(
   "payment startup failures must cancel the pending registration before showing the error",
 );
 
+const registrationCheckBlock = overlaySource.match(/const checkRegistration = async \(\) => \{[\s\S]*?\n\s*\};/);
+assert.ok(registrationCheckBlock, "workshop detail must check whether the current user has applied");
+assert.match(
+  registrationCheckBlock[0],
+  /\.eq\('status',\s*'confirmed'\)/,
+  "the already-applied UI must only lock confirmed registrations",
+);
+assert.doesNotMatch(
+  registrationCheckBlock[0],
+  /\.in\('status',\s*\[\s*'pending',\s*'confirmed'\s*\]\)/,
+  "pending payment holds must not show as already applied after payment cancellation",
+);
+
 const authFailureBlock = confirmRouteSource.match(/if\s*\(auth\.authResultCode !== "0000"\)\s*\{[\s\S]*?\n\s*\}/);
 assert.ok(authFailureBlock, "NICEPAY auth failure block must exist");
 assert.match(
