@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { createLegacyWorkshop } from "@/lib/home/pageConfig";
 import { resetHomeScrollPosition } from "@/hooks/useHomeScrollReset";
 
 interface UseHomeNavigationStateOptions {
@@ -68,11 +67,7 @@ export function useHomeNavigationState({ sanityWorkshops }: UseHomeNavigationSta
         const presetId = currentParams.get('preset');
 
         if (workshopId) {
-            const legacyId = Number(workshopId);
-            const found = sanityWorkshops.find(w => (w._id || w.id)?.toString() === workshopId)
-                || (Number.isInteger(legacyId) && legacyId > 0 && legacyId <= 24
-                    ? createLegacyWorkshop(legacyId)
-                    : null);
+            const found = sanityWorkshops.find(w => (w._id || w.id)?.toString() === workshopId) || null;
 
             if (found) {
                 revealPreset('workshop', found);

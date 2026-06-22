@@ -20,18 +20,6 @@ export const getTagColor = (tag: string) => {
     return 'gray';
 };
 
-export const createLegacyWorkshop = (id: number) => ({
-    id,
-    isSanity: false,
-    sortNum: id,
-    title: `AI.zip ${id}`,
-    tutor: "000 @asdf1234",
-    price: 150000,
-    capacity: 8,
-    tags: ["AI", "WORKSHOP", "GRAPHIC"],
-    isClosed: id <= 11,
-});
-
 export const getClientCurrentMonth = () => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);

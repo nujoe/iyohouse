@@ -39,6 +39,14 @@ function requireExcludes(relativePath, needles) {
   return content;
 }
 
+function requireMissing(relativePath) {
+  const path = join(root, relativePath);
+
+  if (existsSync(path)) {
+    failures.push(`${relativePath} should be removed.`);
+  }
+}
+
 function requireMatches(relativePath, checks) {
   const content = read(relativePath);
 
@@ -75,6 +83,11 @@ requireMatches("src/app/api/workshops/data/route.ts", [
   [/schedule_key/, "public workshop API must group counts by schedule key."],
 ]);
 
+requireExcludes("src/app/api/workshops/data/route.ts", [
+  "hiddenWorkshopNumbers",
+  "isActive == false && defined(number)",
+]);
+
 requireMatches("src/app/api/admin/sync-workshops/route.ts", [
   [/isActive/, "admin sync must read the Sanity active flag."],
   [/schedule\[\]/, "admin sync must read Sanity schedule entries."],
@@ -106,6 +119,48 @@ requireIncludes("src/hooks/useWorkshopData.ts", [
   "setScheduleCounts",
 ]);
 
+requireExcludes("src/hooks/useWorkshopData.ts", [
+  "Array.from({ length: 24",
+  "isSanity: false",
+  "hiddenWorkshopNumbers",
+]);
+
+requireExcludes("src/hooks/useHomeNavigationState.ts", [
+  "createLegacyWorkshop",
+  "legacyId",
+  "legacy",
+]);
+
+requireExcludes("src/lib/home/pageConfig.ts", [
+  "createLegacyWorkshop",
+  "isSanity: false",
+]);
+
+requireExcludes("src/lib/i18n/workshopLocalization.ts", [
+  "isLegacyWorkshop",
+  "legacyTitle",
+]);
+
+requireExcludes("src/lib/i18n/translations.ts", [
+  "legacyTitle",
+]);
+
+requireMissing("src/lib/legacyPosters.ts");
+requireMissing("scripts/import-workshops.mjs");
+
+requireExcludes("src/components/WorkshopGrid.tsx", [
+  "getLegacyPosterMeta",
+  "isLegacyWorkshop",
+  "isHardcoded",
+  "legacyPoster",
+]);
+
+requireExcludes("src/components/workshop/WorkshopDetailPoster.tsx", [
+  "getLegacyPosterMeta",
+  "legacyPoster",
+  "!isSanity",
+]);
+
 requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "scheduleCounts",
   "getSessionCapacity",
@@ -118,6 +173,8 @@ requireExcludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "s-capacity",
   "const sessionPaidCount = getSchedulePaidCount(workshop, session)",
   "const sessionCapacity = getSessionCapacity(workshop, session)",
+  "isLegacyClosed",
+  "Number(ws?.id) <= 11",
 ]);
 
 requireMatches("src/styles/10-overlays-responsive.css", [

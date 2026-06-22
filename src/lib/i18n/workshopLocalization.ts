@@ -1,15 +1,7 @@
 import type { Language, Translation } from "./translations";
 
-export function isLegacyWorkshop(workshop: any) {
-    return workshop?.isSanity === false;
-}
-
 export function getLocalizedWorkshopTitle(workshop: any, language: Language, t: Translation) {
     if (!workshop) return "";
-
-    if (isLegacyWorkshop(workshop)) {
-        return t.workshop.legacyTitle(workshop.id);
-    }
 
     if (language === "en" && workshop.titleEn) {
         return workshop.titleEn;
@@ -20,10 +12,6 @@ export function getLocalizedWorkshopTitle(workshop: any, language: Language, t: 
 
 export function getLocalizedWorkshopTutor(workshop: any, language: Language) {
     if (!workshop) return "";
-
-    if (isLegacyWorkshop(workshop)) {
-        return "000 @asdf1234";
-    }
 
     return (language === "en" && workshop.tutorEn) ? workshop.tutorEn : workshop.tutor;
 }

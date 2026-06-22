@@ -3,13 +3,11 @@
 import { urlFor } from "@/sanity/image";
 import Image from "next/image";
 import { CSSProperties, memo } from "react";
-import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import { getWorkshopPath } from "@/lib/workshopRoutes";
 import { useLanguage } from "@/lib/i18n";
 import {
     getLocalizedWorkshopTitle,
     getLocalizedWorkshopTutor,
-    isLegacyWorkshop
 } from "@/lib/i18n/workshopLocalization";
 
 interface WorkshopGridProps {
@@ -38,29 +36,19 @@ function WorkshopGrid({
     }, {});
     
     const renderWorkshopPreview = (ws: any, index: number) => {
-        const isHardcoded = isLegacyWorkshop(ws);
-        const id = isHardcoded ? ws.id : ws._id;
+        const id = ws._id || ws.id;
         const title = getLocalizedWorkshopTitle(ws, language, t);
-        const workshopPath = isHardcoded ? "" : getWorkshopPath(ws);
+        const workshopPath = getWorkshopPath(ws);
         const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
         const capacity = typeof ws.capacity === 'number' ? ws.capacity : 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
-        const isClosed = isHardcoded
-            ? ws.id <= 11 || registeredCount >= capacity
-            : ws.isClosed || registeredCount >= capacity;
+        const isClosed = ws.isClosed || registeredCount >= capacity;
 
-        const legacyPoster = isHardcoded ? getLegacyPosterMeta(Number(ws.id)) : null;
-        let posterWidth = legacyPoster?.width || 1080;
-        let posterHeight = legacyPoster?.height || 1350;
-        if (!isHardcoded && ws.posterMeta) {
-            posterWidth = ws.posterMeta.width;
-            posterHeight = ws.posterMeta.height;
-        }
+        const posterWidth = ws.posterMeta?.width || 1080;
+        const posterHeight = ws.posterMeta?.height || 1350;
         const aspectRatio = `${posterWidth} / ${posterHeight}`;
 
-        const imgUrl = isHardcoded
-            ? legacyPoster?.src
-            : (ws.poster ? urlFor(ws.poster).width(600).auto('format').url() : null);
+        const imgUrl = ws.poster ? urlFor(ws.poster).width(600).auto('format').url() : null;
 
         const content = (
             <>

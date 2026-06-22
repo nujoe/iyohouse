@@ -275,10 +275,9 @@ export default function WorkshopDetailOverlay({
         [getSchedulePaidCount, getSessionCapacity]);
 
     const isWorkshopClosedForPayment = useCallback((ws: any) => {
-        const isLegacyClosed = !ws?.isSanity && Number(ws?.id) <= 11;
         const schedule = getWorkshopSchedule(ws);
 
-        if (ws?.isClosed || isLegacyClosed) return true;
+        if (ws?.isClosed) return true;
 
         if (schedule.length > 0) {
             return schedule.every((session: any) => isScheduleFull(ws, session));

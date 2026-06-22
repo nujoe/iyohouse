@@ -3,7 +3,6 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 
-import { getLegacyPosterMeta } from "@/lib/legacyPosters";
 import { urlFor } from "@/sanity/image";
 
 type WorkshopDetailPosterProps = {
@@ -11,20 +10,11 @@ type WorkshopDetailPosterProps = {
 };
 
 export default function WorkshopDetailPoster({ workshop }: WorkshopDetailPosterProps) {
-    const isSanity = !!workshop._id;
-    const legacyPoster = !isSanity ? getLegacyPosterMeta(Number(workshop.id)) : null;
-    let posterWidth = legacyPoster?.width || 1080;
-    let posterHeight = legacyPoster?.height || 1350;
-
-    if (isSanity && workshop.posterMeta) {
-        posterWidth = workshop.posterMeta.width;
-        posterHeight = workshop.posterMeta.height;
-    }
+    const posterWidth = workshop.posterMeta?.width || 1080;
+    const posterHeight = workshop.posterMeta?.height || 1350;
 
     const aspectRatio = `${posterWidth} / ${posterHeight}`;
-    const imgUrl = isSanity
-        ? (workshop.poster ? urlFor(workshop.poster).width(1200).auto('format').url() : null)
-        : legacyPoster?.src;
+    const imgUrl = workshop.poster ? urlFor(workshop.poster).width(1200).auto('format').url() : null;
     const imageAlt = workshop.posterAlt || workshop.title || "IYOHOUSE workshop poster";
 
     return (

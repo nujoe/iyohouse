@@ -103,7 +103,7 @@ async function getWorkshopRuntimeData(workshopIds: string[]) {
 
 export async function GET() {
   try {
-    const [workshops, hiddenWorkshopNumbers, events, availability] = await Promise.all([
+    const [workshops, events, availability] = await Promise.all([
       sanityServerClient.fetch(`*[_type == "workshop" && isActive != false] | order(number desc) {
         ...,
         titleEn,
@@ -124,7 +124,6 @@ export async function GET() {
         supabase_workshop_id,
         "posterMeta": poster.asset->metadata.dimensions
       }`),
-      sanityServerClient.fetch(`*[_type == "workshop" && isActive == false && defined(number)].number`),
       sanityServerClient.fetch(`*[_type == "event"] | order(date asc)`),
       getRegistrationAvailability(),
     ])
@@ -152,7 +151,6 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       workshops: mergedWorkshops,
-      hiddenWorkshopNumbers,
       events,
       counts: availability.counts,
       scheduleCounts: availability.scheduleCounts,
@@ -164,7 +162,6 @@ export async function GET() {
       {
         success: false,
         workshops: [],
-        hiddenWorkshopNumbers: [],
         events: [],
         counts: {},
         scheduleCounts: {},
