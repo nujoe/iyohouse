@@ -458,7 +458,7 @@ export default function WorkshopDetailOverlay({
                             <div className="detail-info-section">
                                 {workshopInfoItems.map((item) => (
                                     <div className="detail-info-row" key={item.key}>
-                                        <div className="detail-section-label">{item.label}</div>
+                                        <div className="detail-info-label">▮ {item.label}</div>
                                         <div className="detail-info-content">{item.value}</div>
                                     </div>
                                 ))}

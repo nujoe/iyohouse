@@ -145,6 +145,14 @@ requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "WORKSHOP_INFO_FIELDS",
   "detail-info-section",
   "detail-info-row",
+  "detail-info-label",
+  "▮ {item.label}",
+]);
+
+requireIncludes("src/styles/08-info-workshop-detail.css", [
+  ".detail-info-label",
+  "font-size: 20px",
+  "border-bottom: 1px solid #eee",
 ]);
 
 requireExcludes("src/hooks/useHomeNavigationState.ts", [

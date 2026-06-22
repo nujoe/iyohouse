@@ -411,6 +411,14 @@
     margin-bottom: 30px;
 }
 
+.detail-info-label {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+
 .detail-info-content {
     color: #444;
     font-size: 16px;
