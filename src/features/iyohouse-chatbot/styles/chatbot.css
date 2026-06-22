@@ -65,8 +65,6 @@
 .iyo-chatbot-avatar[aria-expanded="true"] {
   transform: translate3d(0, -3px, 0);
 }
-
-
 .iyo-chatbot-popover {
   position: absolute;
   right: 0;

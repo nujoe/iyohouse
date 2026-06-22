@@ -278,9 +278,7 @@ export default function ChatbotWidget() {
           });
         }}
       >
-        <div className="iyo-chatbot-inner-avatar">
           <img src="/logo.png" alt="iyohouse logo" className="iyo-chatbot-logo-img" />
-        </div>
       </button>
 
       {isOpen && (
