@@ -120,20 +120,14 @@ export default function ChatbotWidget() {
   const chatbotRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
   const [question, setQuestion] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [health, setHealth] = useState<HealthState | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([initialAssistantMessage]);
   const [position, setPosition] = useState<ChatbotPosition>({ x: null, y: 0 });
-  const settingsEnabled = chatbotConfig.settingsEnabled;
-
-
 
   useEffect(() => {
     setIsMounted(true);
-    setApiKey(window.localStorage.getItem(chatbotConfig.apiKeyStorageKey) || "");
   }, []);
 
   useEffect(() => {
@@ -158,7 +152,7 @@ export default function ChatbotWidget() {
   }, [isMounted]);
 
   useEffect(() => {
-    if (!isMounted || isOpen || isSettingsOpen || isAsking) {
+    if (!isMounted || isOpen || isAsking) {
       setPosition(resetIdlePosition);
       return;
     }
@@ -173,7 +167,7 @@ export default function ChatbotWidget() {
     }, idleMovementIntervalMs);
 
     return () => window.clearInterval(timer);
-  }, [isMounted, isOpen, isSettingsOpen, isAsking]);
+  }, [isMounted, isOpen, isAsking]);
 
   if (!isMounted || !chatbotConfig.enabled) return null;
 
@@ -200,12 +194,8 @@ export default function ChatbotWidget() {
     try {
       const payload: Record<string, unknown> = {
         question: trimmed,
-        includeTrace: settingsEnabled,
+        includeTrace: false,
       };
-      if (settingsEnabled && apiKey.trim()) {
-        payload.geminiApiKey = apiKey.trim();
-        window.localStorage.setItem(chatbotConfig.apiKeyStorageKey, apiKey.trim());
-      }
 
       const response = await fetch("/api/chatbot/ask", {
         method: "POST",
@@ -352,45 +342,6 @@ export default function ChatbotWidget() {
         </section>
       )}
 
-      {settingsEnabled && (
-        <button
-          className="iyo-chatbot-settings-toggle"
-          type="button"
-          onClick={() => setIsSettingsOpen((value) => !value)}
-        >
-          settings
-        </button>
-      )}
-
-      {settingsEnabled && isSettingsOpen && (
-        <aside className="iyo-chatbot-settings" aria-label="챗봇 설정">
-          <div className="iyo-chatbot-header">
-            <div>
-              <p>test settings</p>
-              <strong>Gemini API key</strong>
-            </div>
-            <button type="button" onClick={() => setIsSettingsOpen(false)} aria-label="설정 닫기">
-              ×
-            </button>
-          </div>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder="AIza..."
-            autoComplete="off"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (apiKey.trim()) window.localStorage.setItem(chatbotConfig.apiKeyStorageKey, apiKey.trim());
-              else window.localStorage.removeItem(chatbotConfig.apiKeyStorageKey);
-            }}
-          >
-            저장
-          </button>
-        </aside>
-      )}
     </div>
   );
 }
