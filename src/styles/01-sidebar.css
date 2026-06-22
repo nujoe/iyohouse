@@ -201,7 +201,7 @@
     padding: 6px 0;
     margin: 0;
     line-height: 1.1;
-    font-weight: 800; /* 고딕체 굵게 적용 */
+    font-weight: 700;
     line-height: 1.2;
     color: var(--line);
     text-align: left;
