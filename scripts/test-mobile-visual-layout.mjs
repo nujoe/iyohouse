@@ -58,6 +58,20 @@ function declarationsFor(root, selector, mode = "mobile") {
     );
 }
 
+function baseDeclarationsFor(root, selector) {
+    const rules = root.nodes.filter(
+        (node) => node.type === "rule" && node.selectors?.includes(selector),
+    );
+
+    return Object.fromEntries(
+        rules.flatMap((rule) =>
+            rule.nodes
+                .filter((node) => node.type === "decl")
+                .map((decl) => [decl.prop, { value: decl.value, important: decl.important }]),
+        ),
+    );
+}
+
 function expectImportantDeclaration(declarations, property, value) {
     assert.deepEqual(
         declarations[property],
@@ -138,4 +152,29 @@ test("mobile pola image can scale down inside the main text column", () => {
         true,
         "mobile pola image max-width should override the desktop rule",
     );
+});
+
+test("mobile app and stage use dynamic viewport height so the bottom grid line stays visible", () => {
+    const baseCss = parseCss("src/styles/00-base.css");
+    const mobileCss = parseCss("src/styles/12-mobile-scroll-layout.css");
+    const baseAppDeclarations = baseDeclarationsFor(baseCss, ".app-container");
+    const appDeclarations = declarationsFor(mobileCss, ".app-container");
+    const stageDeclarations = declarationsFor(mobileCss, ".stage");
+
+    assert.equal(
+        baseAppDeclarations.height?.value,
+        "100vh",
+        "desktop app container should keep the stable viewport height baseline",
+    );
+    expectImportantDeclaration(appDeclarations, "height", "100dvh");
+    expectImportantDeclaration(stageDeclarations, "height", "100dvh");
+});
+
+test("mobile main bottom grid row uses the small viewport height to avoid browser chrome overlap", () => {
+    const mobileCss = parseCss("src/styles/12-mobile-scroll-layout.css");
+    const mainDeclarations = declarationsFor(mobileCss, ".app-container.preset-main");
+    const transitionDeclarations = declarationsFor(mobileCss, ".app-container.grid-preset-main");
+
+    expectImportantDeclaration(mainDeclarations, "--grid-top-row-2", "calc(100svh - var(--line-gap))");
+    expectImportantDeclaration(transitionDeclarations, "--grid-top-row-2", "calc(100svh - var(--line-gap))");
 });

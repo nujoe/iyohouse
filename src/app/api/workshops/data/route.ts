@@ -140,6 +140,7 @@ export async function GET() {
 
       return {
         ...workshop,
+        displayCapacity: workshop.capacity,
         price: runtime.price,
         capacity: runtime.capacity,
         scheduleCapacities: runtime.schedule_capacities || {},

@@ -85,6 +85,7 @@ requireMatches("src/app/api/workshops/data/route.ts", [
   [/schedule_capacities/, "public workshop API must load per-schedule capacities from Supabase."],
   [/scheduleCounts/, "public workshop API must return per-schedule registration counts."],
   [/schedule_key/, "public workshop API must group counts by schedule key."],
+  [/displayCapacity:\s*workshop\.capacity/, "public workshop API must preserve the Sanity capacity display string before merging runtime capacity."],
 ]);
 
 requireExcludes("src/app/api/workshops/data/route.ts", [
@@ -127,6 +128,10 @@ requireExcludes("src/hooks/useWorkshopData.ts", [
   "Array.from({ length: 24",
   "isSanity: false",
   "hiddenWorkshopNumbers",
+]);
+
+requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
+  "workshop.displayCapacity ?? workshop.capacity",
 ]);
 
 requireExcludes("src/hooks/useHomeNavigationState.ts", [

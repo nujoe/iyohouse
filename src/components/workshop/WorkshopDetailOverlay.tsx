@@ -469,9 +469,9 @@ export default function WorkshopDetailOverlay({
                         )}
 
                         {/* 정원 */}
-                        {workshop.capacity && (
+                        {(workshop.displayCapacity ?? workshop.capacity) && (
                             <div className="detail-capacity">
-                                {t.workshop.capacityLabel(workshop.capacity)}
+                                {t.workshop.capacityLabel(workshop.displayCapacity ?? workshop.capacity)}
                             </div>
                         )}
 

@@ -45,6 +45,17 @@
         overscroll-behavior-y: none !important;
     }
 
+    .app-container,
+    .stage {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+    }
+
+    .app-container.preset-main,
+    .app-container.grid-preset-main {
+        --grid-top-row-2: calc(100svh - var(--line-gap)) !important;
+    }
+
 
 
 
