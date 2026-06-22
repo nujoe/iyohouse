@@ -323,6 +323,8 @@
 .complete-profile-card {
     transform: none;
     padding: 40px;
+    max-height: none;
+    overflow: visible;
 }
 
 .complete-profile-card .login-input:disabled {
@@ -343,6 +345,13 @@
     color: #c80000;
     font-size: 13px;
     line-height: 1.5;
+}
+
+.complete-profile-card .email-submit-btn,
+.complete-profile-card .complete-profile-logout {
+    min-height: 54px;
+    font-size: 13px;
+    line-height: 1.25;
 }
 
 .complete-profile-logout {

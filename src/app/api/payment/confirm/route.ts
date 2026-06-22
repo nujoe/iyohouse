@@ -89,6 +89,8 @@ export async function POST(request: Request) {
     }
 
     if (auth.authResultCode !== "0000") {
+      await markPendingRegistrationCancelled(registration.id, "auth_failed");
+
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {
           order_id: registration.order_id,
@@ -128,6 +130,7 @@ export async function POST(request: Request) {
 
     if (!approval.ok) {
       console.error("NICEPAY approval failed:", approval.message, safeNicepayPayload(auth));
+      await markPendingRegistrationCancelled(registration.id, "approval_failed");
 
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {

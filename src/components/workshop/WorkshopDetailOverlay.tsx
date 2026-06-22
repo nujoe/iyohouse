@@ -149,6 +149,24 @@ function shouldFallbackToLegacyRegistrationRpc(error: any) {
     return code === "PGRST202" || message.includes("p_schedule_") || message.includes("Could not find the function");
 }
 
+async function cancelPendingPaymentRegistration(registrationId: string | null | undefined) {
+    if (!registrationId) return;
+
+    try {
+        const response = await fetch("/api/payment/fail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ registration_id: registrationId }),
+        });
+
+        if (!response.ok) {
+            console.error("Pending payment registration cleanup failed:", response.status);
+        }
+    } catch (error) {
+        console.error("Pending payment registration cleanup error:", error);
+    }
+}
+
 export default function WorkshopDetailOverlay({
     workshop,
     t,
@@ -248,6 +266,7 @@ export default function WorkshopDetailOverlay({
         }
 
         setIsPaymentStarting(true);
+        let pendingRegistrationId: string | null = null;
 
         try {
             const selectedSchedule = selectedSession ? getLocalizedScheduleSession(selectedSession, language) : null;
@@ -275,6 +294,7 @@ export default function WorkshopDetailOverlay({
             if (rpcError) throw rpcError;
 
             const { registration_id, workshop_title } = regData;
+            pendingRegistrationId = registration_id;
             const orderName = workshop_title || getLocalizedWorkshopTitle(ws, language, t) || t.workshop.fallbackTitle(ws.number || ws.id);
             const checkoutResponse = await fetch("/api/payment/checkout", {
                 method: "POST",
@@ -302,11 +322,17 @@ export default function WorkshopDetailOverlay({
             window.AUTHNICE.requestPay({
                 ...checkout.payload,
                 fnError: (result: unknown) => {
+                    void cancelPendingPaymentRegistration(registration_id);
+                    setIsRegistered(false);
                     showToast("error", nicepayErrorMessage(result));
                     setIsPaymentStarting(false);
                 },
             });
         } catch (error: any) {
+            if (pendingRegistrationId) {
+                await cancelPendingPaymentRegistration(pendingRegistrationId);
+                setIsRegistered(false);
+            }
             console.error("신청/결제 요청 에러:", error);
             showToast("error", getUserFacingPaymentError(error.message, "신청/결제 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         } finally {
