@@ -1,6 +1,14 @@
 "use client";
 
-import { type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { chatbotConfig } from "../config";
 
 type ChatMessage = {
@@ -17,24 +25,34 @@ type HealthState = {
 };
 
 type ChatbotPosition = {
-  x: number | null;
+  x: number;
   y: number;
+};
+
+type DragState = {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startX: number;
+  startY: number;
 };
 
 type ChatbotBounds = {
   minX: number;
   maxX: number;
+  minY: number;
+  maxY: number;
 };
 
 type ChatbotStyle = CSSProperties & {
-  "--iyo-chatbot-left": string;
+  "--iyo-chatbot-x": string;
   "--iyo-chatbot-y": string;
 };
 
-const idleMovementIntervalMs = 5200;
 const movementViewportPadding = 16;
-const infoBoundaryGap = 12;
-const rightGridBoundaryGap = 14;
+const sidebarBoundaryGap = 12;
+const dragThresholdPx = 4;
+const defaultChatbotSize = 104;
 
 const FAQ_TEMPLATES = [
   {
@@ -60,71 +78,55 @@ const initialAssistantMessage: ChatMessage = {
   text: "안녕하세요. 이요하우스 위키에서 공개된 문서를 찾아 답할게요.",
 };
 
-const maxStepSize = 80;
+function getChatbotBounds(chatbotElement: HTMLElement | null): ChatbotBounds {
+  const rect = chatbotElement?.getBoundingClientRect();
+  const chatbotWidth = rect?.width || defaultChatbotSize;
+  const chatbotHeight = rect?.height || defaultChatbotSize;
+  const sidebarRect = document.querySelector(".left-panel")?.getBoundingClientRect();
+  const sidebarRight = sidebarRect && sidebarRect.width > 0
+    ? sidebarRect.right + sidebarBoundaryGap
+    : movementViewportPadding;
+  const minX = Math.max(movementViewportPadding, sidebarRight);
+  const maxX = Math.max(minX, window.innerWidth - chatbotWidth - movementViewportPadding);
+  const minY = movementViewportPadding;
+  const maxY = Math.max(minY, window.innerHeight - chatbotHeight - movementViewportPadding);
 
-function getNextIdlePosition(bounds: ChatbotBounds, currentX: number | null): ChatbotPosition {
-  const range = Math.max(0, bounds.maxX - bounds.minX);
-  const fallbackX = Math.round(bounds.minX + range / 2);
-  const baseX = currentX === null ? fallbackX : currentX;
-  
-  // -maxStepSize ~ +maxStepSize 범위에서 랜덤 스텝 생성
-  const step = Math.round((Math.random() * 2 - 1) * maxStepSize);
-  let nextX = baseX + step;
-  
-  // 바운더리 클램핑
-  nextX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
+  return { minX, maxX, minY, maxY };
+}
 
+function clampChatbotPosition(position: ChatbotPosition, bounds: ChatbotBounds): ChatbotPosition {
   return {
-    x: nextX,
-    y: 0,
+    x: Math.min(bounds.maxX, Math.max(bounds.minX, position.x)),
+    y: Math.min(bounds.maxY, Math.max(bounds.minY, position.y)),
   };
 }
 
-function resetIdlePosition(current: ChatbotPosition): ChatbotPosition {
-  return current.x === null && current.y === 0 ? current : { x: null, y: 0 };
-}
+function getInitialChatbotPosition(chatbotElement: HTMLElement | null): ChatbotPosition {
+  const bounds = getChatbotBounds(chatbotElement);
+  const rect = chatbotElement?.getBoundingClientRect();
+  const chatbotHeight = rect?.height || defaultChatbotSize;
 
-function getChatbotBounds(chatbotElement: HTMLElement | null): ChatbotBounds {
-  const chatbotWidth = chatbotElement?.getBoundingClientRect().width || 88;
-  const infoRect = document.querySelector(".info-bottom-text-wrapper")?.getBoundingClientRect();
-  const rightGridRects = [
-    ...Array.from(document.querySelectorAll(".top-v-3")),
-    ...Array.from(document.querySelectorAll(".v-line")),
-  ].map((element) => element.getBoundingClientRect());
-
-  const rightGridLeft = rightGridRects.length
-    ? Math.max(...rightGridRects.map((rect) => rect.left))
-    : window.innerWidth - movementViewportPadding;
-  const minX = Math.max(
-    movementViewportPadding,
-    infoRect ? infoRect.right + infoBoundaryGap : window.innerWidth * 0.38
+  return clampChatbotPosition(
+    {
+      x: window.innerWidth * 0.53 - 124,
+      y: window.innerHeight - chatbotHeight - 24,
+    },
+    bounds,
   );
-  const maxX = Math.min(
-    window.innerWidth - chatbotWidth - movementViewportPadding,
-    rightGridLeft - chatbotWidth - rightGridBoundaryGap
-  );
-
-  if (maxX <= minX) {
-    const fallbackX = Math.max(
-      movementViewportPadding,
-      Math.min(window.innerWidth - chatbotWidth - movementViewportPadding, window.innerWidth * 0.53 - 124)
-    );
-
-    return { minX: fallbackX, maxX: fallbackX };
-  }
-
-  return { minX, maxX };
 }
 
 export default function ChatbotWidget() {
   const chatbotRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<DragState | null>(null);
+  const hasDraggedRef = useRef(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
   const [question, setQuestion] = useState("");
   const [health, setHealth] = useState<HealthState | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([initialAssistantMessage]);
-  const [position, setPosition] = useState<ChatbotPosition>({ x: null, y: 0 });
+  const [position, setPosition] = useState<ChatbotPosition | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -151,6 +153,22 @@ export default function ChatbotWidget() {
   useEffect(() => {
     if (!isMounted || !chatbotConfig.enabled) return;
 
+    const refreshPosition = () => {
+      setPosition((current) => {
+        const nextPosition = current ?? getInitialChatbotPosition(chatbotRef.current);
+        return clampChatbotPosition(nextPosition, getChatbotBounds(chatbotRef.current));
+      });
+    };
+
+    refreshPosition();
+    window.addEventListener("resize", refreshPosition);
+
+    return () => window.removeEventListener("resize", refreshPosition);
+  }, [isMounted]);
+
+  useEffect(() => {
+    if (!isMounted || !chatbotConfig.enabled) return;
+
     fetch("/api/chatbot/health", { cache: "no-store" })
       .then((response) => response.json())
       .then((data) => {
@@ -170,22 +188,79 @@ export default function ChatbotWidget() {
   }, [isMounted]);
 
   useEffect(() => {
-    if (!isMounted || isOpen || isAsking) {
-      setPosition(resetIdlePosition);
+    if (!isDragging) return;
+
+    const handleWindowPointerMove = (event: globalThis.PointerEvent) => {
+      const dragState = dragStartRef.current;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+      const deltaX = event.clientX - dragState.startClientX;
+      const deltaY = event.clientY - dragState.startClientY;
+      if (Math.abs(deltaX) > dragThresholdPx || Math.abs(deltaY) > dragThresholdPx) {
+        hasDraggedRef.current = true;
+      }
+
+      setPosition(
+        clampChatbotPosition(
+          {
+            x: dragState.startX + deltaX,
+            y: dragState.startY + deltaY,
+          },
+          getChatbotBounds(chatbotRef.current),
+        ),
+      );
+    };
+
+    const handleWindowPointerUp = (event: globalThis.PointerEvent) => {
+      const dragState = dragStartRef.current;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+      dragStartRef.current = null;
+      setIsDragging(false);
+    };
+
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerUp);
+    };
+  }, [isDragging]);
+
+  const handleAvatarPointerDown = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const currentPosition = position ?? getInitialChatbotPosition(chatbotRef.current);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: currentPosition.x,
+      startY: currentPosition.y,
+    };
+    hasDraggedRef.current = false;
+    setPosition(currentPosition);
+    setIsDragging(true);
+  }, [position]);
+
+  const handleAvatarClick = useCallback(() => {
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
       return;
     }
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const timer = window.setInterval(() => {
-      setPosition((current) => {
-        const bounds = getChatbotBounds(chatbotRef.current);
-        return getNextIdlePosition(bounds, current.x);
-      });
-    }, idleMovementIntervalMs);
-
-    return () => window.clearInterval(timer);
-  }, [isMounted, isOpen, isAsking]);
+    setIsOpen((value) => {
+      const nextValue = !value;
+      if (nextValue) {
+        setMessages([initialAssistantMessage]);
+      }
+      return nextValue;
+    });
+  }, []);
 
   if (!isMounted || !chatbotConfig.enabled) return null;
 
@@ -265,28 +340,22 @@ export default function ChatbotWidget() {
   };
 
   const chatbotStyle: ChatbotStyle = {
-    "--iyo-chatbot-left": position.x === null ? "calc(53vw - 124px)" : `${position.x}px`,
-    "--iyo-chatbot-y": `${position.y}px`,
+    "--iyo-chatbot-x": position ? `${position.x}px` : "calc(53vw - 124px)",
+    "--iyo-chatbot-y": position ? `${position.y}px` : "calc(100vh - 128px)",
   };
+  const chatbotClassName = isDragging ? "iyo-chatbot is-dragging" : "iyo-chatbot";
 
   return (
-    <div className="iyo-chatbot" ref={chatbotRef} style={chatbotStyle}>
+    <div className={chatbotClassName} ref={chatbotRef} style={chatbotStyle}>
       <button
         className="iyo-chatbot-avatar"
         type="button"
         aria-label="이요하우스 챗봇 열기"
         aria-expanded={isOpen}
-        onClick={() => {
-          setIsOpen((value) => {
-            const nextValue = !value;
-            if (nextValue) {
-              setMessages([initialAssistantMessage]);
-            }
-            return nextValue;
-          });
-        }}
+        onPointerDown={handleAvatarPointerDown}
+        onClick={handleAvatarClick}
       >
-          <img src="/logo.png" alt="iyohouse logo" className="iyo-chatbot-logo-img" />
+          <img src="/logo.png" alt="iyohouse logo" className="iyo-chatbot-logo-img" draggable={false} />
       </button>
 
       {isOpen && (
