@@ -152,16 +152,6 @@
         display: none !important;
     }
 
-    .preset-workshop .grid-intersection-marker-left,
-    .preset-workshop .grid-intersection-marker-right,
-    .preset-workshop .grid-intersection-marker-bottom,
-    .grid-preset-workshop .grid-intersection-marker-left,
-    .grid-preset-workshop .grid-intersection-marker-right,
-    .grid-preset-workshop .grid-intersection-marker-bottom {
-        opacity: 0 !important;
-        visibility: hidden !important;
-    }
-
     .calendar-container {
         width: 100% !important;
         max-width: 100% !important;

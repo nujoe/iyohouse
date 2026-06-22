@@ -45,6 +45,16 @@ function expectDisplayNone(atRules, selector) {
   );
 }
 
+function expectNoRule(atRules, selector) {
+  for (const atRule of atRules) {
+    const rule = atRule.nodes.find(
+      (node) => node.type === "rule" && node.selectors?.includes(selector),
+    );
+
+    assert.ok(!rule, `${selector} should not be hidden by mobile workshop card rules`);
+  }
+}
+
 const workshopCss = parseCss("src/styles/06-workshop-calendar.css");
 const mobileCss = parseCss("src/styles/12-mobile-scroll-layout.css");
 const workshopGridSource = readFileSync(
@@ -79,17 +89,7 @@ for (const selector of [
   ".grid-preset-workshop .grid-intersection-marker-right",
   ".grid-preset-workshop .grid-intersection-marker-bottom",
 ]) {
-  const declarations = declarationsFor(mobileLayout, selector);
-  assert.deepEqual(
-    declarations.opacity,
-    { value: "0", important: true },
-    `${selector} should be hidden on mobile workshop edges`,
-  );
-  assert.deepEqual(
-    declarations.visibility,
-    { value: "hidden", important: true },
-    `${selector} should not reserve visible edge markers`,
-  );
+  expectNoRule(mobileLayout, selector);
 }
 
 for (const selector of [
