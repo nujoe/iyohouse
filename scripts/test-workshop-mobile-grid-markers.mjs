@@ -92,12 +92,27 @@ for (const selector of [
   );
 }
 
+for (const selector of [
+  ".preset-workshop .workshop-item[data-mobile-row-end=\"true\"]::after",
+  ".preset-workshop .workshop-item[data-mobile-row-end=\"true\"] .intersection-diamond",
+  ".preset-workshop .workshop-item[data-mobile-last-row=\"true\"]::before",
+  ".preset-workshop .workshop-item[data-mobile-last-row=\"true\"] .intersection-diamond",
+  ".app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-row-end=\"true\"]::after",
+  ".app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-row-end=\"true\"] > .intersection-diamond",
+  ".app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-last-row=\"true\"]::before",
+  ".app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-last-row=\"true\"] > .intersection-diamond",
+]) {
+  expectDisplayNone(mobileLayout, selector);
+}
+
 for (const needle of [
   "visibleWorkshops",
   "isMobileRowEnd",
   "isMobileLastRow",
   "is-mobile-row-end",
   "is-mobile-last-row",
+  "data-mobile-row-end",
+  "data-mobile-last-row",
 ]) {
   assert.ok(
     workshopGridSource.includes(needle),

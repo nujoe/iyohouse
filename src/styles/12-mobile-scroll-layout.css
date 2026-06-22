@@ -138,6 +138,20 @@
         padding-top: 10px !important;
     }
 
+    .preset-workshop .workshop-item[data-mobile-row-end="true"]::after,
+    .preset-workshop .workshop-item[data-mobile-row-end="true"] .intersection-diamond,
+    .grid-preset-workshop .workshop-item[data-mobile-row-end="true"]::after,
+    .grid-preset-workshop .workshop-item[data-mobile-row-end="true"] .intersection-diamond {
+        display: none !important;
+    }
+
+    .preset-workshop .workshop-item[data-mobile-last-row="true"]::before,
+    .preset-workshop .workshop-item[data-mobile-last-row="true"] .intersection-diamond,
+    .grid-preset-workshop .workshop-item[data-mobile-last-row="true"]::before,
+    .grid-preset-workshop .workshop-item[data-mobile-last-row="true"] .intersection-diamond {
+        display: none !important;
+    }
+
     .preset-workshop .grid-intersection-marker-left,
     .preset-workshop .grid-intersection-marker-right,
     .preset-workshop .grid-intersection-marker-bottom,
@@ -324,5 +338,27 @@
     .preset-member .cell-member.active {
         animation: none !important;
         transform: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-row-end="true"]::after,
+    .app-container.grid-preset-workshop .workshop-grid .workshop-item[data-mobile-row-end="true"]::after {
+        display: none !important;
+    }
+
+    .app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-row-end="true"] > .intersection-diamond,
+    .app-container.grid-preset-workshop .workshop-grid .workshop-item[data-mobile-row-end="true"] > .intersection-diamond {
+        display: none !important;
+    }
+
+    .app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-last-row="true"]::before,
+    .app-container.grid-preset-workshop .workshop-grid .workshop-item[data-mobile-last-row="true"]::before {
+        display: none !important;
+    }
+
+    .app-container.preset-workshop .workshop-grid .workshop-item[data-mobile-last-row="true"] > .intersection-diamond,
+    .app-container.grid-preset-workshop .workshop-grid .workshop-item[data-mobile-last-row="true"] > .intersection-diamond {
+        display: none !important;
     }
 }

@@ -108,6 +108,8 @@ function WorkshopGrid({
                 <a
                     key={id}
                     className={itemClassName}
+                    data-mobile-row-end={isMobileRowEnd ? "true" : undefined}
+                    data-mobile-last-row={isMobileLastRow ? "true" : undefined}
                     href={workshopPath}
                     onClick={(event) => {
                         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -125,6 +127,8 @@ function WorkshopGrid({
             <div
                 key={id}
                 className={itemClassName}
+                data-mobile-row-end={isMobileRowEnd ? "true" : undefined}
+                data-mobile-last-row={isMobileLastRow ? "true" : undefined}
                 onClick={() => onSelectWorkshop(ws)}
                 style={{ cursor: 'pointer' }}
             >
