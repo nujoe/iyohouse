@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Translation } from "@/lib/i18n";
 
@@ -34,6 +35,7 @@ export default function HomeInfoButton({ className = "", label = "info", t }: Ho
             <div className="info-bottom-text">{label}</div>
             <div className="business-info-overlay" onClick={(e) => e.stopPropagation()}>
                 <strong>{t.footer.company}</strong><br />
+                PRIVACY POLICY : <Link href="/privacy">개인정보처리방침</Link><br />
                 {t.footer.address}<br />
                 {t.footer.businessLicense}<br />
                 {t.footer.mallOrderLicense}<br />
