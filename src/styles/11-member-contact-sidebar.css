@@ -618,7 +618,7 @@
     }
 
     .left-panel .sidebar-nav button {
-        font-size: 2.7rem !important;
+        font-size: 2.5rem !important;
     }
 
     .left-panel .user-login-btn,
@@ -628,7 +628,8 @@
 
     .left-panel.sidebar-lang-ko .user-login-btn,
     .left-panel.sidebar-lang-ko .user-signup-btn {
-        font-size: calc(1.25rem - 3px) !important;
+        font-size: 38px !important;
+        font-weight: 600 !important;
     }
 
     /* 모바일 헤더 정돈 */
