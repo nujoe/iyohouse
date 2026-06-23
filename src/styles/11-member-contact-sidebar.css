@@ -172,7 +172,7 @@
     .main-visual-column .visual-stack-v2,
     .member-visual-aside .visual-stack-v2 {
         position: absolute !important;
-        inset: 0 !important;
+        inset: calc(var(--line-gap) * 2) calc(var(--line-gap) * 2) var(--line-gap) !important;
         display: flex !important;
         flex-direction: column;
         gap: var(--line-gap) !important;
@@ -182,9 +182,13 @@
         margin: 0 !important;
         align-items: stretch;
         box-sizing: border-box;
-        padding: var(--line-gap) !important;
+        padding: 0 !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
+    }
+
+    .member-visual-aside .visual-stack-v2 {
+        inset: var(--line-gap) calc(var(--line-gap) * 2) var(--line-gap) !important;
     }
 
     .main-visual-column .v-box-v2,
@@ -857,7 +861,7 @@
         height: auto !important;
         overflow-y: visible !important;
         overflow-x: hidden !important;
-        padding: var(--line-gap) !important;
+        padding: var(--line-gap) calc(var(--line-gap) * 2) var(--line-gap) !important;
         gap: var(--line-gap) !important;
         box-sizing: border-box !important;
         align-items: stretch !important;

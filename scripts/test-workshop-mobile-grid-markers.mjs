@@ -45,6 +45,14 @@ function expectDisplayNone(atRules, selector) {
   );
 }
 
+function expectDeclaration(atRules, selector, property, value) {
+  assert.deepEqual(
+    declarationsFor(atRules, selector)[property],
+    { value, important: true },
+    `${selector} ${property} should be ${value} !important`,
+  );
+}
+
 function expectNoRule(atRules, selector) {
   for (const atRule of atRules) {
     const rule = atRule.nodes.find(
@@ -56,13 +64,17 @@ function expectNoRule(atRules, selector) {
 }
 
 const workshopCss = parseCss("src/styles/06-workshop-calendar.css");
+const responsiveCss = parseCss("src/styles/07-mobile-responsive.css");
 const mobileCss = parseCss("src/styles/12-mobile-scroll-layout.css");
 const workshopGridSource = readFileSync(
   resolve(rootDir, "src/components/WorkshopGrid.tsx"),
   "utf8",
 );
 const workshopMobile = mediaRules(workshopCss, "max-width: 800px");
+const responsiveMobile = mediaRules(responsiveCss, "max-width: 768px");
 const mobileLayout = mediaRules(mobileCss, "max-width: 768px");
+
+expectDeclaration(responsiveMobile, ".workshop-item::after", "top", "-20px");
 
 for (const selector of [
   ".workshop-item:nth-child(2n)::after",

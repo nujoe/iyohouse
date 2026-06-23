@@ -155,6 +155,10 @@ requireIncludes("src/styles/08-info-workshop-detail.css", [
   "border-bottom: 1px solid #eee",
 ]);
 
+requireMatches("src/styles/08-info-workshop-detail.css", [
+  [/\.detail-info-section\s*\{[^}]*border-top:\s*0;/s, "detail info section must not draw a separator below the workshop description."],
+]);
+
 requireExcludes("src/hooks/useHomeNavigationState.ts", [
   "createLegacyWorkshop",
   "legacyId",

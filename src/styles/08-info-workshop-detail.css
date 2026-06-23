@@ -402,7 +402,7 @@
 
 /* 추가 안내 정보 */
 .detail-info-section {
-    border-top: 1px solid #eee;
+    border-top: 0;
     padding-top: 60px;
     margin-top: 20px;
 }

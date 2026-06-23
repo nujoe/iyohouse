@@ -82,17 +82,15 @@ function expectImportantDeclaration(declarations, property, value) {
 
 test("desktop main and member visual stacks keep one grid-gap padding around images", () => {
     const css = parseCss("src/styles/11-member-contact-sidebar.css");
-    const stackSelectors = [
-        ".main-visual-column .visual-stack-v2",
-        ".member-visual-aside .visual-stack-v2",
-    ];
+    const mainDeclarations = declarationsFor(css, ".main-visual-column .visual-stack-v2", "desktop");
+    expectImportantDeclaration(mainDeclarations, "inset", "calc(var(--line-gap) * 2) calc(var(--line-gap) * 2) var(--line-gap)");
+    expectImportantDeclaration(mainDeclarations, "padding", "0");
+    expectImportantDeclaration(mainDeclarations, "gap", "var(--line-gap)");
 
-    for (const selector of stackSelectors) {
-        const declarations = declarationsFor(css, selector, "desktop");
-        expectImportantDeclaration(declarations, "inset", "0");
-        expectImportantDeclaration(declarations, "padding", "var(--line-gap)");
-        expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
-    }
+    const memberDeclarations = declarationsFor(css, ".member-visual-aside .visual-stack-v2", "desktop");
+    expectImportantDeclaration(memberDeclarations, "inset", "var(--line-gap) calc(var(--line-gap) * 2) var(--line-gap)");
+    expectImportantDeclaration(memberDeclarations, "padding", "0");
+    expectImportantDeclaration(memberDeclarations, "gap", "var(--line-gap)");
 });
 
 test("mobile main and member visual stacks use grid-gap spacing with original image ratio", () => {
@@ -112,7 +110,7 @@ test("mobile main and member visual stacks use grid-gap spacing with original im
 
     for (const selector of stackSelectors) {
         const declarations = declarationsFor(css, selector);
-        expectImportantDeclaration(declarations, "padding", "var(--line-gap)");
+        expectImportantDeclaration(declarations, "padding", "var(--line-gap) calc(var(--line-gap) * 2) var(--line-gap)");
         expectImportantDeclaration(declarations, "gap", "var(--line-gap)");
         expectImportantDeclaration(declarations, "height", "auto");
         expectImportantDeclaration(declarations, "overflow-y", "visible");
