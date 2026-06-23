@@ -3,9 +3,9 @@
 
 export default function MemberVisualStack() {
   const images = [
-    { src: "/member/member_2.png?v=1", width: 736, height: 736 },
-    { src: "/member/member_3.png?v=1", width: 736, height: 736 },
-    { src: "/member/member_4.png?v=1", width: 736, height: 736 },
+    { src: "/member/2.JPG", width: 736, height: 736 },
+    { src: "/member/3.JPG", width: 736, height: 736 },
+    { src: "/member/4.JPG", width: 736, height: 736 },
   ];
 
   return (
