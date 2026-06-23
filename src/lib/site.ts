@@ -1,4 +1,4 @@
-export const SITE_NAME = "IYOHOUSE";
+export const SITE_NAME = "이요하우스 IYOHOUSE";
 
 export const SITE_DESCRIPTION =
   "이요하우스는 창작자를 위한 자유실험공간입니다. 2025년 ‘공공공원’이라는 이름으로 시작해, 워크숍과 동아리, 각종 이벤트가 열리는 공간으로 운영되고 있습니다.";
