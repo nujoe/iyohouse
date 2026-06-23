@@ -42,7 +42,7 @@ const ko: MemberProfile[] = [
     role: "Artist",
     description:
       "무한도전에 정 과장이 있다면 이요하우스에는 문 과장이 있다. 디자이너들 사이에서 꾸준히 파워포인트로 작업하는 비전공자. 잘 만든 B급 영화처럼 대놓고 어설픈데 웃다 보면 묘하게 여운을 주는 지점을 공략한다. <2 Broke Girls>, <Miranda> 등 영미권 시트콤의 농담을 좋아한다. 좋아하는 캐릭터는 <Modern Family>의 Gloria. 무해해 인스타그램 계정(@muhaehaehaehaehaehaehaehae)을 운영하고 있고, 슐튀르미디어(@sulturemedia)에서 글을 쓰고 있다.",
-    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/sulturemedia/" }],
+    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/glwormun/" }],
   },
   {
     id: 5,
@@ -87,7 +87,7 @@ const en: MemberProfile[] = [
     role: "Artist",
     description:
       "If Infinite Challenge had Manager Jung, IYOHOUSE has Manager Moon. A non-design-major who persistently works with PowerPoint among designers, Gahyun aims for the kind of openly awkward charm found in a well-made B movie, where laughter leaves a strange aftertaste. She enjoys jokes from English-language sitcoms such as 2 Broke Girls and Miranda, and her favorite character is Gloria from Modern Family. She runs the Instagram account @muhaehaehaehaehaehaehaehae and writes at Sulture Media (@sulturemedia).",
-    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/sulturemedia/" }],
+    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/glwormun/" }],
   },
   {
     id: 5,

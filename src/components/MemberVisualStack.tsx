@@ -3,9 +3,14 @@
 
 export default function MemberVisualStack() {
   const images = [
-    { src: "/member/2.JPG", width: 736, height: 736 },
     { src: "/member/3.JPG", width: 736, height: 736 },
+    { src: "/member/2.JPG", width: 736, height: 736 },
     { src: "/member/4.JPG", width: 736, height: 736 },
+    { src: "/member/5.jpg", width: 736, height: 736 },
+    { src: "/member/6.JPG", width: 736, height: 736 },
+    { src: "/member/7.jpeg", width: 736, height: 736 },
+    { src: "/member/8.jpeg", width: 736, height: 736 },
+    { src: "/member/9.jpeg", width: 736, height: 736 },
   ];
 
   return (

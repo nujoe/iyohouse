@@ -33,4 +33,16 @@ for (const name of ["연서", "Yeonseo"]) {
   assert.ok(!block.includes('링크 2'), `${name} should not include the second placeholder link`);
 }
 
+for (const name of ["가현", "Gahyun"]) {
+  const block = memberBlock(name);
+  assert.ok(
+    block.includes('url: "https://www.instagram.com/glwormun/"'),
+    `${name} should link to glwormun Instagram`,
+  );
+  assert.ok(
+    !block.includes('url: "https://www.instagram.com/sulturemedia/"'),
+    `${name} should not link to the old Instagram`,
+  );
+}
+
 console.log("member link checks passed.");
