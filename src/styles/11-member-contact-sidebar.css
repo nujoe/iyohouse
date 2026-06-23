@@ -628,7 +628,7 @@
 
     .left-panel.sidebar-lang-ko .user-login-btn,
     .left-panel.sidebar-lang-ko .user-signup-btn {
-        font-size: 18px !important;
+        font-size: calc(1.25rem - 3px) !important;
     }
 
     /* 모바일 헤더 정돈 */
