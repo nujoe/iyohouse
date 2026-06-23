@@ -18,7 +18,6 @@ const ko: MemberProfile[] = [
       "현은 다양한 창작의 방법론을 연구하는 서울 기반의 디렉터로 ‘실패를 통해 자기 이해를 한다’는 문장을 좋아하며, 무엇이든 도전하고 실패하기를 즐긴다. 현재는 히얼투필름(@heretofilm)과 키요이(@kiyoioffice), 그리고 이요하우스(@iyohouse )를 운영하는 중. 비주얼 기획, 연출 감독, 촬영/조명 감독, 포토그래퍼, 퍼실리테이터, 놀이 연구원으로 활동하며 Ai와 동시대 디자인 파이프라인 연구하고 지식의 공유로 지속가능한 창작 생태계를 만들고자 한다.",
     links: [
       { label: "INSTAGRAM", url: "https://www.instagram.com/hyun2xyz/" },
-      { label: "WEBSITE", url: "#" },
     ],
   },
   {
@@ -27,10 +26,7 @@ const ko: MemberProfile[] = [
     role: "Designer",
     description:
       "이름대로 산다는 말을 믿고, 이름처럼 편지 쓰기를 좋아한다. 다독가는 아니지만 애서가이며, 책장이 넘칠 만큼 책을 쌓아두고는 뿌듯해하는 편이다. 독립 잡지 매거진 미러(@mirrormgz)의 편집장이자 에디터. 지면의 힘을 믿으며 지금껏 아홉 권을 펴냈다. 재능이라면, 번번이 헛물켜면서도 사랑과 다정을 포기하지 않는 것. 바람이라면, 말과 마음을 손에 쥘 수 있는 형태로 남기는 것.",
-    links: [
-      { label: "링크 1", url: "#" },
-      { label: "링크 2", url: "#" },
-    ],
+    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/kahonhill/" }],
   },
   {
     id: 3,
@@ -67,7 +63,6 @@ const en: MemberProfile[] = [
       "Hyun is a Seoul-based director who studies different methods of making. They like the phrase, “we understand ourselves through failure,” and enjoy trying, failing, and trying again. Hyun currently runs Here to Film (@heretofilm), Kiyoi (@kiyoioffice), and IYOHOUSE (@iyohouse). Working across visual planning, directing, cinematography, lighting, photography, facilitation, and play research, Hyun explores AI and contemporary design pipelines while building a sustainable creative ecosystem through shared knowledge.",
     links: [
       { label: "INSTAGRAM", url: "https://www.instagram.com/hyun2xyz/" },
-      { label: "WEBSITE", url: "#" },
     ],
   },
   {
@@ -76,10 +71,7 @@ const en: MemberProfile[] = [
     role: "Designer",
     description:
       "Just as a thin thread moves freely between fingers, 'iyo' focuses on accidental crossings. Like cat's cradle, pulling tight and releasing loose, thoughts constantly transform through each other's touch. The threads in the cradle tangle for a moment and sometimes break, not knowing what they will become. But we willingly accept that even misalignment becomes a new connection. Public Park for Creators leads to IYOHOUSE.",
-    links: [
-      { label: "LINK 1", url: "#" },
-      { label: "LINK 2", url: "#" },
-    ],
+    links: [{ label: "INSTAGRAM", url: "https://www.instagram.com/kahonhill/" }],
   },
   {
     id: 3,
