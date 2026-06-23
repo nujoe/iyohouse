@@ -130,6 +130,13 @@ test("mobile main and member visual stacks use grid-gap spacing with original im
     }
 });
 
+test("mobile main text column uses a tighter grid-gap left inset", () => {
+    const css = parseCss("src/styles/11-member-contact-sidebar.css");
+    const declarations = declarationsFor(css, ".main-text-column");
+
+    expectImportantDeclaration(declarations, "padding-left", "0");
+});
+
 test("mobile pola image can scale down inside the main text column", () => {
     const css = parseCss("src/styles/03-home.css");
     const wrapperDeclarations = declarationsFor(css, ".main-pola-wrapper");
