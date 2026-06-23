@@ -626,6 +626,11 @@
         font-size: 1.25rem !important;
     }
 
+    .left-panel.sidebar-lang-ko .user-login-btn,
+    .left-panel.sidebar-lang-ko .user-signup-btn {
+        font-size: 18px !important;
+    }
+
     /* 모바일 헤더 정돈 */
     .header-right {
         --mobile-auth-width: 60px;

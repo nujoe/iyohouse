@@ -549,12 +549,16 @@ export default function WorkshopDetailOverlay({
                                 <div className="schedule-selector-wrapper">
                                     <button
                                         type="button"
-                                        className={`action-btn outline-btn ${selectedSession ? 'selected' : ''}`}
-                                        onClick={() => setShowSchedule(!showSchedule)}
+                                        className={`action-btn outline-btn ${selectedSession ? 'selected' : ''} ${workshopClosedForPayment ? 'schedule-locked' : ''}`}
+                                        disabled={workshopClosedForPayment}
+                                        onClick={() => {
+                                            if (workshopClosedForPayment) return;
+                                            setShowSchedule(!showSchedule);
+                                        }}
                                     >
                                         {selectedSession ? getScheduleSessionLabel(selectedSession, language) : t.workshop.scheduleSelect}
                                     </button>
-                                    {showSchedule && (
+                                    {showSchedule && !workshopClosedForPayment && (
                                         <div className="schedule-dropdown">
                                             {getWorkshopSchedule(workshop).map((session: any, index: number) => {
                                                 const localizedSession = getLocalizedScheduleSession(session, language);

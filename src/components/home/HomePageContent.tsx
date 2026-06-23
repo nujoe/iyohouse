@@ -105,6 +105,7 @@ export default function HomePageContent() {
                 isContactOpen={isContactOpen}
                 isProfileComplete={isProfileComplete}
                 isSidebarExpanded={isSidebarExpanded}
+                language={language}
                 onCloseContact={() => setIsContactOpen(false)}
                 onCloseSidebar={closeSidebar}
                 onGoToCompleteProfile={goToCompleteProfile}

@@ -200,8 +200,8 @@
     font-family: var(--font-noto-sans), 'Noto Sans KR', system-ui, sans-serif;
     padding: 6px 0;
     margin: 0;
-    line-height: 1.1;
-    font-weight: 700;
+    font-size: 49px;
+    font-weight: 600;
     line-height: 1.2;
     color: var(--line);
     text-align: left;

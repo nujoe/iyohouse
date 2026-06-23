@@ -4,13 +4,14 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import ContactSidebar from "@/components/home/ContactSidebar";
 import HomeInfoButton from "@/components/home/HomeInfoButton";
-import type { Translation } from "@/lib/i18n";
+import type { Language, Translation } from "@/lib/i18n";
 
 interface HomeSidebarProps {
     activePreset: string;
     isContactOpen: boolean;
     isProfileComplete: boolean;
     isSidebarExpanded: boolean;
+    language: Language;
     onCloseContact: () => void;
     onCloseSidebar: () => void;
     onGoToCompleteProfile: () => void;
@@ -29,6 +30,7 @@ export default function HomeSidebar({
     isContactOpen,
     isProfileComplete,
     isSidebarExpanded,
+    language,
     onCloseContact,
     onCloseSidebar,
     onGoToCompleteProfile,
@@ -66,7 +68,7 @@ export default function HomeSidebar({
     const shouldShowPanelIcon = !isPanelOpen && !isPanelClosing;
 
     return (
-        <div className={`left-panel ${isPanelOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && onToggleSidebar()}>
+        <div className={`left-panel sidebar-lang-${language} ${isPanelOpen ? 'expanded' : ''} ${isContactOpen ? 'contact-mode' : ''}`} onClick={() => !isContactOpen && onToggleSidebar()}>
             <div className="mobile-panel-actions" style={{ opacity: shouldShowPanelIcon ? 1 : 0, pointerEvents: shouldShowPanelIcon ? 'auto' : 'none' }}>
                 <button
                     type="button"
