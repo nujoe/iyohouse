@@ -22,6 +22,10 @@ for (const needle of [
   "dragStartRef",
   "hasDraggedRef",
   "clampChatbotPosition",
+  "isMobileChatbotViewport",
+  "window.matchMedia(\"(max-width: 768px)\").matches",
+  "window.innerWidth - chatbotWidth - lineGap",
+  "window.innerHeight - chatbotHeight - lineGap",
   "handleAvatarPointerDown",
   "handleWindowPointerMove",
   "handleWindowPointerUp",
@@ -65,6 +69,16 @@ const mobileRule = cssSource.match(/@media\s*\(max-width:\s*768px\)\s*\{[\s\S]*?
 assert.ok(mobileRule, "mobile chatbot media rule should exist");
 assert.doesNotMatch(mobileRule[0], /right:\s*16px\s*!important;/, "mobile chatbot should not override draggable x position");
 assert.doesNotMatch(mobileRule[0], /bottom:\s*16px\s*!important;/, "mobile chatbot should not override draggable y position");
+assert.match(
+  mobileRule[0],
+  /left:[^;]*var\(--line-gap\)[^;]*var\(--iyo-chatbot-x\)/,
+  "mobile chatbot should keep the avatar inside the outer grid while preserving draggable x position",
+);
+assert.match(
+  mobileRule[0],
+  /top:[^;]*var\(--top-row-1\)[^;]*var\(--line-gap\)[^;]*var\(--iyo-chatbot-y\)/,
+  "mobile chatbot should keep the avatar below the top grid while preserving draggable y position",
+);
 
 const facingRightRule = ruleFor(".iyo-chatbot.is-facing-right .iyo-chatbot-logo-img");
 assert.match(facingRightRule, /transform:\s*scaleX\(-1\);/, "chatbot logo should flip toward right movement");

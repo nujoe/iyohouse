@@ -248,6 +248,8 @@
 
 @media (max-width: 768px) {
   .iyo-chatbot {
+    left: min(calc(100vw - var(--line-gap) - 104px), max(var(--line-gap), var(--iyo-chatbot-x))) !important;
+    top: min(calc(100dvh - var(--line-gap) - 104px), max(calc(var(--top-row-1) + var(--line-gap)), var(--iyo-chatbot-y))) !important;
     transition: none !important;
   }
 

@@ -54,6 +54,10 @@ const sidebarBoundaryGap = 12;
 const dragThresholdPx = 4;
 const defaultChatbotSize = 104;
 
+function isMobileChatbotViewport() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
 const FAQ_TEMPLATES = [
   {
     id: "faq-1",
@@ -82,11 +86,21 @@ function getChatbotBounds(chatbotElement: HTMLElement | null): ChatbotBounds {
   const rect = chatbotElement?.getBoundingClientRect();
   const chatbotWidth = rect?.width || defaultChatbotSize;
   const chatbotHeight = rect?.height || defaultChatbotSize;
-  const stageRect = document.querySelector(".stage")?.getBoundingClientRect();
-  const sidebarRect = document.querySelector(".left-panel")?.getBoundingClientRect();
   const rootStyle = getComputedStyle(document.documentElement);
   const lineGap = Number.parseFloat(rootStyle.getPropertyValue("--line-gap")) || movementViewportPadding;
   const topRow = Number.parseFloat(rootStyle.getPropertyValue("--top-row-1")) || 0;
+
+  if (isMobileChatbotViewport()) {
+    const minX = lineGap;
+    const maxX = Math.max(minX, window.innerWidth - chatbotWidth - lineGap);
+    const minY = topRow + lineGap;
+    const maxY = Math.max(minY, window.innerHeight - chatbotHeight - lineGap);
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  const stageRect = document.querySelector(".stage")?.getBoundingClientRect();
+  const sidebarRect = document.querySelector(".left-panel")?.getBoundingClientRect();
   const stageLeft = stageRect?.left ?? 0;
   const stageRight = stageRect?.right ?? window.innerWidth;
   const sidebarIsRightSide = Boolean(sidebarRect && sidebarRect.left > window.innerWidth / 2);
