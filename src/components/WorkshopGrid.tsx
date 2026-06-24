@@ -53,7 +53,9 @@ function WorkshopGrid({
         const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
         const capacity = parseCapacity(ws.capacity, ws.schedule) ?? 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
-        const isClosed = ws.isClosed || registeredCount >= capacity;
+        const capacityFull = registeredCount >= capacity;
+        const hasWaitlistForm = typeof ws.waitlistFormUrl === "string" && ws.waitlistFormUrl.trim().length > 0;
+        const shouldShowClosedTag = ws.isClosed || (capacityFull && !hasWaitlistForm);
 
         const posterWidth = ws.posterMeta?.width || 1080;
         const posterHeight = ws.posterMeta?.height || 1350;
@@ -92,9 +94,9 @@ function WorkshopGrid({
                         />
                     )}
                 </div>
-                <div className={`blueprint-info ${isClosed ? 'is-closed' : ''}`}>
+                <div className={`blueprint-info ${shouldShowClosedTag ? 'is-closed' : ''}`}>
                     <div className="info-row" style={{ justifyContent: 'flex-start', gap: '0.8rem' }}>
-                        {isClosed && <div className="tag-closed">{t.workshop.closed}</div>}
+                        {shouldShowClosedTag && <div className="tag-closed">{t.workshop.closed}</div>}
                         <div className="title-box">{title}</div>
                     </div>
                     <hr className="blueprint-hr" />

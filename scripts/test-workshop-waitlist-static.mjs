@@ -7,6 +7,7 @@ function read(path) {
 
 const schema = read("src/sanity/schemaTypes/workshop.ts");
 const detail = read("src/components/workshop/WorkshopDetailOverlay.tsx");
+const grid = read("src/components/WorkshopGrid.tsx");
 const translations = read("src/lib/i18n/translations.ts");
 
 const curriculumIndex = schema.indexOf("name: 'curriculum'");
@@ -61,6 +62,19 @@ assert.ok(
 assert.ok(
   translations.includes('waitlistApply: "Join waitlist"'),
   "English translations should include waitlist button text",
+);
+
+assert.ok(
+  grid.includes("hasWaitlistForm"),
+  "workshop grid should know whether a waitlist form exists",
+);
+assert.ok(
+  grid.includes("shouldShowClosedTag"),
+  "workshop grid should separate closed tag display from capacity-full state",
+);
+assert.ok(
+  grid.includes("capacityFull && !hasWaitlistForm"),
+  "workshop grid should hide the closed tag when capacity is full and waitlist is available",
 );
 
 console.log("workshop waitlist static checks passed.");
