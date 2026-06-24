@@ -16,10 +16,9 @@ function buildWorkshopReturnPath(workshopId: string | null) {
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = searchParams.get("order_id");
   const amount = searchParams.get("amount");
-  const registrationId = searchParams.get("registration_id");
   const workshopId = searchParams.get("workshop");
+  const workshopTitle = searchParams.get("workshop_title");
   const returnPath = buildWorkshopReturnPath(workshopId);
 
   return (
@@ -30,18 +29,13 @@ function SuccessContent() {
           <div className="login-modal-body">
             <div className="login-intro payment-success-intro">
               <h3>결제가 성공적으로 완료되었습니다.</h3>
+              {workshopTitle && (
+                <p className="payment-success-workshop-title">{workshopTitle}</p>
+              )}
               <p>워크숍 신청이 완료되었습니다.</p>
             </div>
 
             <div className="payment-success-meta" aria-label="결제 완료 정보">
-              <div className="payment-success-meta-row">
-                <span>신청 번호</span>
-                <span>{registrationId || "-"}</span>
-              </div>
-              <div className="payment-success-meta-row">
-                <span>주문 번호</span>
-                <span>{orderId || "-"}</span>
-              </div>
               {amount && (
                 <div className="payment-success-meta-row">
                   <span>결제 금액</span>

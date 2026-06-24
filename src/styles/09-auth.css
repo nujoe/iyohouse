@@ -384,6 +384,15 @@
     word-break: keep-all;
 }
 
+.payment-success-workshop-title {
+    margin: 16px 0 8px;
+    color: #000000;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.45;
+    word-break: keep-all;
+}
+
 .payment-success-meta {
     display: flex;
     flex-direction: column;

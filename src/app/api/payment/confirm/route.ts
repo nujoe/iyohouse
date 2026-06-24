@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   const auth = await parseNicepayRequest(request);
   const reservedParams = new URLSearchParams(auth.mallReserved || "");
   const workshopId = reservedParams.get("workshop") || undefined;
+  const workshopTitle = reservedParams.get("workshop_title") || undefined;
   const orderId = auth.orderId || "";
   const supabase = getSupabaseServerClient();
 
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
           order_id: registration.order_id,
           amount: registration.amount,
           workshop: workshopId,
+          workshop_title: workshopTitle,
         }),
         { status: 303 },
       );
@@ -186,6 +188,7 @@ export async function POST(request: Request) {
         order_id: registration.order_id,
         amount: registration.amount,
         workshop: workshopId,
+        workshop_title: workshopTitle,
       }),
       { status: 303 },
     );

@@ -15,6 +15,7 @@ type CheckoutRequest = {
   method?: string;
   scheduleLabel?: string;
   workshopId?: string;
+  workshopTitle?: string;
 };
 
 type CheckoutRegistration = {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { registration_id, orderName, method, scheduleLabel, workshopId } = await request.json() as CheckoutRequest;
+    const { registration_id, orderName, method, scheduleLabel, workshopId, workshopTitle } = await request.json() as CheckoutRequest;
 
     if (!registration_id) {
       return NextResponse.json(
@@ -106,14 +107,18 @@ export async function POST(request: Request) {
       mallReserved.set("workshop", workshopId);
     }
 
-    const workshopTitle = Array.isArray(registration.workshops)
+    if (workshopTitle) {
+      mallReserved.set("workshop_title", workshopTitle);
+    }
+
+    const registrationWorkshopTitle = Array.isArray(registration.workshops)
       ? registration.workshops[0]?.title
       : registration.workshops?.title;
 
     const payload = createNicepayPaymentPayload({
       registration,
       userId: user.id,
-      orderName: orderName || workshopTitle || "IYOHOUSE Workshop",
+      orderName: orderName || workshopTitle || registrationWorkshopTitle || "IYOHOUSE Workshop",
       origin,
       method,
       mallReserved,
