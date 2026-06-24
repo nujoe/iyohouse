@@ -7,11 +7,11 @@ const source = readFileSync(
 );
 
 const expectedOrder = [
-  "/member/3.JPG",
+  "/member/6.JPG",
   "/member/2.JPG",
+  "/member/3.JPG",
   "/member/4.JPG",
   "/member/5.jpg",
-  "/member/6.JPG",
   "/member/7.jpeg",
   "/member/8.jpeg",
   "/member/9.jpeg",

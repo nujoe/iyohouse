@@ -398,8 +398,8 @@
 }
 
 .action-btn.outline-btn.selected {
-    background: #000;
-    color: #fff;
+    background: #fff;
+    color: #000;
     border-color: #000;
 }
 

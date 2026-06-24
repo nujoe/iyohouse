@@ -372,6 +372,7 @@
 
 .payment-success-card {
     max-width: 460px;
+    font-family: var(--font-gowun-batang), 'Gowun Batang', var(--font-noto-serif), serif;
 }
 
 .payment-success-intro {
