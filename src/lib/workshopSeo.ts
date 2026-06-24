@@ -56,6 +56,7 @@ export type WorkshopSeoDocument = {
   price?: number;
   isActive?: boolean;
   isClosed?: boolean;
+  waitlistFormUrl?: string;
 };
 
 export function getWorkshopSeoTitle(workshop: WorkshopSeoDocument) {

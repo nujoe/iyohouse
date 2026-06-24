@@ -18,13 +18,18 @@ import {
     getScheduleSessionLabel,
 } from "@/lib/i18n/workshopLocalization";
 
-const WORKSHOP_INFO_FIELDS = [
+const WORKSHOP_PRIMARY_INFO_FIELDS = [
     { key: "targetAudience", label: "대상" },
     { key: "materials", label: "준비물" },
     { key: "location", label: "장소" },
+] as const;
+
+const WORKSHOP_POST_CURRICULUM_INFO_FIELDS = [
     { key: "applicationGuide", label: "신청 안내" },
     { key: "inquiry", label: "문의" },
 ] as const;
+
+type WorkshopInfoField = (typeof WORKSHOP_PRIMARY_INFO_FIELDS | typeof WORKSHOP_POST_CURRICULUM_INFO_FIELDS)[number];
 
 interface WorkshopDetailOverlayProps {
     workshop: any;
@@ -250,12 +255,14 @@ export default function WorkshopDetailOverlay({
             : [], []);
 
     const hasSelectableSchedule = useCallback((ws: any) => getWorkshopSchedule(ws).length > 0, [getWorkshopSchedule]);
-    const workshopInfoItems = WORKSHOP_INFO_FIELDS
+    const getWorkshopInfoItems = useCallback((fields: readonly WorkshopInfoField[]) => fields
         .map((field) => ({
             ...field,
             value: typeof workshop?.[field.key] === "string" ? workshop[field.key].trim() : "",
         }))
-        .filter((item) => item.value);
+        .filter((item) => item.value), [workshop]);
+    const primaryInfoItems = getWorkshopInfoItems(WORKSHOP_PRIMARY_INFO_FIELDS);
+    const postCurriculumInfoItems = getWorkshopInfoItems(WORKSHOP_POST_CURRICULUM_INFO_FIELDS);
 
     const getSessionCapacity = useCallback((ws: any, session: any) => {
         const sessionCapacity = getPositiveInteger(session?.capacity);
@@ -429,6 +436,10 @@ export default function WorkshopDetailOverlay({
 
     const selectedScheduleFull = selectedSession ? isScheduleFull(workshop, selectedSession) : false;
     const workshopClosedForPayment = isWorkshopClosedForPayment(workshop);
+    const workshopManuallyClosed = Boolean(workshop?.isClosed);
+    const waitlistFormUrl = typeof workshop?.waitlistFormUrl === "string" ? workshop.waitlistFormUrl.trim() : "";
+    const capacityClosed = (workshopClosedForPayment || selectedScheduleFull) && !workshopManuallyClosed;
+    const shouldShowWaitlistButton = capacityClosed && Boolean(waitlistFormUrl);
     const isApplyDisabled = isPaymentStarting || workshopClosedForPayment || selectedScheduleFull;
 
     return (
@@ -454,9 +465,9 @@ export default function WorkshopDetailOverlay({
                             ))}
                         </div>
 
-                        {workshopInfoItems.length > 0 && (
+                        {primaryInfoItems.length > 0 && (
                             <div className="detail-info-section">
-                                {workshopInfoItems.map((item) => (
+                                {primaryInfoItems.map((item) => (
                                     <div className="detail-info-row" key={item.key}>
                                         <div className="detail-info-label">▮ {item.label}</div>
                                         <div className="detail-info-content">{item.value}</div>
@@ -490,6 +501,17 @@ export default function WorkshopDetailOverlay({
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {postCurriculumInfoItems.length > 0 && (
+                            <div className="detail-info-section">
+                                {postCurriculumInfoItems.map((item) => (
+                                    <div className="detail-info-row" key={item.key}>
+                                        <div className="detail-info-label">▮ {item.label}</div>
+                                        <div className="detail-info-content">{item.value}</div>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
@@ -587,6 +609,15 @@ export default function WorkshopDetailOverlay({
                                 <button className="action-btn registered-status-btn" disabled>
                                     {t.workshop.alreadyApplied}
                                 </button>
+                            ) : shouldShowWaitlistButton ? (
+                                <a
+                                    className="action-btn fill-btn"
+                                    href={waitlistFormUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {t.workshop.waitlistApply}
+                                </a>
                             ) : (
                                 <button
                                     className={`action-btn fill-btn ${hasSelectableSchedule(workshop) && !selectedSession ? 'locked' : ''}`}

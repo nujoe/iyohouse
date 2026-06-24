@@ -142,7 +142,8 @@ requireExcludes("src/hooks/useWorkshopData.ts", [
 
 requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "workshop.displayCapacity ?? workshop.capacity",
-  "WORKSHOP_INFO_FIELDS",
+  "WORKSHOP_PRIMARY_INFO_FIELDS",
+  "WORKSHOP_POST_CURRICULUM_INFO_FIELDS",
   "detail-info-section",
   "detail-info-row",
   "detail-info-label",

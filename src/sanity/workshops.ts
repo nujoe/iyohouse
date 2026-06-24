@@ -41,6 +41,7 @@ const workshopSeoProjection = `{
   price,
   isActive,
   isClosed,
+  waitlistFormUrl,
   supabase_workshop_id,
   "posterMeta": poster.asset->metadata.dimensions
 }`;

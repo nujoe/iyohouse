@@ -115,6 +115,13 @@ export const workshopType = defineType({
       description: '사이트에는 노출하되 신청 버튼만 마감으로 표시합니다.',
     }),
     defineField({
+      name: 'waitlistFormUrl',
+      title: '대기자 신청 구글폼 링크',
+      type: 'url',
+      description: '정원이 자동 마감되었을 때 "대기자 신청" 버튼으로 연결할 구글폼 URL입니다. 직접 마감 처리한 워크숍은 기존처럼 마감으로 표시됩니다.',
+      validation: (Rule) => Rule.uri({ scheme: ['http', 'https'] }),
+    }),
+    defineField({
       name: 'poster',
       title: '포스터 이미지',
       type: 'image',
@@ -227,6 +234,20 @@ export const workshopType = defineType({
       ],
     }),
     defineField({
+      name: 'applicationGuide',
+      title: '신청 안내',
+      type: 'text',
+      rows: 4,
+      description: '신청 방법이나 유의사항을 입력합니다.',
+    }),
+    defineField({
+      name: 'inquiry',
+      title: '문의',
+      type: 'text',
+      rows: 3,
+      description: '문의 채널 또는 연락처를 입력합니다.',
+    }),
+    defineField({
       name: 'targetAudience',
       title: '대상',
       type: 'text',
@@ -246,20 +267,6 @@ export const workshopType = defineType({
       type: 'text',
       rows: 2,
       description: '워크숍 장소를 입력합니다.',
-    }),
-    defineField({
-      name: 'applicationGuide',
-      title: '신청 안내',
-      type: 'text',
-      rows: 4,
-      description: '신청 방법이나 유의사항을 입력합니다.',
-    }),
-    defineField({
-      name: 'inquiry',
-      title: '문의',
-      type: 'text',
-      rows: 3,
-      description: '문의 채널 또는 연락처를 입력합니다.',
     }),
     defineField({
       name: 'capacity',
