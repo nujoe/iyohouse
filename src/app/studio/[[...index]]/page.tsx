@@ -1,8 +1,10 @@
-'use client'
+import SanityStudioClient from "@/components/admin/SanityStudioClient"
+import { requireAdminClient } from "@/lib/admin/workshopAdmin"
 
-import { NextStudio } from 'next-sanity/studio'
-import { config } from '../../../sanity/config'
+export const dynamic = "force-dynamic"
 
-export default function StudioPage() {
-  return <NextStudio config={config} />
+export default async function StudioPage() {
+  await requireAdminClient()
+
+  return <SanityStudioClient />
 }
