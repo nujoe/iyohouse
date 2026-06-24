@@ -366,6 +366,58 @@
     letter-spacing: 0.12em;
 }
 
+.payment-success-wrapper {
+    min-height: 100vh;
+}
+
+.payment-success-card {
+    max-width: 460px;
+}
+
+.payment-success-intro {
+    margin-bottom: 24px;
+}
+
+.payment-success-intro h3 {
+    font-size: 2.1rem;
+    line-height: 1.18;
+    word-break: keep-all;
+}
+
+.payment-success-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 22px 0 24px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #555;
+}
+
+.payment-success-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.payment-success-meta-row span:first-child {
+    flex: 0 0 auto;
+    color: #000000;
+    font-weight: 700;
+}
+
+.payment-success-meta-row span:last-child {
+    text-align: right;
+    word-break: break-all;
+}
+
+.payment-success-return-btn {
+    width: 100%;
+    min-height: 50px;
+}
+
 @media (max-width: 600px) {
     .login-modal-card {
         max-width: 90%;
@@ -374,6 +426,14 @@
     .login-modal-frame,
     .complete-profile-card {
         padding: 30px 20px;
+    }
+
+    .payment-success-card {
+        max-width: calc(100% - 32px);
+    }
+
+    .payment-success-intro h3 {
+        font-size: 1.65rem;
     }
 }
 

@@ -376,6 +376,7 @@ export default function WorkshopDetailOverlay({
             const { registration_id, workshop_title } = regData;
             pendingRegistrationId = registration_id;
             const orderName = workshop_title || getLocalizedWorkshopTitle(ws, language, t) || t.workshop.fallbackTitle(ws.number || ws.id);
+            const workshopId = ws._id || ws.id;
             const checkoutResponse = await fetch("/api/payment/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -383,6 +384,7 @@ export default function WorkshopDetailOverlay({
                     registration_id,
                     orderName,
                     scheduleLabel,
+                    workshopId: workshopId ? String(workshopId) : undefined,
                     method: "card",
                 }),
             });

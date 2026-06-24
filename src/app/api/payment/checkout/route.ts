@@ -14,6 +14,7 @@ type CheckoutRequest = {
   orderName?: string;
   method?: string;
   scheduleLabel?: string;
+  workshopId?: string;
 };
 
 type CheckoutRegistration = {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { registration_id, orderName, method, scheduleLabel } = await request.json() as CheckoutRequest;
+    const { registration_id, orderName, method, scheduleLabel, workshopId } = await request.json() as CheckoutRequest;
 
     if (!registration_id) {
       return NextResponse.json(
@@ -99,6 +100,10 @@ export async function POST(request: Request) {
 
     if (scheduleLabel) {
       mallReserved.set("schedule", scheduleLabel);
+    }
+
+    if (workshopId) {
+      mallReserved.set("workshop", workshopId);
     }
 
     const workshopTitle = Array.isArray(registration.workshops)

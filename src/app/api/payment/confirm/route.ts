@@ -64,6 +64,8 @@ async function markPendingRegistrationCancelled(registrationId: string, reason: 
 
 export async function POST(request: Request) {
   const auth = await parseNicepayRequest(request);
+  const reservedParams = new URLSearchParams(auth.mallReserved || "");
+  const workshopId = reservedParams.get("workshop") || undefined;
   const orderId = auth.orderId || "";
   const supabase = getSupabaseServerClient();
 
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
           registration_id: registration.id,
           order_id: registration.order_id,
           amount: registration.amount,
+          workshop: workshopId,
         }),
         { status: 303 },
       );
@@ -182,6 +185,7 @@ export async function POST(request: Request) {
         registration_id: registration.id,
         order_id: registration.order_id,
         amount: registration.amount,
+        workshop: workshopId,
       }),
       { status: 303 },
     );
