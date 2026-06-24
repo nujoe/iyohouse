@@ -98,12 +98,8 @@
 }
 
 @media (min-width: 901px) {
-    .main-inline-info {
-        padding-left: calc(var(--line-gap) + 24px);
-    }
-
     .main-inline-info .info-bottom-text {
-        font-size: calc(1.5rem + 4px);
+        font-size: calc(1.5rem + 2px);
     }
 }
 
