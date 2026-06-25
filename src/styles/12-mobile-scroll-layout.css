@@ -56,6 +56,11 @@
         --grid-top-row-2: calc(100svh - var(--line-gap)) !important;
     }
 
+    .preset-main .cell-main,
+    .grid-preset-main .cell-main {
+        touch-action: pan-y pinch-zoom !important;
+    }
+
 
 
 
