@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Gowun_Batang, Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
@@ -76,6 +76,12 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.webp",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  userScalable: true,
 };
 
 const organizationJsonLd = {

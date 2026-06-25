@@ -181,6 +181,12 @@
         width: 100%;
     }
 
+    .preset-main .main-text-column,
+    .preset-main .main-intro-title,
+    .preset-main .main-intro-text {
+        touch-action: pan-y pinch-zoom !important;
+    }
+
     .main-visual-column {
         flex: none;
         width: 100%;
