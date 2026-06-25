@@ -153,7 +153,7 @@ const styles = {
     margin: "0 0 8px",
   },
   title: {
-    fontSize: "clamp(2.2rem, 6vw, 4.4rem)",
+    fontSize: "30px",
     lineHeight: 1,
     margin: 0,
   },
