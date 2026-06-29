@@ -42,9 +42,22 @@ for (const needle of [
   "expectedRecipientCount",
   "new Resend",
   "renderWorkshopEmail",
+  "sendWorkshopEmailBatchWithRetry",
+  "chunkEmails",
+  "MAX_BATCH_EMAILS = 100",
+  "resend.batch.send",
+  "batchValidation: \"permissive\"",
+  "isRateLimitError",
+  "retryDelayMs",
+  "await sleep",
 ]) {
   assert.ok(route.includes(needle), `send email route should include ${needle}`);
 }
+
+assert.ok(
+  !route.includes("resend.emails.send"),
+  "send email route should use Resend Batch API instead of one request per recipient",
+);
 
 assert.ok(
   !/\.in\("status",\s*\[[^\]]*pending/.test(route),

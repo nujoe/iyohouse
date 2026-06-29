@@ -19,8 +19,82 @@ type RouteContext = {
   }>;
 };
 
+const MAX_BATCH_EMAILS = 100;
+const MAX_BATCH_RETRIES = 3;
+const BATCH_REQUEST_SPACING_MS = 650;
+
 function readExpectedRecipientCount(value: unknown) {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function retryDelayMs(attempt: number) {
+  return 1000 * (2 ** attempt);
+}
+
+function isRateLimitError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+
+  const record = error as Record<string, unknown>;
+  const statusCode = record.statusCode ?? record.status;
+  const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+
+  return statusCode === 429 || message.includes("rate limit") || message.includes("too many requests");
+}
+
+function chunkEmails<T>(items: T[], size = MAX_BATCH_EMAILS) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function sendWorkshopEmailBatchWithRetry(
+  resend: Resend,
+  emails: Array<{
+    from: string;
+    to: string[];
+    replyTo: string;
+    subject: string;
+    html: string;
+    text: string;
+  }>,
+) {
+  for (let attempt = 0; attempt <= MAX_BATCH_RETRIES; attempt += 1) {
+    const { data, error } = await resend.batch.send(emails, {
+      batchValidation: "permissive",
+    });
+
+    if (!error) {
+      return {
+        sentCount: data?.data?.length ?? 0,
+        failedCount: data?.errors?.length ?? 0,
+        errors: data?.errors ?? [],
+      };
+    }
+
+    if (!isRateLimitError(error) || attempt === MAX_BATCH_RETRIES) {
+      return {
+        sentCount: 0,
+        failedCount: emails.length,
+        errors: [{ index: -1, message: error.message || "Batch email delivery failed" }],
+      };
+    }
+
+    await sleep(retryDelayMs(attempt));
+  }
+
+  return {
+    sentCount: 0,
+    failedCount: emails.length,
+    errors: [{ index: -1, message: "Batch email delivery failed after retries" }],
+  };
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -104,27 +178,56 @@ export async function POST(request: Request, context: RouteContext) {
     const workshopTitle = sanityTitle || workshop.title || "IYOHOUSE workshop";
     let sentCount = 0;
     let failedCount = 0;
+    const deliveryErrors: Array<{ index: number; message: string }> = [];
 
-    for (const recipient of recipients) {
+    const emailPayloads = recipients.map((recipient) => {
       const rendered = renderWorkshopEmail(template, recipient, workshopTitle);
-      const { error } = await resend.emails.send({
+
+      return {
         from,
         to: [recipient.email],
         replyTo,
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text,
-      });
+        recipientId: recipient.id,
+      };
+    });
 
-      if (error) {
-        failedCount += 1;
+    for (const chunk of chunkEmails(emailPayloads)) {
+      const result = await sendWorkshopEmailBatchWithRetry(
+        resend,
+        chunk.map(({ recipientId: _recipientId, ...email }) => email),
+      );
+
+      sentCount += result.sentCount;
+      failedCount += result.failedCount;
+      deliveryErrors.push(...result.errors);
+
+      for (const error of result.errors) {
+        const recipientId = error.index >= 0 ? chunk[error.index]?.recipientId : undefined;
         console.error("Admin workshop email delivery failed", {
           workshopId,
-          recipientId: recipient.id,
+          recipientId,
           error,
         });
-      } else {
-        sentCount += 1;
+      }
+
+      if (emailPayloads.length > MAX_BATCH_EMAILS) {
+        await sleep(BATCH_REQUEST_SPACING_MS);
+      }
+    }
+
+    if (sentCount + failedCount !== recipients.length) {
+      const unknownCount = recipients.length - sentCount - failedCount;
+
+      if (unknownCount > 0) {
+        failedCount += unknownCount;
+        console.error("Admin workshop email delivery had unknown outcomes", {
+          workshopId,
+          unknownCount,
+          deliveryErrors,
+        });
       }
     }
 
