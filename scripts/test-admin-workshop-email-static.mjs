@@ -7,7 +7,10 @@ function read(path) {
 
 const schema = read("src/sanity/schemaTypes/workshop.ts");
 const adminPage = read("src/app/admin/workshops/[workshopId]/page.tsx");
+const applicantsClient = read("src/components/admin/AdminWorkshopApplicantsClient.tsx");
+const emailPanel = read("src/components/admin/AdminWorkshopEmailPanel.tsx");
 const helper = read("src/lib/admin/workshopEmail.ts");
+const adminStyles = read("src/styles/13-admin.css");
 const routePath = new URL("../src/app/api/admin/workshops/[workshopId]/send-email/route.ts", import.meta.url);
 
 assert.ok(existsSync(routePath), "admin workshop email send API route should exist");
@@ -24,11 +27,33 @@ for (const needle of [
 }
 
 assert.ok(
-  adminPage.includes("AdminWorkshopEmailPanel") &&
+  adminPage.includes("AdminWorkshopApplicantsClient") &&
     adminPage.includes("emailTemplate={emailTemplate}") &&
-    adminPage.includes("applicantCount={applicantCount}"),
-  "admin workshop detail page should render the email panel with template and confirmed recipient count",
+    adminPage.includes("applicantCount={applicantCount}") &&
+    adminPage.includes("groups={groups}"),
+  "admin workshop detail page should render the applicants client with template, groups, and confirmed recipient count",
 );
+
+for (const needle of [
+  "selectedRegistrationIds",
+  "selectedApplicantCount",
+  "toggleApplicantSelection",
+  "toggleGroupSelection",
+  "toggleAllSelection",
+  'type="checkbox"',
+  "AdminWorkshopEmailPanel",
+]) {
+  assert.ok(applicantsClient.includes(needle), `admin applicants client should include ${needle}`);
+}
+
+for (const needle of [
+  "selectedRegistrationIds",
+  "selectedApplicantCount",
+  "expectedRecipientCount: selectedApplicantCount",
+  "selectedRegistrationIds,",
+]) {
+  assert.ok(emailPanel.includes(needle), `admin email panel should send selected recipients with ${needle}`);
+}
 
 const postIndex = route.indexOf("export async function POST");
 const authIndex = route.indexOf("verifyAdminAccess(request)", postIndex);
@@ -40,6 +65,7 @@ assert.ok(authIndex < bodyIndex, "admin access must be verified before parsing r
 
 for (const needle of [
   "expectedRecipientCount",
+  "selectedRegistrationIds",
   "new Resend",
   "renderWorkshopEmail",
   "sendWorkshopEmailBatchWithRetry",
@@ -70,6 +96,7 @@ for (const needle of [
   'from("workshop_registrations_v2")',
   '.eq("workshop_id", workshopId)',
   '.eq("status", "confirmed")',
+  '.in("id", registrationIds)',
   "seenEmails",
   "snapshot_email",
   "{name}",
@@ -82,6 +109,13 @@ for (const needle of [
 assert.ok(
   !/\.in\("status",\s*\[[^\]]*pending/.test(helper),
   "workshop email helper must not include pending registrations",
+);
+
+assert.ok(
+  adminStyles.includes(".admin-email-link-action") &&
+    adminStyles.includes("text-decoration") &&
+    !/\.admin-email-actions button\s*\{[^}]*background:\s*#000/s.test(adminStyles),
+  "admin email actions should use hyperlink-style controls, not filled black buttons",
 );
 
 console.log("admin workshop email static checks passed.");

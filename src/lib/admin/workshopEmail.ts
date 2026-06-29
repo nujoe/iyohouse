@@ -83,24 +83,32 @@ function getScheduleLabel(row: Record<string, unknown>) {
 export async function getConfirmedWorkshopEmailRecipients(
   adminClient: AdminSupabaseClient,
   workshopId: string,
+  registrationIds?: string[],
 ): Promise<AdminWorkshopEmailRecipient[]> {
-  const { data, error } = await adminClient
+  let query = adminClient
     .from("workshop_registrations_v2")
     .select("id, snapshot_name, snapshot_email, schedule_label, schedule_date, schedule_time")
     .eq("workshop_id", workshopId)
-    .eq("status", "confirmed")
-    .order("created_at", { ascending: true });
+    .eq("status", "confirmed");
+
+  if (registrationIds?.length) {
+    query = query.in("id", registrationIds);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: true });
 
   if (error) {
     throw new Error(`확정 신청자 이메일 목록을 불러오지 못했습니다: ${error.message}`);
   }
 
+  const shouldDedupeEmails = !registrationIds?.length;
   const seenEmails = new Set<string>();
   const recipients: AdminWorkshopEmailRecipient[] = [];
 
   for (const row of data ?? []) {
     const email = readString(row.snapshot_email).toLowerCase();
-    if (!email || !isValidEmail(email) || seenEmails.has(email)) continue;
+    if (!email || !isValidEmail(email)) continue;
+    if (shouldDedupeEmails && seenEmails.has(email)) continue;
 
     seenEmails.add(email);
     recipients.push({

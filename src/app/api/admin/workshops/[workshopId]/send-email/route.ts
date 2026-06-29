@@ -27,6 +27,17 @@ function readExpectedRecipientCount(value: unknown) {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
+function readSelectedRegistrationIds(value: unknown) {
+  if (!Array.isArray(value)) return null;
+
+  const ids = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(ids));
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -106,10 +117,32 @@ export async function POST(request: Request, context: RouteContext) {
     const expectedRecipientCount = readExpectedRecipientCount(
       (body as Record<string, unknown> | null)?.expectedRecipientCount,
     );
+    const selectedRegistrationIds = readSelectedRegistrationIds(
+      (body as Record<string, unknown> | null)?.selectedRegistrationIds,
+    );
 
     if (expectedRecipientCount === null) {
       return NextResponse.json(
         { success: false, error: "expectedRecipientCount is required." },
+        { status: 400 },
+      );
+    }
+
+    if (!selectedRegistrationIds?.length) {
+      return NextResponse.json(
+        { success: false, error: "selectedRegistrationIds is required." },
+        { status: 400 },
+      );
+    }
+
+    if (selectedRegistrationIds.length !== expectedRecipientCount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "선택한 신청자 수가 화면 표시와 달라졌습니다. 다시 선택해 주세요.",
+          expectedRecipientCount,
+          selectedRecipientCount: selectedRegistrationIds.length,
+        },
         { status: 400 },
       );
     }
@@ -135,7 +168,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     const [{ template, title: sanityTitle }, recipients] = await Promise.all([
       getWorkshopApplicantEmailTemplate(workshopId),
-      getConfirmedWorkshopEmailRecipients(adminClient, workshopId),
+      getConfirmedWorkshopEmailRecipients(adminClient, workshopId, selectedRegistrationIds),
     ]);
 
     if (!template) {
@@ -156,7 +189,7 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json(
         {
           success: false,
-          error: "확정 신청자 수가 화면 표시와 달라졌습니다. 페이지를 새로고침한 뒤 다시 확인해 주세요.",
+          error: "선택한 신청자 중 발송 가능한 확정 신청자 수가 달라졌습니다. 페이지를 새로고침한 뒤 다시 확인해 주세요.",
           expectedRecipientCount,
           actualRecipientCount: recipients.length,
         },

@@ -12,6 +12,8 @@ type AdminWorkshopEmailTemplate = {
 type AdminWorkshopEmailPanelProps = {
   applicantCount: number;
   emailTemplate: AdminWorkshopEmailTemplate | null;
+  selectedApplicantCount: number;
+  selectedRegistrationIds: string[];
   workshopId: string;
 };
 
@@ -33,12 +35,14 @@ function renderPreview(template: AdminWorkshopEmailTemplate) {
 export default function AdminWorkshopEmailPanel({
   applicantCount,
   emailTemplate,
+  selectedApplicantCount,
+  selectedRegistrationIds,
   workshopId,
 }: AdminWorkshopEmailPanelProps) {
   const [confirmation, setConfirmation] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState<SendResult | null>(null);
-  const canSend = Boolean(emailTemplate && applicantCount > 0 && confirmation.trim() === "발송" && !isSending);
+  const canSend = Boolean(emailTemplate && selectedApplicantCount > 0 && confirmation.trim() === "발송" && !isSending);
   const previewBody = useMemo(
     () => emailTemplate ? renderPreview(emailTemplate) : "",
     [emailTemplate],
@@ -47,7 +51,7 @@ export default function AdminWorkshopEmailPanel({
   async function handleSend() {
     if (!canSend) return;
 
-    const ok = window.confirm(`확정 신청자 ${applicantCount}명에게 이메일을 발송합니다. 계속할까요?`);
+    const ok = window.confirm(`선택한 확정 신청자 ${selectedApplicantCount}명에게 이메일을 발송합니다. 계속할까요?`);
     if (!ok) return;
 
     setIsSending(true);
@@ -60,7 +64,8 @@ export default function AdminWorkshopEmailPanel({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          expectedRecipientCount: applicantCount,
+          expectedRecipientCount: selectedApplicantCount,
+          selectedRegistrationIds,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -84,7 +89,7 @@ export default function AdminWorkshopEmailPanel({
           <p className="admin-kicker">EMAIL PRESET</p>
           <h2>확정 신청자 이메일</h2>
         </div>
-        <span>{applicantCount}명 대상</span>
+        <span>선택 {selectedApplicantCount}명 / 전체 {applicantCount}명</span>
       </div>
 
       {!emailTemplate ? (
@@ -122,7 +127,7 @@ export default function AdminWorkshopEmailPanel({
               />
             </label>
             <button type="button" onClick={handleSend} disabled={!canSend}>
-              {isSending ? "발송 중..." : "확정 신청자에게 발송"}
+              {isSending ? "발송 중..." : `선택한 ${selectedApplicantCount}명에게 발송`}
             </button>
           </div>
         </>
