@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import AdminWorkshopEmailPanel from "@/components/admin/AdminWorkshopEmailPanel";
 import {
   formatAdminDate,
   formatAdminDateTime,
@@ -25,7 +26,7 @@ export default async function AdminWorkshopApplicantsPage({
     notFound();
   }
 
-  const { workshop, groups, applicantCount } = data;
+  const { workshop, groups, applicantCount, emailTemplate } = data;
 
   return (
     <main className="admin-page">
@@ -42,6 +43,12 @@ export default async function AdminWorkshopApplicantsPage({
             </p>
           </div>
         </header>
+
+        <AdminWorkshopEmailPanel
+          applicantCount={applicantCount}
+          emailTemplate={emailTemplate}
+          workshopId={workshopId}
+        />
 
         {groups.length === 0 ? (
           <section className="admin-empty-panel">확정된 신청자가 없습니다.</section>

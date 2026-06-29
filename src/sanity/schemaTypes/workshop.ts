@@ -122,6 +122,46 @@ export const workshopType = defineType({
       validation: (Rule) => Rule.uri({ scheme: ['http', 'https'] }),
     }),
     defineField({
+      name: 'applicantEmailTemplate',
+      title: '확정 신청자 이메일 템플릿',
+      type: 'object',
+      description: '관리자 페이지에서 이 워크숍의 확정 신청자에게만 발송되는 이메일 프리셋입니다. 사용 가능 치환값: {name}, {workshopTitle}, {schedule}',
+      options: {
+        collapsible: true,
+        collapsed: false,
+      },
+      fields: [
+        defineField({
+          name: 'subject',
+          title: '메일 제목',
+          type: 'string',
+          description: '예: {workshopTitle} 안내드립니다',
+          validation: (Rule) => Rule.max(120),
+        }),
+        defineField({
+          name: 'body',
+          title: '메일 본문',
+          type: 'text',
+          rows: 10,
+          description: '줄바꿈이 메일에 반영됩니다. 치환값: {name}, {workshopTitle}, {schedule}',
+        }),
+        defineField({
+          name: 'ctaLabel',
+          title: '버튼 문구',
+          type: 'string',
+          description: '선택 사항입니다. 예: 안내 페이지 열기',
+          validation: (Rule) => Rule.max(40),
+        }),
+        defineField({
+          name: 'ctaUrl',
+          title: '버튼 링크',
+          type: 'url',
+          description: '선택 사항입니다.',
+          validation: (Rule) => Rule.uri({ scheme: ['http', 'https'] }),
+        }),
+      ],
+    }),
+    defineField({
       name: 'poster',
       title: '포스터 이미지',
       type: 'image',

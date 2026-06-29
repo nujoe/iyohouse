@@ -4,6 +4,8 @@ import { createClient as createSanityClient } from "next-sanity";
 import { redirect } from "next/navigation";
 
 import { apiVersion, dataset, projectId } from "@/sanity/env";
+import type { AdminWorkshopEmailTemplate } from "@/lib/admin/workshopEmail";
+import { getWorkshopApplicantEmailTemplate } from "@/lib/admin/workshopEmail";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import { createClient as createSupabaseSessionClient } from "@/lib/supabase/server";
 
@@ -48,6 +50,13 @@ export type AdminApplicantRow = {
 export type AdminApplicantGroup = {
   label: string;
   applicants: AdminApplicantRow[];
+};
+
+export type AdminWorkshopApplicantsData = {
+  workshop: Omit<AdminWorkshopRow, "confirmedCount" | "pendingCount">;
+  groups: AdminApplicantGroup[];
+  applicantCount: number;
+  emailTemplate: AdminWorkshopEmailTemplate | null;
 };
 
 const sanityAdminClient = createSanityClient({
@@ -213,7 +222,7 @@ export async function getAdminWorkshops() {
   });
 }
 
-export async function getAdminWorkshopApplicants(workshopId: string) {
+export async function getAdminWorkshopApplicants(workshopId: string): Promise<AdminWorkshopApplicantsData | null> {
   const adminClient = await requireAdminClient();
   const { data: workshop, error: workshopError } = await adminClient
     .from("workshops")
@@ -264,6 +273,8 @@ export async function getAdminWorkshopApplicants(workshopId: string) {
     applicantRows = (withSchedule.data ?? []) as AdminApplicantRow[];
   }
 
+  const emailTemplate = await getWorkshopApplicantEmailTemplate(workshopId);
+
   return {
     workshop: {
       ...(workshop as Omit<AdminWorkshopRow, "confirmedCount" | "pendingCount" | "sanityId" | "number" | "isSynced">),
@@ -273,6 +284,7 @@ export async function getAdminWorkshopApplicants(workshopId: string) {
     },
     groups: groupApplicantsBySchedule(applicantRows),
     applicantCount: applicantRows.length,
+    emailTemplate: emailTemplate.template,
   };
 }
 
