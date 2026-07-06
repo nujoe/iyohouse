@@ -10,13 +10,13 @@ import {
     getLocalizedWorkshopTutor,
 } from "@/lib/i18n/workshopLocalization";
 import { parseCapacity } from "@/lib/workshopUtils";
+import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
 
 interface WorkshopGridProps {
     workshops: any[];
     registrationCounts?: Record<string, number>;
     registrations?: any[];
     onSelectWorkshop: (workshop: any) => void;
-    getTagColor: (tag: string) => string;
 }
 
 function WorkshopGrid({
@@ -24,7 +24,6 @@ function WorkshopGrid({
     registrationCounts,
     registrations = [],
     onSelectWorkshop,
-    getTagColor
 }: WorkshopGridProps) {
     const { language, t } = useLanguage();
     const visibleWorkshops = workshops.filter((ws) => ws?.isActive !== false);
@@ -56,6 +55,7 @@ function WorkshopGrid({
         const capacityFull = registeredCount >= capacity;
         const hasWaitlistForm = typeof ws.waitlistFormUrl === "string" && ws.waitlistFormUrl.trim().length > 0;
         const shouldShowClosedTag = ws.isClosed || (capacityFull && !hasWaitlistForm);
+        const tags = getWorkshopTags(ws.tags);
 
         const posterWidth = ws.posterMeta?.width || 1080;
         const posterHeight = ws.posterMeta?.height || 1350;
@@ -67,7 +67,11 @@ function WorkshopGrid({
             <>
                 <div className="intersection-diamond"></div>
                 <div className="color-dots">
-                    <span className="dot-yellow">WORKSHOP</span>
+                    {tags.map((tag) => (
+                        <span className={`dot-${getWorkshopTagColor(tag)}`} key={tag}>
+                            {tag}
+                        </span>
+                    ))}
                 </div>
                 <div
                     className={`blueprint-img-box ${!imgUrl ? 'is-empty' : ''}`}

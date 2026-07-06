@@ -9,7 +9,6 @@ import type { Language, Translation } from "@/lib/i18n";
 interface HomeWorkshopCellProps {
     activePreset: string;
     allWorkshops: any[];
-    getTagColor: (tag: string) => string;
     isVisited: boolean;
     language: Language;
     onRequireLogin: () => void;
@@ -24,7 +23,6 @@ interface HomeWorkshopCellProps {
 export default function HomeWorkshopCell({
     activePreset,
     allWorkshops,
-    getTagColor,
     isVisited,
     language,
     onRequireLogin,
@@ -55,7 +53,6 @@ export default function HomeWorkshopCell({
                             workshops={allWorkshops}
                             registrationCounts={registrationCounts}
                             onSelectWorkshop={onSelectWorkshop}
-                            getTagColor={getTagColor}
                         />
                     )
                 )}

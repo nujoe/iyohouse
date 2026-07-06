@@ -17,6 +17,7 @@ import {
   type WorkshopSeoDocument,
 } from "@/lib/workshopSeo";
 import { getWorkshopPath, getWorkshopSlug } from "@/lib/workshopRoutes";
+import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
 import { getPublishedWorkshopsForSeo, getWorkshopBySlug } from "@/sanity/workshops";
 
 export const revalidate = 3600;
@@ -110,6 +111,7 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
   const posterUrl = getWorkshopPosterUrl(workshop);
   const posterWidth = workshop.posterMeta?.width || 1080;
   const posterHeight = workshop.posterMeta?.height || 1350;
+  const tags = getWorkshopTags(workshop.tags);
   const scheduleLabel = getPrimaryScheduleLabel(workshop);
   const jsonLd = buildWorkshopJsonLd(workshop);
 
@@ -159,9 +161,8 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
             <div className="detail-info-inner">
               <header className="detail-info-header">
                 <div className="detail-tags">
-                  <span className="pills pill-yellow">WORKSHOP</span>
-                  {workshop.tags?.map((tag) => (
-                    <span className="pills pill-black" key={tag}>
+                  {tags.map((tag) => (
+                    <span className={`pills pill-${getWorkshopTagColor(tag)}`} key={tag}>
                       {tag}
                     </span>
                   ))}

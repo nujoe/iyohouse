@@ -8,6 +8,7 @@ import { TEXT } from "@/lib/i18n/translations";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
 import { parseCapacity } from "@/lib/workshopUtils";
+import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
 import {
     getLocalizedCurriculumItem,
     getLocalizedScheduleSession,
@@ -476,6 +477,7 @@ export default function WorkshopDetailOverlay({
     const studentDiscountNotice = typeof workshop?.studentDiscountNotice === "string" && workshop.studentDiscountNotice.trim()
         ? workshop.studentDiscountNotice.trim()
         : t.workshop.studentDiscountNotice;
+    const tags = getWorkshopTags(workshop.tags);
 
     return (
         <div className="workshop-detail-container">
@@ -485,7 +487,11 @@ export default function WorkshopDetailOverlay({
                     <div className="detail-info-inner">
                         <div className="detail-info-header">
                             <div className="detail-tags">
-                                <span className="pills pill-yellow">WORKSHOP</span>
+                                {tags.map((tag) => (
+                                    <span className={`pills pill-${getWorkshopTagColor(tag)}`} key={tag}>
+                                        {tag}
+                                    </span>
+                                ))}
                             </div>
                             <div className="detail-title-wrapper">
                                 <MixedWorkshopTitle

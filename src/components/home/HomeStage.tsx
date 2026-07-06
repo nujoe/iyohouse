@@ -14,7 +14,6 @@ interface HomeStageProps {
     allWorkshops: any[];
     calendarEvents: any[];
     currentMonth: Date;
-    getTagColor: (tag: string) => string;
     language: Language;
     onCalendarMonthChange: (month: Date) => void;
     onRequireLogin: () => void;
@@ -32,7 +31,6 @@ export default function HomeStage({
     allWorkshops,
     calendarEvents,
     currentMonth,
-    getTagColor,
     language,
     onCalendarMonthChange,
     onRequireLogin,
@@ -50,7 +48,6 @@ export default function HomeStage({
                 <HomeWorkshopCell
                     activePreset={activePreset}
                     allWorkshops={allWorkshops}
-                    getTagColor={getTagColor}
                     isVisited={Boolean(visited.workshop)}
                     language={language}
                     onRequireLogin={onRequireLogin}

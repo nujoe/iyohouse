@@ -12,14 +12,6 @@ export const noopScrollHandler = () => { };
 
 export const HYDRATION_SAFE_CALENDAR_MONTH = new Date("2000-01-01T12:00:00.000Z");
 
-export const getTagColor = (tag: string) => {
-    const t = tag.toUpperCase().trim();
-    if (t === 'WORKSHOP') return 'yellow';
-    if (t === 'TALK') return 'blue';
-    if (t === 'IYOCA') return 'green';
-    return 'gray';
-};
-
 export const getClientCurrentMonth = () => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);

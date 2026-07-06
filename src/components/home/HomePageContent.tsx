@@ -20,10 +20,7 @@ import MobileMenu from "@/components/home/MobileMenu";
 import LoginModal from "@/components/home/LoginModal";
 
 import ChatbotWidget from "@/features/iyohouse-chatbot/components/ChatbotWidget";
-import {
-    getTagColor,
-    noopScrollHandler,
-} from "@/lib/home/pageConfig";
+import { noopScrollHandler } from "@/lib/home/pageConfig";
 import { useLanguage } from "@/lib/i18n";
 
 export default function HomePageContent() {
@@ -143,7 +140,6 @@ export default function HomePageContent() {
                 allWorkshops={allWorkshops}
                 calendarEvents={calendarEvents}
                 currentMonth={currentMonth}
-                getTagColor={getTagColor}
                 language={language}
                 onCalendarMonthChange={setCurrentMonth}
                 onRequireLogin={openLogin}
