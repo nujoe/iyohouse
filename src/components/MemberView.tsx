@@ -45,7 +45,7 @@ function MemberView() {
                     <h2 
                       className="card-name"
                       style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='13' height='10' viewBox='0 0 13 10' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0.5' y='0.5' width='9' height='9' fill='${encodeURIComponent(getMemberColorHex(member.name))}' stroke='black' stroke-width='1'/%3E%3C/svg%3E")`
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0.5' y='0.5' width='6' height='6' fill='${encodeURIComponent(getMemberColorHex(member.name))}' stroke='black' stroke-width='1'/%3E%3C/svg%3E")`
                       }}
                     >
                       {member.name}

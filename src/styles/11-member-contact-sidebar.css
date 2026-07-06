@@ -68,14 +68,14 @@
     font-size: 26px;
     border-bottom: none;
     color: black;
-    padding: 0 10px 13px 10px; /* 아래쪽 패딩을 13px로 늘려 10px 높이의 마커와 이름 글자 사이에 3px 간격 확보 */
+    padding: 0 10px 11px 10px; /* 아래쪽 패딩을 11px로 늘려 8px 높이의 마커와 이름 글자 사이에 3px 간격 확보 */
     display: inline-block;
     box-sizing: border-box;
     letter-spacing: -0.02em;
     font-weight: 700;
     line-height: 1.1;
-    background-image: url("data:image/svg+xml,%3Csvg width='13' height='10' viewBox='0 0 13 10' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0.5' y='0.5' width='9' height='9' fill='%23f8f01d' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
-    background-size: 13px 10px;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0.5' y='0.5' width='6' height='6' fill='%23f8f01d' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 10px 8px;
     background-repeat: round no-repeat; /* 가로는 round 반복하여 꽉 채우고 세로는 no-repeat로 하여 한 줄만 렌더링 */
     background-position: left bottom;
 }
