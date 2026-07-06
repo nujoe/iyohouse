@@ -210,10 +210,17 @@ export default function WorkshopDetailOverlay({
 
     const [showSchedule, setShowSchedule] = useState(false);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
+    const [isStudentDiscountSelected, setIsStudentDiscountSelected] = useState(false);
     const [showRefundPolicy, setShowRefundPolicy] = useState(false);
     const [nicepayScriptUrl, setNicepayScriptUrl] = useState("");
     const [isPaymentStarting, setIsPaymentStarting] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
+
+    useEffect(() => {
+        setSelectedSession(null);
+        setShowSchedule(false);
+        setIsStudentDiscountSelected(false);
+    }, [workshop?._id, workshop?.id]);
 
     useEffect(() => {
         if (!user || !workshop?.supabase_workshop_id) {
@@ -354,21 +361,32 @@ export default function WorkshopDetailOverlay({
             const scheduleDate = selectedSchedule?.date || selectedSession?.date || "";
             const scheduleTime = selectedSchedule?.time || selectedSession?.time || "";
             const scheduleKey = selectedSession?._key || [selectedSession?.date, selectedSession?.time].filter(Boolean).join("-");
-            const registrationPayload = {
+            const registrationPayloadWithoutPriceType = {
                 p_workshop_id: dbWorkshopId,
                 p_schedule_key: scheduleKey || null,
                 p_schedule_label: scheduleLabel || null,
                 p_schedule_date: scheduleDate || null,
                 p_schedule_time: scheduleTime || null,
             };
+            const registrationPayload = {
+                ...registrationPayloadWithoutPriceType,
+                p_price_type: isStudentDiscountSelected ? "student" : "regular",
+            };
             let { data: regData, error: rpcError } = await supabase.rpc('create_pending_registration', registrationPayload);
 
             if (rpcError && shouldFallbackToLegacyRegistrationRpc(rpcError)) {
-                const legacyResult = await supabase.rpc('create_pending_registration', {
-                    p_workshop_id: dbWorkshopId,
-                });
-                regData = legacyResult.data;
-                rpcError = legacyResult.error;
+                const scheduleFallback = await supabase.rpc('create_pending_registration', registrationPayloadWithoutPriceType);
+
+                if (scheduleFallback.error && shouldFallbackToLegacyRegistrationRpc(scheduleFallback.error)) {
+                    const legacyResult = await supabase.rpc('create_pending_registration', {
+                        p_workshop_id: dbWorkshopId,
+                    });
+                    regData = legacyResult.data;
+                    rpcError = legacyResult.error;
+                } else {
+                    regData = scheduleFallback.data;
+                    rpcError = scheduleFallback.error;
+                }
             }
 
             if (rpcError) throw rpcError;
@@ -435,7 +453,8 @@ export default function WorkshopDetailOverlay({
         onRequireLogin,
         goToCompleteProfile,
         supabase,
-        language
+        language,
+        isStudentDiscountSelected
     ]);
 
     const selectedScheduleFull = selectedSession ? isScheduleFull(workshop, selectedSession) : false;
@@ -445,6 +464,13 @@ export default function WorkshopDetailOverlay({
     const capacityClosed = (workshopClosedForPayment || selectedScheduleFull) && !workshopManuallyClosed;
     const shouldShowWaitlistButton = capacityClosed && Boolean(waitlistFormUrl);
     const isApplyDisabled = isPaymentStarting || workshopClosedForPayment || selectedScheduleFull;
+    const studentPrice = getPositiveInteger(workshop?.studentPrice);
+    const regularPrice = typeof workshop?.price === "number" && Number.isFinite(workshop.price) ? Math.round(workshop.price) : null;
+    const hasStudentDiscount = studentPrice !== null && regularPrice !== null && studentPrice < regularPrice;
+    const displayPrice = isStudentDiscountSelected && hasStudentDiscount ? studentPrice : workshop.price;
+    const studentDiscountNotice = typeof workshop?.studentDiscountNotice === "string" && workshop.studentDiscountNotice.trim()
+        ? workshop.studentDiscountNotice.trim()
+        : t.workshop.studentDiscountNotice;
 
     return (
         <div className="workshop-detail-container">
@@ -570,7 +596,20 @@ export default function WorkshopDetailOverlay({
                         </div>
 
                         <div className="detail-footer-actions">
-                            <div className="price-tag">{t.workshop.priceLabel(workshop.price)}</div>
+                            <div className="price-tag">{t.workshop.priceLabel(displayPrice)}</div>
+                            {hasStudentDiscount && (
+                                <label className="student-discount-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={isStudentDiscountSelected}
+                                        onChange={(event) => setIsStudentDiscountSelected(event.target.checked)}
+                                    />
+                                    <span>
+                                        {t.workshop.studentDiscountLabel}
+                                        <small>{studentDiscountNotice}</small>
+                                    </span>
+                                </label>
+                            )}
                             {hasSelectableSchedule(workshop) && (
                                 <div className="schedule-selector-wrapper">
                                     <button

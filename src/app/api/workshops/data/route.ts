@@ -15,6 +15,7 @@ const sanityServerClient = createClient({
 type WorkshopRuntimeData = {
   id: string
   price: number
+  student_price?: number | null
   capacity: number
   status: string | null
   schedule_capacities?: Record<string, number> | null
@@ -71,10 +72,20 @@ async function getWorkshopRuntimeData(workshopIds: string[]) {
     const supabase = getSupabaseServerClient()
     const primary = await supabase
       .from('workshops')
-      .select('id, price, capacity, status, schedule_capacities')
+      .select('id, price, student_price, capacity, status, schedule_capacities')
       .in('id', workshopIds)
     let data = primary.data as WorkshopRuntimeData[] | null
     let error = primary.error
+
+    if (error && String(error.message || '').includes('student_price')) {
+      const fallback = await supabase
+        .from('workshops')
+        .select('id, price, capacity, status, schedule_capacities')
+        .in('id', workshopIds)
+
+      data = fallback.data as WorkshopRuntimeData[] | null
+      error = fallback.error
+    }
 
     if (error && String(error.message || '').includes('schedule_capacities')) {
       const fallback = await supabase
@@ -121,6 +132,8 @@ export async function GET() {
           timeEn,
           capacity
         },
+        studentPrice,
+        studentDiscountNotice,
         supabase_workshop_id,
         "posterMeta": poster.asset->metadata.dimensions
       }`),
@@ -142,6 +155,7 @@ export async function GET() {
         ...workshop,
         displayCapacity: workshop.capacity,
         price: runtime.price,
+        studentPrice: runtime.student_price ?? workshop.studentPrice,
         capacity: runtime.capacity,
         scheduleCapacities: runtime.schedule_capacities || {},
         isClosed: runtime.status !== 'active',

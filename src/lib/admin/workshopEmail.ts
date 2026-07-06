@@ -17,7 +17,15 @@ export type AdminWorkshopEmailRecipient = {
   id: string;
   name: string;
   email: string;
+  scheduleKey: string;
   schedule: string;
+};
+
+export type AdminWorkshopEmailTemplateSet = {
+  sanityId: string | null;
+  title: string | null;
+  fallbackTemplate: AdminWorkshopEmailTemplate | null;
+  scheduleEmailTemplates: Record<string, AdminWorkshopEmailTemplate>;
 };
 
 const sanityAdminClient = createSanityClient({
@@ -73,6 +81,68 @@ export async function getWorkshopApplicantEmailTemplate(workshopId: string) {
   };
 }
 
+function getScheduleKey(row: Record<string, unknown>) {
+  const explicit = readString(row._key || row.schedule_key);
+  if (explicit) return explicit;
+
+  return [readString(row.date || row.schedule_date), readString(row.time || row.schedule_time)]
+    .filter(Boolean)
+    .join("-");
+}
+
+export async function getWorkshopScheduleEmailTemplates(workshopId: string): Promise<AdminWorkshopEmailTemplateSet> {
+  const document = await sanityAdminClient.fetch<{
+    _id: string;
+    title?: string | null;
+    applicantEmailTemplate?: unknown;
+    schedule?: Array<{
+      _key?: string | null;
+      date?: string | null;
+      time?: string | null;
+      emailTemplate?: unknown;
+    }> | null;
+  } | null>(
+    `*[_type == "workshop" && supabase_workshop_id == $workshopId && !(_id in path("drafts.**"))][0] {
+      _id,
+      title,
+      applicantEmailTemplate,
+      schedule[]{
+        _key,
+        date,
+        time,
+        emailTemplate
+      }
+    }`,
+    { workshopId },
+  );
+
+  const scheduleEmailTemplates: Record<string, AdminWorkshopEmailTemplate> = {};
+
+  for (const session of document?.schedule ?? []) {
+    const scheduleKey = getScheduleKey(session as Record<string, unknown>);
+    const template = normalizeEmailTemplate(session.emailTemplate);
+
+    if (scheduleKey && template) {
+      scheduleEmailTemplates[scheduleKey] = template;
+    }
+  }
+
+  return {
+    sanityId: document?._id ?? null,
+    title: document?.title ?? null,
+    fallbackTemplate: normalizeEmailTemplate(document?.applicantEmailTemplate),
+    scheduleEmailTemplates,
+  };
+}
+
+export function selectWorkshopEmailTemplate(
+  fallbackTemplate: AdminWorkshopEmailTemplate | null,
+  scheduleEmailTemplates: Record<string, AdminWorkshopEmailTemplate>,
+  recipient: Pick<AdminWorkshopEmailRecipient, "scheduleKey">,
+) {
+  return (recipient.scheduleKey && scheduleEmailTemplates[recipient.scheduleKey]) || fallbackTemplate;
+}
+
 function getScheduleLabel(row: Record<string, unknown>) {
   const explicit = readString(row.schedule_label);
   if (explicit) return explicit;
@@ -87,7 +157,7 @@ export async function getConfirmedWorkshopEmailRecipients(
 ): Promise<AdminWorkshopEmailRecipient[]> {
   let query = adminClient
     .from("workshop_registrations_v2")
-    .select("id, snapshot_name, snapshot_email, schedule_label, schedule_date, schedule_time")
+    .select("id, snapshot_name, snapshot_email, schedule_key, schedule_label, schedule_date, schedule_time")
     .eq("workshop_id", workshopId)
     .eq("status", "confirmed");
 
@@ -115,6 +185,7 @@ export async function getConfirmedWorkshopEmailRecipients(
       id: readString(row.id),
       name: readString(row.snapshot_name) || "신청자",
       email,
+      scheduleKey: readString(row.schedule_key),
       schedule: getScheduleLabel(row) || "일정 미지정",
     });
   }

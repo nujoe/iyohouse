@@ -39,6 +39,8 @@ const workshopSeoProjection = `{
   },
   capacity,
   price,
+  studentPrice,
+  studentDiscountNotice,
   isActive,
   isClosed,
   waitlistFormUrl,

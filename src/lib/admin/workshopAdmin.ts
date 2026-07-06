@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { apiVersion, dataset, projectId } from "@/sanity/env";
 import type { AdminWorkshopEmailTemplate } from "@/lib/admin/workshopEmail";
-import { getWorkshopApplicantEmailTemplate } from "@/lib/admin/workshopEmail";
+import { getWorkshopScheduleEmailTemplates } from "@/lib/admin/workshopEmail";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import { createClient as createSupabaseSessionClient } from "@/lib/supabase/server";
 
@@ -273,7 +273,10 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     applicantRows = (withSchedule.data ?? []) as AdminApplicantRow[];
   }
 
-  const emailTemplate = await getWorkshopApplicantEmailTemplate(workshopId);
+  const emailTemplateSet = await getWorkshopScheduleEmailTemplates(workshopId);
+  const emailTemplate = emailTemplateSet.fallbackTemplate ||
+    Object.values(emailTemplateSet.scheduleEmailTemplates)[0] ||
+    null;
 
   return {
     workshop: {
@@ -284,7 +287,7 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     },
     groups: groupApplicantsBySchedule(applicantRows),
     applicantCount: applicantRows.length,
-    emailTemplate: emailTemplate.template,
+    emailTemplate,
   };
 }
 

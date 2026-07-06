@@ -94,10 +94,13 @@ export default function AdminWorkshopEmailPanel({
 
       {!emailTemplate ? (
         <p className="admin-email-muted">
-          Sanity 워크숍 문서의 “확정 신청자 이메일 템플릿” 제목과 본문을 입력하면 발송할 수 있습니다.
+          Sanity 워크숍 문서의 “확정 신청자 이메일 템플릿” 또는 일정별 이메일 템플릿 제목과 본문을 입력하면 발송할 수 있습니다.
         </p>
       ) : (
         <>
+          <p className="admin-email-muted">
+            일정별 이메일 템플릿이 입력된 신청자는 해당 일정 템플릿으로, 없으면 아래 공통 템플릿으로 발송됩니다.
+          </p>
           <div className="admin-email-preview">
             <div>
               <strong>제목</strong>

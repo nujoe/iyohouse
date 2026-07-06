@@ -4,8 +4,9 @@ import { Resend } from "resend";
 import { verifyAdminAccess } from "@/app/api/admin/_auth";
 import {
   getConfirmedWorkshopEmailRecipients,
-  getWorkshopApplicantEmailTemplate,
+  getWorkshopScheduleEmailTemplates,
   renderWorkshopEmail,
+  selectWorkshopEmailTemplate,
 } from "@/lib/admin/workshopEmail";
 import { SITE_EMAIL } from "@/lib/site";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
@@ -166,14 +167,18 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ success: false, error: "워크숍을 찾을 수 없습니다." }, { status: 404 });
     }
 
-    const [{ template, title: sanityTitle }, recipients] = await Promise.all([
-      getWorkshopApplicantEmailTemplate(workshopId),
+    const [{ fallbackTemplate, scheduleEmailTemplates, title: sanityTitle }, recipients] = await Promise.all([
+      getWorkshopScheduleEmailTemplates(workshopId),
       getConfirmedWorkshopEmailRecipients(adminClient, workshopId, selectedRegistrationIds),
     ]);
 
-    if (!template) {
+    const missingTemplateRecipients = recipients.filter((recipient) =>
+      !selectWorkshopEmailTemplate(fallbackTemplate, scheduleEmailTemplates, recipient),
+    );
+
+    if (missingTemplateRecipients.length > 0) {
       return NextResponse.json(
-        { success: false, error: "Sanity에 확정 신청자 이메일 템플릿 제목과 본문을 먼저 입력해 주세요." },
+        { success: false, error: "Sanity에 선택한 신청자 일정 이메일 템플릿 또는 공통 이메일 템플릿 제목과 본문을 먼저 입력해 주세요." },
         { status: 400 },
       );
     }
@@ -214,6 +219,12 @@ export async function POST(request: Request, context: RouteContext) {
     const deliveryErrors: Array<{ index: number; message: string }> = [];
 
     const emailPayloads = recipients.map((recipient) => {
+      const template = selectWorkshopEmailTemplate(fallbackTemplate, scheduleEmailTemplates, {
+        scheduleKey: recipient.scheduleKey,
+      });
+      if (!template) {
+        throw new Error("선택한 신청자에게 사용할 이메일 템플릿을 찾을 수 없습니다.");
+      }
       const rendered = renderWorkshopEmail(template, recipient, workshopTitle);
 
       return {

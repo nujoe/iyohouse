@@ -51,9 +51,12 @@ export type WorkshopSeoDocument = {
     time?: string;
     timeEn?: string;
     capacity?: number;
+    emailTemplate?: unknown;
   }>;
   capacity?: number;
   price?: number;
+  studentPrice?: number;
+  studentDiscountNotice?: string;
   isActive?: boolean;
   isClosed?: boolean;
   waitlistFormUrl?: string;

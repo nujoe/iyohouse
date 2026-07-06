@@ -26,6 +26,7 @@ type SanityWorkshop = {
   title?: string
   number?: number
   price?: number
+  studentPrice?: number
   capacity?: string | number
   isActive?: boolean
   isClosed?: boolean
@@ -247,6 +248,7 @@ export async function POST(request: NextRequest) {
           title,
           number,
           price,
+          studentPrice,
           capacity,
           isActive,
           isClosed,
@@ -264,6 +266,7 @@ export async function POST(request: NextRequest) {
           title,
           number,
           price,
+          studentPrice,
           capacity,
           isActive,
           isClosed,
@@ -300,9 +303,11 @@ export async function POST(request: NextRequest) {
 
     for (const ws of sanityWorkshops) {
       const price = normalizeInteger(ws.price)
+      const studentPrice = normalizeInteger(ws.studentPrice)
       const capacity = parseCapacity(ws.capacity, ws.schedule)
       const title = ws.title || `Workshop #${ws.number || ws._id}`
       const hasValidPrice = price !== null && price >= 0
+      const hasValidStudentPrice = studentPrice === null || studentPrice >= 0
       const hasValidCapacity = capacity !== null && capacity > 0
       const scheduleCapacities = buildScheduleCapacities(ws.schedule)
       const status = ws.isActive === false ? 'inactive' : ws.isClosed ? 'closed' : 'active'
@@ -313,10 +318,17 @@ export async function POST(request: NextRequest) {
         continue
       }
 
+      if (!hasValidStudentPrice) {
+        results.errors.push(`${title}: Sanity studentPrice must be 0 or greater when provided.`)
+        results.skipped++
+        continue
+      }
+
       const workshopPayload = {
         title,
         description: `Sanity Workshop #${ws.number || ws._id}`,
         price,
+        student_price: studentPrice,
         status,
         schedule_capacities: scheduleCapacities,
       }

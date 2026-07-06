@@ -215,6 +215,12 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
                     <dd>{workshop.price.toLocaleString("ko-KR")}원</dd>
                   </div>
                 )}
+                {typeof workshop.studentPrice === "number" && (
+                  <div>
+                    <dt>학부생 할인가</dt>
+                    <dd>{workshop.studentPrice.toLocaleString("ko-KR")}원</dd>
+                  </div>
+                )}
               </dl>
 
               <div className="detail-footer-actions">

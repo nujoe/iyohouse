@@ -74,10 +74,17 @@ export const SyncWorkshopDbAction: DocumentActionComponent = (props) => {
       if (!sourceDocument || disabled) return
 
       const price = getNumberValue(sourceDocument.price)
+      const studentPrice = getNumberValue(sourceDocument.studentPrice)
       const capacity = parseCapacity(sourceDocument.capacity, sourceDocument.schedule)
 
       if (price === null || price < 0) {
         window.alert('가격을 0 이상의 숫자로 입력한 뒤 다시 시도해 주세요.')
+        props.onComplete()
+        return
+      }
+
+      if (studentPrice !== null && studentPrice < 0) {
+        window.alert('학부생 할인가를 0 이상의 숫자로 입력하거나 비워둔 뒤 다시 시도해 주세요.')
         props.onComplete()
         return
       }
