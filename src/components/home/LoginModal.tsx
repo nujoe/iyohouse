@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileNavigation } from "@/hooks/useProfileNavigation";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/context/ToastContext";
 import { TEXT } from "@/lib/i18n/translations";
+import AccountWorkshopHistory from "@/components/home/AccountWorkshopHistory";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface LoginModalProps {
 }
 
 type SocialProvider = "google";
+type AccountTab = "profile" | "history";
 
 function getKoreanAuthError(message: string) {
     if (!message) return "오류가 발생했습니다.";
@@ -64,6 +66,14 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     const [profileMessage, setProfileMessage] = useState<string | null>(null);
     const [profileError, setProfileError] = useState<string | null>(null);
     const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
+    const [accountActiveTab, setAccountActiveTab] = useState<AccountTab>("profile");
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = 0;
+        }
+    }, [accountActiveTab]);
 
     useEffect(() => {
         if (isOpen) {
@@ -77,6 +87,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
             setProfileMessage(null);
             setProfileError(null);
             setIsProfileSubmitting(false);
+            setAccountActiveTab("profile");
         }
     }, [isOpen, initialMode]);
 
@@ -181,17 +192,15 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
     return (
         <div className={`login-overlay-wrapper ${isOpen ? 'active' : ''}`}>
             <div className="login-dimmer" onClick={onClose}></div>
-            <div className="login-modal-card">
+            <div className={`login-modal-card ${user && isProfileComplete ? "account-modal-card" : ""}`}>
                 <div className="login-modal-frame">
                     <button className="login-close-btn" onClick={onClose} aria-label="닫기">&times;</button>
                     <div className="login-modal-body">
                     {user ? (
                         /* 로그인 상태 */
-                        <div className="login-intro">
-                            <h3>IYOHOUSE</h3>
-
-                            {!isProfileComplete ? (
-                                /* 프로필 미완성: 전용 가입 완료 페이지로 이동 */
+                        !isProfileComplete ? (
+                            <div className="login-intro">
+                                <h3>IYOHOUSE</h3>
                                 <div className="profile-setup-container" style={{ marginTop: '24px', textAlign: 'left' }}>
                                     <p style={{ fontSize: '13px', marginBottom: '20px', opacity: 0.7 }}>
                                         {t.auth.completePrompt}
@@ -213,91 +222,124 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                                         {t.auth.logout}
                                     </button>
                                 </div>
-                            ) : (
-                                /* 프로필 완성: 일반 로그인 상태 */
-                                <div className="profile-welcome-container">
-                                    <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{t.auth.editProfile}</div>
-                                    <div style={{ marginTop: '8px', fontSize: '13px', opacity: 0.6 }}>
-                                        {t.auth.welcome(profile?.full_name)}
-                                    </div>
+                            </div>
+                        ) : (
+                            /* 프로필 완성: 일반 로그인 상태 */
+                            <div className="account-modal-shell">
+                                <nav className="account-tab-rail" aria-label="회원 메뉴">
+                                    <button
+                                        type="button"
+                                        className={`account-tab-button ${accountActiveTab === "profile" ? "is-active" : ""}`}
+                                        onClick={() => setAccountActiveTab("profile")}
+                                    >
+                                        정보 수정
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`account-tab-button ${accountActiveTab === "history" ? "is-active" : ""}`}
+                                        onClick={() => setAccountActiveTab("history")}
+                                    >
+                                        워크숍 신청 내역
+                                    </button>
+                                </nav>
 
-                                    <form className="profile-edit-form" onSubmit={handleProfileSubmit}>
-                                        <label className="complete-profile-label" htmlFor="profile-edit-name">
-                                            {t.auth.nameLabel}
-                                        </label>
-                                        <input
-                                            id="profile-edit-name"
-                                            className="login-input"
-                                            type="text"
-                                            value={profileFullName}
-                                            onChange={(event) => setProfileFullName(event.target.value)}
-                                            required
-                                            disabled={isProfileSubmitting}
-                                        />
-
-                                        <label className="complete-profile-label" htmlFor="profile-edit-email">
-                                            {t.auth.email}
-                                        </label>
-                                        <input
-                                            id="profile-edit-email"
-                                            className="login-input"
-                                            type="email"
-                                            value={profileEmail}
-                                            onChange={(event) => setProfileEmail(event.target.value)}
-                                            required
-                                            disabled={isProfileSubmitting}
-                                        />
-
-                                        <label className="complete-profile-label" htmlFor="profile-edit-phone">
-                                            {t.auth.phoneLabel}
-                                        </label>
-                                        <input
-                                            id="profile-edit-phone"
-                                            className="login-input"
-                                            type="tel"
-                                            value={profilePhone}
-                                            onChange={(event) => setProfilePhone(event.target.value)}
-                                            required
-                                            disabled={isProfileSubmitting}
-                                        />
-
-                                        <label className="complete-profile-label" htmlFor="profile-edit-bio">
-                                            {t.auth.bioLabel}
-                                        </label>
-                                        <textarea
-                                            id="profile-edit-bio"
-                                            className="login-input login-textarea"
-                                            value={profileBio}
-                                            onChange={(event) => setProfileBio(event.target.value)}
-                                            placeholder={t.auth.bioPlaceholder}
-                                            rows={4}
-                                            disabled={isProfileSubmitting}
-                                        />
-                                        <p className="profile-helper-text">{t.auth.bioHelper}</p>
-
-                                        {profileError && (
-                                            <div className="profile-form-status error" role="alert">
-                                                {profileError}
+                                <div ref={containerRef} className="profile-welcome-container">
+                                    {accountActiveTab === "profile" ? (
+                                        <>
+                                            <div className="account-history-heading">
+                                                <h3 id="account-profile-title">iyohouse</h3>
+                                                <p className="account-history-greeting">
+                                                    <strong>{profile?.full_name || "회원"}님</strong> 안녕하세요 !
+                                                </p>
+                                                <p className="account-history-copy">
+                                                    이 페이지에서는 개인 회원 정보를 수정하실 수 있습니다
+                                                </p>
                                             </div>
-                                        )}
-                                        {profileMessage && (
-                                            <div className="profile-form-status success" role="status">
-                                                {profileMessage}
-                                            </div>
-                                        )}
+                                            <div className="account-history-divider" aria-hidden="true" />
 
-                                        <button
-                                            className="email-submit-btn"
-                                            type="submit"
-                                            disabled={isProfileSubmitting}
-                                        >
-                                            {isProfileSubmitting ? t.auth.submitting : t.auth.saveProfile}
-                                        </button>
-                                    </form>
+                                            <form className="profile-edit-form" onSubmit={handleProfileSubmit}>
+                                                <label className="complete-profile-label" htmlFor="profile-edit-name">
+                                                    {t.auth.nameLabel}
+                                                </label>
+                                                <input
+                                                    id="profile-edit-name"
+                                                    className="login-input"
+                                                    type="text"
+                                                    value={profileFullName}
+                                                    onChange={(event) => setProfileFullName(event.target.value)}
+                                                    required
+                                                    disabled={isProfileSubmitting}
+                                                />
 
+                                                <label className="complete-profile-label" htmlFor="profile-edit-email">
+                                                    {t.auth.email}
+                                                </label>
+                                                <input
+                                                    id="profile-edit-email"
+                                                    className="login-input"
+                                                    type="email"
+                                                    value={profileEmail}
+                                                    onChange={(event) => setProfileEmail(event.target.value)}
+                                                    required
+                                                    disabled={isProfileSubmitting}
+                                                />
+
+                                                <label className="complete-profile-label" htmlFor="profile-edit-phone">
+                                                    {t.auth.phoneLabel}
+                                                </label>
+                                                <input
+                                                    id="profile-edit-phone"
+                                                    className="login-input"
+                                                    type="tel"
+                                                    value={profilePhone}
+                                                    onChange={(event) => setProfilePhone(event.target.value)}
+                                                    required
+                                                    disabled={isProfileSubmitting}
+                                                />
+
+                                                <label className="complete-profile-label" htmlFor="profile-edit-bio">
+                                                    {t.auth.bioLabel}
+                                                </label>
+                                                <textarea
+                                                    id="profile-edit-bio"
+                                                    className="login-input login-textarea"
+                                                    value={profileBio}
+                                                    onChange={(event) => setProfileBio(event.target.value)}
+                                                    placeholder={t.auth.bioPlaceholder}
+                                                    rows={4}
+                                                    disabled={isProfileSubmitting}
+                                                />
+                                                <p className="profile-helper-text">{t.auth.bioHelper}</p>
+
+                                                {profileError && (
+                                                    <div className="profile-form-status error" role="alert">
+                                                        {profileError}
+                                                    </div>
+                                                )}
+                                                {profileMessage && (
+                                                    <div className="profile-form-status success" role="status">
+                                                        {profileMessage}
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    className="email-submit-btn"
+                                                    type="submit"
+                                                    disabled={isProfileSubmitting}
+                                                >
+                                                    {isProfileSubmitting ? t.auth.submitting : t.auth.saveProfile}
+                                                </button>
+                                            </form>
+                                        </>
+                                    ) : (
+                                        <AccountWorkshopHistory
+                                            isActive={accountActiveTab === "history"}
+                                            profileName={profile?.full_name}
+                                        />
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )
                     ) : (
                         /* 비로그인 상태 */
                         <>

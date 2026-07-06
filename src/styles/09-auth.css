@@ -285,6 +285,229 @@
     color: #006b2e;
 }
 
+.account-modal-card {
+    overflow: visible;
+}
+
+.account-modal-card {
+    height: 600px;
+    max-height: 600px;
+    overflow: visible;
+}
+
+.account-modal-card .login-modal-frame {
+    height: 100%;
+    max-height: none;
+    overflow: visible;
+}
+
+.account-modal-shell {
+    position: relative; /* 탭 레일의 absolute 배치를 위해 relative로 설정 */
+}
+
+.account-tab-rail {
+    position: absolute;
+    top: 0; /* 부모 패딩 40px을 고려하여, 모달 프레임 기준 top: 40px(좌상단 마커 바로 밑)에 오도록 0으로 설정 */
+    left: -87px; /* active 너비(48px)와 모달 프레임 패딩(40px)을 매칭하여 튀어나오는 단차를 줄임 */
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.account-tab-button {
+    width: 42px;
+    min-height: 162px;
+    padding: 6px 7px; /* 상하 패딩을 12px에서 6px로 줄여 글씨 시작점을 올림 */
+    border: 1px solid #000000;
+    background: var(--intersect);
+    color: #000000;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.6;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-family: var(--font-gowun-batang), 'Gowun Batang', var(--font-noto-serif), serif;
+    
+    /* 호버 및 크기 전환 애니메이션 */
+    transition: width 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                box-shadow 0.25s ease, 
+                z-index 0.25s ease;
+}
+
+.account-tab-button + .account-tab-button {
+    margin-top: -18px; /* 겹침폭을 -38px에서 -18px로 더 줄여 아래쪽 버튼을 20px 하향 조정 */
+}
+
+.account-tab-button.is-active {
+    width: 48px; /* 튀어나오는 폭을 48px로 줄임 (단차 6px) */
+    z-index: 22;
+}
+
+/* 호버 시 튀어나오는 모션 및 그림자 */
+.account-tab-button:hover {
+    width: 48px; /* 호버 시 48px로 은은하게 튀어나오도록 조정 */
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+    z-index: 23;
+}
+
+.account-tab-button.is-active:hover {
+    width: 48px;
+    z-index: 24;
+}
+
+.account-modal-card .profile-welcome-container {
+    margin-top: 0;
+    text-align: left;
+    height: 520px; /* 프레임 높이 600px - 패딩 상하 80px */
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding-right: 8px; /* 스크롤바와 콘텐츠 사이 간격 확보 */
+}
+
+.account-modal-card .complete-profile-label,
+.account-modal-card .email-submit-btn {
+    font-weight: 400;
+}
+
+.account-profile-intro {
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.account-profile-title {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.account-profile-greeting {
+    margin-top: 8px;
+    color: #666666;
+    font-size: 13px;
+}
+
+.account-history-panel {
+    padding: 0 0 16px; /* 좌우 패딩을 6px에서 0으로 축소하여 정보 수정의 좌우 라인과 완벽히 일치시킴 */
+    text-align: left;
+}
+
+.account-history-heading h3 {
+    margin: 0 0 26px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.account-history-greeting {
+    margin: 0 0 16px;
+    font-size: 1.3rem;
+    font-weight: 400;
+    line-height: 1.35;
+    word-break: keep-all;
+}
+
+.account-history-greeting strong {
+    font-weight: 800;
+}
+
+.account-history-copy {
+    max-width: 560px;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.35;
+    word-break: keep-all;
+}
+
+.account-history-divider {
+    margin: 30px 0 36px;
+    border-top: 1px solid #000000; /* 줄 굵기를 1px로 축소 */
+}
+
+.account-history-status {
+    padding: 48px 0;
+    color: #666666;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+}
+
+.account-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 54px;
+}
+
+.workshop-history-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.workshop-history-item.is-reversed {
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+}
+
+.workshop-history-item.is-reversed .workshop-history-poster {
+    grid-column: 2;
+}
+
+.workshop-history-item.is-reversed .workshop-history-detail {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.workshop-history-poster {
+    width: 100%;
+    aspect-ratio: var(--poster-ratio, 4 / 5);
+    background: #000000;
+    overflow: hidden;
+}
+
+.workshop-history-poster img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.workshop-history-poster-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #000000;
+}
+
+.workshop-history-detail {
+    max-height: 100%;
+    overflow: hidden;
+    padding-top: 2px;
+    font-size: 0.98rem;
+    font-weight: 400;
+    line-height: 1.55;
+    word-break: keep-all;
+}
+
+.workshop-history-detail h4 {
+    margin: 0 0 18px;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+.workshop-history-detail p {
+    margin: 0 0 16px;
+}
+
+.workshop-history-description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 7;
+}
+
 .email-submit-btn {
     padding: 14px;
     background: #000;
@@ -438,6 +661,107 @@
         padding: 30px 20px;
     }
 
+    .account-modal-card {
+        max-width: calc(100% - 32px);
+        height: 520px !important; /* 모바일 모달 고정 높이 지정 */
+        overflow: visible !important;
+    }
+
+    .account-modal-card .login-modal-frame {
+        height: 100% !important; /* 부모 높이 520px에 꽉 채워 격자가 바닥 끝까지 닿도록 수정 */
+        min-height: auto;
+        padding: 30px 20px;
+        overflow: visible !important;
+    }
+
+    .account-modal-shell {
+        min-height: auto;
+    }
+
+    .account-tab-rail {
+        position: absolute !important;
+        display: flex;
+        flex-direction: row;
+        width: 240px;
+        top: -41px; /* 탭 높이가 40px이므로 1px 간격을 주고 모달 테두리 머리 위에 띄움 */
+        left: 50%;
+        transform: translateX(-50%);
+        border: 1px solid black;
+        box-sizing: border-box;
+        background-color: white;
+        margin: 0 !important;
+        z-index: 100 !important;
+    }
+
+    .account-tab-button {
+        width: auto !important;
+        min-height: 40px;
+        flex: 1;
+        padding: 9px 10px;
+        font-size: 13px;
+        line-height: 1.3;
+        writing-mode: horizontal-tb;
+        text-orientation: mixed;
+        background-color: transparent !important;
+        color: black;
+        border: none !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .account-tab-button.is-active {
+        background-color: var(--intersect) !important;
+        color: black !important;
+        z-index: 1 !important;
+    }
+
+    .account-tab-button + .account-tab-button {
+        margin-top: 0 !important;
+        margin-left: 0 !important;
+        border-left: 1px solid black !important;
+    }
+
+    .account-modal-card .profile-welcome-container {
+        height: 460px !important; /* 모바일 프레임 높이 520px - 패딩 상하 60px = 460px */
+        overflow-y: auto !important;
+    }
+
+    .account-history-panel {
+        max-height: none;
+        padding: 0;
+    }
+
+    .account-history-heading h3 {
+        font-size: 2rem;
+    }
+
+    .account-history-greeting {
+        font-size: 1rem;
+    }
+
+    .account-history-copy {
+        font-size: 0.75rem;
+    }
+
+    .account-history-list {
+        gap: 48px;
+    }
+
+    .workshop-history-item,
+    .workshop-history-item.is-reversed {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .workshop-history-item.is-reversed .workshop-history-poster,
+    .workshop-history-item.is-reversed .workshop-history-detail {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
     .payment-success-card {
         max-width: calc(100% - 32px);
     }
@@ -463,4 +787,26 @@
     font-weight: 800;
     letter-spacing: -0.02em;
     text-align: center;
+}
+
+/* Gowun Batang Font overrides for Account Modal components */
+.account-profile-intro .account-profile-title,
+.account-profile-greeting,
+.complete-profile-label,
+.profile-helper-text,
+.profile-form-status,
+.account-history-greeting,
+.account-history-copy,
+.account-history-status,
+.workshop-history-detail h4,
+.history-label {
+    font-family: var(--font-gowun-batang), 'Gowun Batang', var(--font-noto-serif), serif !important;
+}
+
+/* Courier font 유지 대상 */
+.account-history-heading h3,
+.login-modal-card input,
+.login-modal-card textarea,
+.history-value {
+    font-family: 'Courier New', Courier, monospace !important;
 }
