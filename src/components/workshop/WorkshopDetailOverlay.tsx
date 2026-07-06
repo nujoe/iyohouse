@@ -168,6 +168,10 @@ function getPositiveInteger(value: unknown) {
     return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
 }
 
+function getNonNegativeInteger(value: unknown) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+}
+
 function getScheduleKey(session: any) {
     const explicitKey = typeof session?._key === 'string' ? session._key.trim() : '';
     if (explicitKey) return explicitKey;
@@ -464,8 +468,9 @@ export default function WorkshopDetailOverlay({
     const capacityClosed = (workshopClosedForPayment || selectedScheduleFull) && !workshopManuallyClosed;
     const shouldShowWaitlistButton = capacityClosed && Boolean(waitlistFormUrl);
     const isApplyDisabled = isPaymentStarting || workshopClosedForPayment || selectedScheduleFull;
-    const studentPrice = getPositiveInteger(workshop?.studentPrice);
-    const regularPrice = typeof workshop?.price === "number" && Number.isFinite(workshop.price) ? Math.round(workshop.price) : null;
+    const studentPrice = getNonNegativeInteger(workshop?.studentPrice);
+    const regularPriceSource = workshop?.regularPrice ?? workshop?.price;
+    const regularPrice = typeof regularPriceSource === "number" && Number.isFinite(regularPriceSource) ? Math.round(regularPriceSource) : null;
     const hasStudentDiscount = studentPrice !== null && regularPrice !== null && studentPrice < regularPrice;
     const displayPrice = isStudentDiscountSelected && hasStudentDiscount ? studentPrice : workshop.price;
     const studentDiscountNotice = typeof workshop?.studentDiscountNotice === "string" && workshop.studentDiscountNotice.trim()
@@ -670,7 +675,9 @@ export default function WorkshopDetailOverlay({
                                 >
                                     {workshopClosedForPayment || selectedScheduleFull
                                         ? t.workshop.closed
-                                        : t.workshop.apply}
+                                        : hasSelectableSchedule(workshop) && !selectedSession
+                                            ? t.workshop.scheduleRequiredAction
+                                            : t.workshop.apply}
                                 </button>
                             )}
                         </div>

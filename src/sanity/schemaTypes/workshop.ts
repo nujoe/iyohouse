@@ -1,4 +1,8 @@
+import { createElement } from 'react'
 import { defineField, defineType } from 'sanity'
+
+const scheduleEmailTemplateGuide =
+  '일정별 이메일을 사용하려면 하단의 일정 설정에서 각 일정의 이메일 템플릿을 작성하세요. 작성된 일정별 템플릿은 해당 일정 신청자에게 개별로 발송되고, 비워둔 일정은 아래 공통 템플릿을 사용합니다.'
 
 export const workshopType = defineType({
   name: 'workshop',
@@ -120,6 +124,27 @@ export const workshopType = defineType({
       type: 'url',
       description: '정원이 자동 마감되었을 때 "대기자 신청" 버튼으로 연결할 구글폼 URL입니다. 직접 마감 처리한 워크숍은 기존처럼 마감으로 표시됩니다.',
       validation: (Rule) => Rule.uri({ scheme: ['http', 'https'] }),
+    }),
+    defineField({
+      name: 'scheduleEmailTemplateGuide',
+      title: '일정별 이메일 안내',
+      type: 'string',
+      readOnly: true,
+      components: {
+        field: () =>
+          createElement(
+            'p',
+            {
+              style: {
+                color: '#777',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                margin: '0 0 8px',
+              },
+            },
+            scheduleEmailTemplateGuide,
+          ),
+      },
     }),
     defineField({
       name: 'applicantEmailTemplate',

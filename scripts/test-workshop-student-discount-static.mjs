@@ -54,6 +54,7 @@ requireIncludes("src/sanity/workshops.ts", [
 ]);
 
 requireIncludes("src/app/api/workshops/data/route.ts", [
+  "regularPrice: workshop.price",
   "studentPrice",
   "studentDiscountNotice",
 ]);
@@ -61,16 +62,25 @@ requireIncludes("src/app/api/workshops/data/route.ts", [
 requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "isStudentDiscountSelected",
   "setIsStudentDiscountSelected",
+  "getNonNegativeInteger",
+  "workshop?.regularPrice",
   "student-discount-option",
   "p_price_type",
   "student",
   "displayPrice",
+  "scheduleRequiredAction",
 ]);
 
 requireMatches("src/components/workshop/WorkshopDetailOverlay.tsx", [
   [/t\.workshop\.priceLabel\(displayPrice\)/, "detail price tag should render the selected effective price."],
+  [/getNonNegativeInteger\(workshop\?\.studentPrice\)/, "student discount should allow a configured 0 won student price."],
+  [/workshop\?\.regularPrice\s*\?\?\s*workshop\?\.price/, "student discount visibility should compare against the preserved Sanity regular price before runtime price overrides."],
   [/p_price_type:\s*isStudentDiscountSelected\s*\?\s*["']student["']\s*:\s*["']regular["']/, "registration RPC must send regular/student price type."],
 ]);
+
+if (read("src/components/workshop/WorkshopDetailOverlay.tsx").includes("getPositiveInteger(workshop?.studentPrice)")) {
+  failures.push("student discount must not use getPositiveInteger because 0 won is a valid discounted price.");
+}
 
 requireIncludes(migrationPath, [
   "ADD COLUMN IF NOT EXISTS original_amount INTEGER",

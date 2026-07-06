@@ -405,5 +405,5 @@
 
 .fill-btn.locked {
     background: #666 !important;
-    cursor: not-allowed;
+    cursor: pointer;
 }

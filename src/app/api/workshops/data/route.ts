@@ -149,11 +149,17 @@ export async function GET() {
     const mergedWorkshops = workshops.map((workshop: any) => {
       const runtime = runtimeData[workshop.supabase_workshop_id]
 
-      if (!runtime) return workshop
+      if (!runtime) {
+        return {
+          ...workshop,
+          regularPrice: workshop.price,
+        }
+      }
 
       return {
         ...workshop,
         displayCapacity: workshop.capacity,
+        regularPrice: workshop.price,
         price: runtime.price,
         studentPrice: runtime.student_price ?? workshop.studentPrice,
         capacity: runtime.capacity,

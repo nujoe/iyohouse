@@ -17,6 +17,8 @@ assert.ok(existsSync(routePath), "admin workshop email send API route should exi
 const route = read("src/app/api/admin/workshops/[workshopId]/send-email/route.ts");
 
 for (const needle of [
+  "name: 'scheduleEmailTemplateGuide'",
+  "일정별 이메일을 사용하려면 하단의 일정 설정에서 각 일정의 이메일 템플릿을 작성하세요.",
   "name: 'applicantEmailTemplate'",
   "title: '확정 신청자 이메일 템플릿'",
   "name: 'subject'",
