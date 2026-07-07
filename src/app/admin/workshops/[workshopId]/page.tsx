@@ -25,7 +25,7 @@ export default async function AdminWorkshopApplicantsPage({
     notFound();
   }
 
-  const { workshop, groups, applicantCount, emailTemplate } = data;
+  const { workshop, groups, applicantCount, emailTemplate, scheduleOptions, scheduleCounts } = data;
 
   return (
     <main className="admin-page">
@@ -47,6 +47,8 @@ export default async function AdminWorkshopApplicantsPage({
           applicantCount={applicantCount}
           emailTemplate={emailTemplate}
           groups={groups}
+          scheduleCounts={scheduleCounts}
+          scheduleOptions={scheduleOptions}
           workshopId={workshopId}
         />
       </div>
