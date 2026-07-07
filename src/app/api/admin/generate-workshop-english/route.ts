@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
 import { GeminiClient } from '@/features/iyohouse-chatbot/server/gemini-client'
-import { getSupabaseServerClient } from '@/lib/supabase/admin'
-import { createClient as createSupabaseSessionClient } from '@/lib/supabase/server'
+import { verifyAdminAccess } from '@/lib/api/adminAuth'
+import { noStoreJson } from '@/lib/api/responses'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -77,63 +76,6 @@ function getRequestApiKey(body: any) {
   return ''
 }
 
-function hasValidBearerToken(request: Request) {
-  const secret = process.env.ADMIN_SYNC_SECRET
-  if (!secret) return false
-
-  const authHeader = request.headers.get('authorization') ?? ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-
-  return Boolean(token && token === secret)
-}
-
-async function verifyAdminAccess(request: Request):
-  Promise<{ ok: true } | { ok: false; response: NextResponse }> {
-  if (hasValidBearerToken(request)) return { ok: true }
-
-  try {
-    const supabase = await createSupabaseSessionClient()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          { success: false, error: 'Unauthorized - admin session or Bearer token is required.' },
-          { status: 401 },
-        ),
-      }
-    }
-
-    const supabaseAdmin = getSupabaseServerClient()
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, is_super_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError || !profile?.is_super_admin) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          { success: false, error: 'Forbidden - super admin access is required.' },
-          { status: 403 },
-        ),
-      }
-    }
-
-    return { ok: true }
-  } catch (error) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, error: error instanceof Error ? error.message : 'Admin auth failed.' },
-        { status: 401 },
-      ),
-    }
-  }
-}
-
 function extractJson(text: string): WorkshopTranslationResponse {
   const trimmed = text.trim()
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
@@ -199,12 +141,12 @@ export async function POST(request: Request) {
     const document = body?.document
 
     if (!document || document._type !== 'workshop') {
-      return NextResponse.json({ success: false, error: 'workshop document is required' }, { status: 400 })
+      return noStoreJson({ success: false, error: 'workshop document is required' }, { status: 400 })
     }
 
     const apiKey = getRequestApiKey(body)
     if (!apiKey) {
-      return NextResponse.json({ success: false, error: 'Gemini API key is required' }, { status: 400 })
+      return noStoreJson({ success: false, error: 'Gemini API key is required' }, { status: 400 })
     }
 
     const input = buildTranslationInput(document)
@@ -233,11 +175,11 @@ export async function POST(request: Request) {
     const text = result.parts.map((part: { text?: string }) => part.text || '').join('\n')
     const translation = normalizeTranslation(extractJson(text))
 
-    return NextResponse.json({ success: true, translation })
+    return noStoreJson({ success: true, translation })
   } catch (error) {
     console.error('Workshop English generation failed:', error)
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unable to generate English fields' },
+    return noStoreJson(
+      { success: false, error: 'Unable to generate English fields' },
       { status: 500 }
     )
   }

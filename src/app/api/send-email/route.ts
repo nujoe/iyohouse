@@ -1,10 +1,12 @@
 import { Resend } from 'resend'
-import { NextResponse } from 'next/server'
+import { noStoreJson } from '@/lib/api/responses'
 
 export const dynamic = 'force-dynamic'
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 const RATE_LIMIT_MAX = 5
+const MAX_CONTACT_BODY_BYTES = 8 * 1024
+const HONEYPOT_FIELDS = ['company', 'website', 'url', 'homepage']
 const attempts = new Map<string, { count: number; resetAt: number }>()
 
 function getClientKey(request: Request) {
@@ -54,26 +56,51 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
+async function readContactBody(request: Request) {
+  const contentType = request.headers.get('content-type') || ''
+  if (!contentType.toLowerCase().includes('application/json')) return null
+
+  const rawBody = await request.text()
+  if (new TextEncoder().encode(rawBody).length > MAX_CONTACT_BODY_BYTES) return null
+
+  try {
+    const parsed = JSON.parse(rawBody)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null
+  } catch {
+    return null
+  }
+}
+
+function hasHoneypotValue(body: Record<string, unknown>) {
+  return HONEYPOT_FIELDS.some((field) => readString(body[field]).length > 0)
+}
+
 export async function POST(request: Request) {
   try {
     const clientKey = getClientKey(request)
     if (isRateLimited(clientKey)) {
-      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 })
+      return noStoreJson({ success: false, error: 'Too many requests' }, { status: 429 })
+    }
+
+    const body = await readContactBody(request)
+    if (!body || hasHoneypotValue(body)) {
+      return noStoreJson({ success: false, error: 'Invalid contact request' }, { status: 400 })
     }
 
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) {
       console.warn('RESEND_API_KEY is not defined')
-      return NextResponse.json({ success: false, error: 'Email service not configured' }, { status: 500 })
+      return noStoreJson({ success: false, error: 'Email service not configured' }, { status: 500 })
     }
 
-    const body = await request.json().catch(() => null)
-    const email = readString((body as Record<string, unknown> | null)?.email)
-    const subject = readString((body as Record<string, unknown> | null)?.subject)
-    const message = readString((body as Record<string, unknown> | null)?.message)
+    const email = readString(body.email)
+    const subject = readString(body.subject)
+    const message = readString(body.message)
 
     if (!isValidEmail(email) || message.length < 1 || message.length > 3000 || subject.length > 200) {
-      return NextResponse.json({ success: false, error: 'Invalid contact request' }, { status: 400 })
+      return noStoreJson({ success: false, error: 'Invalid contact request' }, { status: 400 })
     }
 
     const resend = new Resend(apiKey)
@@ -96,12 +123,12 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Resend error:', error)
-      return NextResponse.json({ success: false, error: 'Email delivery failed' }, { status: 502 })
+      return noStoreJson({ success: false, error: 'Email delivery failed' }, { status: 502 })
     }
 
-    return NextResponse.json({ success: true, data })
+    return noStoreJson({ success: true, data })
   } catch (error) {
     console.error('Contact API error:', error)
-    return NextResponse.json({ success: false, error: 'Unable to send email' }, { status: 500 })
+    return noStoreJson({ success: false, error: 'Unable to send email' }, { status: 500 })
   }
 }

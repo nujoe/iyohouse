@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createClient } from 'next-sanity'
 import { apiVersion, dataset, projectId } from '@/sanity/env'
 import { getSupabaseServerClient } from '@/lib/supabase/admin'
-import { createClient as createSupabaseSessionClient } from '@/lib/supabase/server'
 import { parseCapacity } from '@/lib/workshopUtils'
+import { verifyAdminAccess } from '@/lib/api/adminAuth'
+import { noStoreJson } from '@/lib/api/responses'
 
 const sanityWriteClient = createClient({
   projectId,
@@ -144,86 +145,11 @@ async function parseSyncRequestBody(request: NextRequest): Promise<SyncRequestBo
   return request.json().catch(() => ({}))
 }
 
-function hasValidBearerToken(request: NextRequest) {
-  const secret = process.env.ADMIN_SYNC_SECRET
-  if (!secret) return false
-
-  const authHeader = request.headers.get('authorization') ?? ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-
-  return Boolean(token && token === secret)
-}
-
-// ---------------------------------------------------------------------------
-// Auth helper – allows server token or active Supabase super admin session.
-// ---------------------------------------------------------------------------
-async function verifyAdminAccess(request: NextRequest):
-  Promise<{ ok: true } | { ok: false; response: NextResponse }> {
-  if (hasValidBearerToken(request)) return { ok: true }
-
-  try {
-    const supabase = await createSupabaseSessionClient()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          { success: false, error: 'Unauthorized – admin session or Bearer token is required.' },
-          { status: 401 },
-        ),
-      }
-    }
-
-    const supabaseAdmin = getSupabaseServerClient()
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email, is_super_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError || !profile?.is_super_admin) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          {
-            success: false,
-            error: 'Forbidden – super admin access is required.',
-            authUser: {
-              id: user.id,
-              email: user.email ?? null,
-            },
-            profile: profile
-              ? {
-                  id: profile.id,
-                  email: profile.email,
-                  is_super_admin: profile.is_super_admin,
-                }
-              : null,
-            profileError: profileError?.message ?? null,
-          },
-          { status: 403 },
-        ),
-      }
-    }
-
-    return { ok: true }
-  } catch (error) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, error: error instanceof Error ? error.message : 'Admin auth failed.' },
-        { status: 401 },
-      ),
-    }
-  }
-}
-
 // ---------------------------------------------------------------------------
 // GET is no longer allowed – return 405 Method Not Allowed
 // ---------------------------------------------------------------------------
 export function GET() {
-  return NextResponse.json(
+  return noStoreJson(
     { success: false, error: 'Method Not Allowed. Use POST.' },
     { status: 405, headers: { Allow: 'POST' } },
   )
@@ -295,7 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (documentId && sanityWorkshops.length === 0) {
-      return NextResponse.json(
+      return noStoreJson(
         { success: false, error: 'Sanity workshop document was not found.', results },
         { status: 404 },
       )
@@ -403,15 +329,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return noStoreJson({
       success: true,
       message: 'Synchronization completed',
       results,
     })
   } catch (error: any) {
-    return NextResponse.json({
+    console.error('Workshop sync failed:', error)
+    return noStoreJson({
       success: false,
-      error: error.message,
+      error: 'Workshop sync failed',
     }, { status: 500 })
   }
 }
