@@ -19,6 +19,7 @@ type AdminApplicantRow = {
   snapshot_email: string | null;
   snapshot_phone: string | null;
   snapshot_bio?: string | null;
+  price_type?: string | null;
   created_at: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
@@ -43,6 +44,8 @@ type AdminScheduleCounts = Record<string, number>;
 
 type AdminWorkshopApplicantsClientProps = {
   applicantCount: number;
+  cancelledCount: number;
+  cancelledGroups: AdminApplicantGroup[];
   emailTemplate: AdminWorkshopEmailTemplate | null;
   groups: AdminApplicantGroup[];
   scheduleCounts: AdminScheduleCounts;
@@ -69,6 +72,8 @@ function mergeIds(currentIds: string[], idsToAdd: string[]) {
 
 export default function AdminWorkshopApplicantsClient({
   applicantCount,
+  cancelledCount,
+  cancelledGroups,
   emailTemplate,
   groups,
   scheduleCounts,
@@ -85,6 +90,7 @@ export default function AdminWorkshopApplicantsClient({
     [groups],
   );
   const selectedApplicantCount = selectedRegistrationIds.length;
+  const hasCancelledApplicants = cancelledCount > 0;
 
   function toggleApplicantSelection(registrationId: string) {
     setSelectedRegistrationIds((currentIds) => {
@@ -175,6 +181,29 @@ export default function AdminWorkshopApplicantsClient({
     }
   }
 
+  function getNameClassName(applicant: AdminApplicantRow) {
+    return [
+      "admin-applicant-name",
+      applicant.price_type === "student" ? "is-student-discount" : "",
+    ].filter(Boolean).join(" ");
+  }
+
+  function renderReadOnlyApplicantRows(applicants: AdminApplicantRow[]) {
+    return applicants.map((applicant, index) => (
+      <tr className="admin-cancelled-applicant-row" key={applicant.id}>
+        <td>{index + 1}</td>
+        <td>
+          <span className="admin-status-badge">취소/환불</span>
+          <span className={getNameClassName(applicant)}>{applicant.snapshot_name || "-"}</span>
+        </td>
+        <td>{applicant.snapshot_email || "-"}</td>
+        <td>{applicant.snapshot_phone || "-"}</td>
+        <td>{applicant.snapshot_bio || "-"}</td>
+        <td>{formatAdminDateTime(applicant.created_at)}</td>
+      </tr>
+    ));
+  }
+
   if (groups.length === 0) {
     return (
       <>
@@ -186,6 +215,31 @@ export default function AdminWorkshopApplicantsClient({
           workshopId={workshopId}
         />
         <section className="admin-empty-panel">확정된 신청자가 없습니다.</section>
+        {hasCancelledApplicants && (
+          <section className="admin-section">
+            <div className="admin-section-header">
+              <h2>취소/환불 내역</h2>
+              <span>{cancelledCount}명</span>
+            </div>
+            {cancelledGroups.map((group) => (
+              <div className="admin-table-wrap" key={group.label}>
+                <table className="admin-table admin-cancelled-applicants-table">
+                  <thead>
+                    <tr>
+                      <th>No.</th>
+                      <th>이름</th>
+                      <th>이메일</th>
+                      <th>연락처</th>
+                      <th>자기소개</th>
+                      <th>신청일</th>
+                    </tr>
+                  </thead>
+                  <tbody>{renderReadOnlyApplicantRows(group.applicants)}</tbody>
+                </table>
+              </div>
+            ))}
+          </section>
+        )}
       </>
     );
   }
@@ -262,7 +316,9 @@ export default function AdminWorkshopApplicantsClient({
                         </label>
                       </td>
                       <td>{index + 1}</td>
-                      <td>{applicant.snapshot_name || "-"}</td>
+                      <td>
+                        <span className={getNameClassName(applicant)}>{applicant.snapshot_name || "-"}</span>
+                      </td>
                       <td>{applicant.snapshot_email || "-"}</td>
                       <td>{applicant.snapshot_phone || "-"}</td>
                       <td>{applicant.snapshot_bio || "-"}</td>
@@ -314,6 +370,32 @@ export default function AdminWorkshopApplicantsClient({
           </section>
         );
       })}
+
+      {hasCancelledApplicants && (
+        <section className="admin-section">
+          <div className="admin-section-header">
+            <h2>취소/환불 내역</h2>
+            <span>{cancelledCount}명</span>
+          </div>
+          {cancelledGroups.map((group) => (
+            <div className="admin-table-wrap" key={group.label}>
+              <table className="admin-table admin-cancelled-applicants-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th>연락처</th>
+                    <th>자기소개</th>
+                    <th>신청일</th>
+                  </tr>
+                </thead>
+                <tbody>{renderReadOnlyApplicantRows(group.applicants)}</tbody>
+              </table>
+            </div>
+          ))}
+        </section>
+      )}
     </>
   );
 }

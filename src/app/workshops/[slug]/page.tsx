@@ -17,7 +17,8 @@ import {
   type WorkshopSeoDocument,
 } from "@/lib/workshopSeo";
 import { getWorkshopPath, getWorkshopSlug } from "@/lib/workshopRoutes";
-import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
+import { getWorkshopTagColor, getWorkshopTags, isIyocaWorkshop } from "@/lib/workshopTags";
+import { getLocalizedWorkshopTutors } from "@/lib/i18n/workshopLocalization";
 import { getPublishedWorkshopsForSeo, getWorkshopBySlug } from "@/sanity/workshops";
 
 export const revalidate = 3600;
@@ -114,6 +115,8 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
   const tags = getWorkshopTags(workshop.tags);
   const scheduleLabel = getPrimaryScheduleLabel(workshop);
   const jsonLd = buildWorkshopJsonLd(workshop);
+  const localizedTutors = getLocalizedWorkshopTutors(workshop, "ko");
+  const tutorLabelPrefix = isIyocaWorkshop(workshop.tags) ? "동아리장 : " : "Tutor. ";
 
   return (
     <main className="workshop-seo-page">
@@ -178,10 +181,14 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
                 ))}
               </section>
 
-              {(workshop.tutor || workshop.tutorBio) && (
+              {localizedTutors.length > 0 && (
                 <section className="detail-tutor-section">
-                  {workshop.tutor && <div className="detail-tutor-name">Tutor. {workshop.tutor}</div>}
-                  {workshop.tutorBio && <div className="detail-tutor-bio">{workshop.tutorBio}</div>}
+                  {localizedTutors.map((tutor, index) => (
+                    <div className="detail-tutor-group" key={`${tutor.name}-${index}`}>
+                      {tutor.name && <div className="detail-tutor-name">{tutorLabelPrefix}{tutor.name}</div>}
+                      {tutor.bio && <div className="detail-tutor-bio">{tutor.bio}</div>}
+                    </div>
+                  ))}
                 </section>
               )}
 

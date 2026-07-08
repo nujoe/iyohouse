@@ -215,6 +215,56 @@ export const workshopType = defineType({
       },
     }),
     defineField({
+      name: 'tutors',
+      title: '튜터',
+      type: 'array',
+      description: '튜터가 두 명 이상이면 + 버튼으로 추가합니다. 비워두면 아래 기존 단일 튜터 정보를 사용합니다.',
+      of: [
+        defineField({
+          name: 'tutor',
+          title: '튜터',
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'name',
+              title: '이름',
+              type: 'string',
+              description: '예: 현 @hyun2xyz',
+            }),
+            defineField({
+              name: 'nameEn',
+              title: '이름 (영문)',
+              type: 'string',
+            }),
+            defineField({
+              name: 'bio',
+              title: '소개',
+              type: 'text',
+              rows: 5,
+            }),
+            defineField({
+              name: 'bioEn',
+              title: '소개 (영문)',
+              type: 'text',
+              rows: 5,
+            }),
+          ],
+          preview: {
+            select: {
+              title: 'name',
+              subtitle: 'nameEn',
+            },
+            prepare({ title, subtitle }) {
+              return {
+                title: title || '이름 미입력',
+                subtitle,
+              }
+            },
+          },
+        }),
+      ],
+    }),
+    defineField({
       name: 'tutor',
       title: '튜터 이름',
       type: 'string',

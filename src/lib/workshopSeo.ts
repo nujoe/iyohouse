@@ -31,6 +31,12 @@ export type WorkshopSeoDocument = {
     height?: number;
   };
   tags?: string[];
+  tutors?: Array<{
+    name?: string;
+    nameEn?: string;
+    bio?: string;
+    bioEn?: string;
+  }>;
   tutor?: string;
   tutorEn?: string;
   tutorBio?: string;

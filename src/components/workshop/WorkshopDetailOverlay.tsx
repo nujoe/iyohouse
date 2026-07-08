@@ -8,14 +8,13 @@ import { TEXT } from "@/lib/i18n/translations";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
 import { parseCapacity } from "@/lib/workshopUtils";
-import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
+import { getWorkshopTagColor, getWorkshopTags, isIyocaWorkshop } from "@/lib/workshopTags";
 import {
     getLocalizedCurriculumItem,
     getLocalizedScheduleSession,
     getLocalizedWorkshopDescription,
     getLocalizedWorkshopTitle,
-    getLocalizedWorkshopTutor,
-    getLocalizedWorkshopTutorBio,
+    getLocalizedWorkshopTutors,
     getScheduleSessionLabel,
 } from "@/lib/i18n/workshopLocalization";
 
@@ -478,6 +477,8 @@ export default function WorkshopDetailOverlay({
         ? workshop.studentDiscountNotice.trim()
         : t.workshop.studentDiscountNotice;
     const tags = getWorkshopTags(workshop.tags);
+    const localizedTutors = getLocalizedWorkshopTutors(workshop, language);
+    const tutorLabel = isIyocaWorkshop(workshop.tags) ? t.workshop.clubLeaderLabel : t.workshop.tutorLabel;
 
     return (
         <div className="workshop-detail-container">
@@ -518,14 +519,18 @@ export default function WorkshopDetailOverlay({
                         )}
 
                         {/* 튜터 정보 */}
-                        {(getLocalizedWorkshopTutor(workshop, language) || getLocalizedWorkshopTutorBio(workshop, language)) && (
+                        {localizedTutors.length > 0 && (
                             <div className="detail-tutor-section">
-                                {getLocalizedWorkshopTutor(workshop, language) && (
-                                    <div className="detail-tutor-name">{t.workshop.tutorLabel(getLocalizedWorkshopTutor(workshop, language))}</div>
-                                )}
-                                {getLocalizedWorkshopTutorBio(workshop, language) && (
-                                    <div className="detail-tutor-bio">{getLocalizedWorkshopTutorBio(workshop, language)}</div>
-                                )}
+                                {localizedTutors.map((tutor, index) => (
+                                    <div className="detail-tutor-group" key={`${tutor.name}-${index}`}>
+                                        {tutor.name && (
+                                            <div className="detail-tutor-name">{tutorLabel(tutor.name)}</div>
+                                        )}
+                                        {tutor.bio && (
+                                            <div className="detail-tutor-bio">{tutor.bio}</div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         )}
 

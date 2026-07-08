@@ -20,6 +20,7 @@ const workshopSeoProjection = `{
   poster,
   posterAlt,
   tags,
+  tutors,
   tutor,
   tutorEn,
   tutorBio,

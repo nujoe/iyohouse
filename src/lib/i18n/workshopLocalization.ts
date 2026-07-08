@@ -1,5 +1,10 @@
 import type { Language, Translation } from "./translations";
 
+export type LocalizedWorkshopTutor = {
+    name: string;
+    bio: string;
+};
+
 export function getLocalizedWorkshopTitle(workshop: any, language: Language, t: Translation) {
     if (!workshop) return "";
 
@@ -11,14 +16,40 @@ export function getLocalizedWorkshopTitle(workshop: any, language: Language, t: 
 }
 
 export function getLocalizedWorkshopTutor(workshop: any, language: Language) {
-    if (!workshop) return "";
-
-    return (language === "en" && workshop.tutorEn) ? workshop.tutorEn : workshop.tutor;
+    return getLocalizedWorkshopTutorNames(workshop, language).join(", ");
 }
 
 export function getLocalizedWorkshopTutorBio(workshop: any, language: Language) {
-    if (!workshop) return "";
-    return (language === "en" && workshop.tutorBioEn) ? workshop.tutorBioEn : workshop.tutorBio;
+    return getLocalizedWorkshopTutors(workshop, language)
+        .map((tutor) => tutor.bio)
+        .filter(Boolean)
+        .join("\n\n");
+}
+
+export function getLocalizedWorkshopTutorNames(workshop: any, language: Language) {
+    return getLocalizedWorkshopTutors(workshop, language)
+        .map((tutor) => tutor.name)
+        .filter(Boolean);
+}
+
+export function getLocalizedWorkshopTutors(workshop: any, language: Language): LocalizedWorkshopTutor[] {
+    if (!workshop) return [];
+
+    if (Array.isArray(workshop.tutors) && workshop.tutors.length > 0) {
+        return workshop.tutors
+            .map((tutor: any): LocalizedWorkshopTutor => {
+                const name = readString((language === "en" && tutor?.nameEn) ? tutor.nameEn : tutor?.name);
+                const bio = readString((language === "en" && tutor?.bioEn) ? tutor.bioEn : tutor?.bio);
+
+                return { name, bio };
+            })
+            .filter((tutor: LocalizedWorkshopTutor) => tutor.name || tutor.bio);
+    }
+
+    const name = readString((language === "en" && workshop.tutorEn) ? workshop.tutorEn : workshop.tutor);
+    const bio = readString((language === "en" && workshop.tutorBioEn) ? workshop.tutorBioEn : workshop.tutorBio);
+
+    return name || bio ? [{ name, bio }] : [];
 }
 
 export function getLocalizedWorkshopDescription(workshop: any, language: Language) {
@@ -57,4 +88,8 @@ export function portableTextBlockToText(block: any) {
 
 function hasPortableText(value: unknown) {
     return Array.isArray(value) && value.some((block) => portableTextBlockToText(block).trim());
+}
+
+function readString(value: unknown) {
+    return typeof value === "string" ? value.trim() : "";
 }

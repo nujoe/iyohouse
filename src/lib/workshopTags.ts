@@ -25,3 +25,7 @@ export function getWorkshopTagColor(tag: string) {
 
   return "yellow";
 }
+
+export function isIyocaWorkshop(tags: unknown) {
+  return getWorkshopTags(tags).includes("IYOCA");
+}

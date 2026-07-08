@@ -7,10 +7,10 @@ import { getWorkshopPath } from "@/lib/workshopRoutes";
 import { useLanguage } from "@/lib/i18n";
 import {
     getLocalizedWorkshopTitle,
-    getLocalizedWorkshopTutor,
+    getLocalizedWorkshopTutorNames,
 } from "@/lib/i18n/workshopLocalization";
 import { parseCapacity } from "@/lib/workshopUtils";
-import { getWorkshopTagColor, getWorkshopTags } from "@/lib/workshopTags";
+import { getWorkshopTagColor, getWorkshopTags, isIyocaWorkshop } from "@/lib/workshopTags";
 
 interface WorkshopGridProps {
     workshops: any[];
@@ -49,7 +49,10 @@ function WorkshopGrid({
         ].filter(Boolean).join(" ");
         const title = getLocalizedWorkshopTitle(ws, language, t);
         const workshopPath = getWorkshopPath(ws);
-        const tutor = t.workshop.tutorLabel(getLocalizedWorkshopTutor(ws, language) || "000");
+        const tutorNames = getLocalizedWorkshopTutorNames(ws, language).join(", ") || "000";
+        const tutor = isIyocaWorkshop(ws.tags)
+            ? t.workshop.clubLeaderLabel(tutorNames)
+            : t.workshop.tutorLabel(tutorNames);
         const capacity = parseCapacity(ws.capacity, ws.schedule) ?? 8;
         const registeredCount = ws.supabase_workshop_id ? (counts[ws.supabase_workshop_id] || 0) : 0;
         const capacityFull = registeredCount >= capacity;

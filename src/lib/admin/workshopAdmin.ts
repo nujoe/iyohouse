@@ -45,6 +45,7 @@ export type AdminApplicantRow = {
   snapshot_email: string | null;
   snapshot_phone: string | null;
   snapshot_bio?: string | null;
+  price_type?: string | null;
   created_at: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
@@ -61,6 +62,8 @@ export type AdminWorkshopApplicantsData = {
   workshop: Omit<AdminWorkshopRow, "confirmedCount" | "pendingCount">;
   groups: AdminApplicantGroup[];
   applicantCount: number;
+  cancelledGroups: AdminApplicantGroup[];
+  cancelledCount: number;
   emailTemplate: AdminWorkshopEmailTemplate | null;
   scheduleOptions: AdminScheduleOption[];
   scheduleCounts: AdminScheduleCounts;
@@ -245,17 +248,26 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     return null;
   }
 
-  const baseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, snapshot_bio, created_at";
-  const fallbackBaseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, created_at";
+  const baseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, snapshot_bio, created_at, price_type";
+  const fallbackBaseSelect = "id, status, snapshot_name, snapshot_email, snapshot_phone, created_at, price_type";
   const scheduleSelect = `${baseSelect}, schedule_key, schedule_label, schedule_date, schedule_time`;
   let applicantRows: AdminApplicantRow[] = [];
+  let cancelledRows: AdminApplicantRow[] = [];
 
-  const withSchedule = await adminClient
-    .from("workshop_registrations_v2")
-    .select(scheduleSelect)
-    .eq("workshop_id", workshopId)
-    .eq("status", "confirmed")
-    .order("created_at", { ascending: true });
+  const [withSchedule, cancelledWithSchedule] = await Promise.all([
+    adminClient
+      .from("workshop_registrations_v2")
+      .select(scheduleSelect)
+      .eq("workshop_id", workshopId)
+      .eq("status", "confirmed")
+      .order("created_at", { ascending: true }),
+    adminClient
+      .from("workshop_registrations_v2")
+      .select(scheduleSelect)
+      .eq("workshop_id", workshopId)
+      .eq("status", "cancelled")
+      .order("created_at", { ascending: true }),
+  ]);
 
   if (withSchedule.error) {
     const message = withSchedule.error.message ?? "";
@@ -280,6 +292,29 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     applicantRows = (withSchedule.data ?? []) as AdminApplicantRow[];
   }
 
+  if (cancelledWithSchedule.error) {
+    const message = cancelledWithSchedule.error.message ?? "";
+
+    if (!message.includes("schedule_") && !message.includes("snapshot_bio")) {
+      throw new Error(`취소/환불 신청자 목록을 불러오지 못했습니다: ${message}`);
+    }
+
+    const fallback = await adminClient
+      .from("workshop_registrations_v2")
+      .select(fallbackBaseSelect)
+      .eq("workshop_id", workshopId)
+      .eq("status", "cancelled")
+      .order("created_at", { ascending: true });
+
+    if (fallback.error) {
+      throw new Error(`취소/환불 신청자 목록을 불러오지 못했습니다: ${fallback.error.message}`);
+    }
+
+    cancelledRows = (fallback.data ?? []) as AdminApplicantRow[];
+  } else {
+    cancelledRows = (cancelledWithSchedule.data ?? []) as AdminApplicantRow[];
+  }
+
   const [emailTemplateSet, scheduleChangeData] = await Promise.all([
     getWorkshopScheduleEmailTemplates(workshopId),
     getWorkshopScheduleChangeData(workshopId),
@@ -297,6 +332,8 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     },
     groups: groupApplicantsBySchedule(applicantRows),
     applicantCount: applicantRows.length,
+    cancelledGroups: groupApplicantsBySchedule(cancelledRows),
+    cancelledCount: cancelledRows.length,
     emailTemplate,
     scheduleOptions: scheduleChangeData.scheduleOptions,
     scheduleCounts: scheduleChangeData.scheduleCounts,
