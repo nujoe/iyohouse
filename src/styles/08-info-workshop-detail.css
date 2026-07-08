@@ -268,7 +268,8 @@
 
 .detail-tutor-group {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 
