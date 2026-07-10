@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useState, useRef, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { sortCalendarEventsByStartTime } from "@/lib/calendarEventOrder";
 
 interface CalendarViewProps {
     currentMonth: Date;
@@ -132,12 +133,14 @@ function CalendarView({
             const displayNum = isCurrMonth ? dayNum : (dayNum <= 0 ? prevMonthDays + dayNum : dayNum - daysInMonth);
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-            const dayEvents = isCurrMonth 
-                ? calendarEvents.filter(e => {
-                    if (e.date === dateStr) return true;
-                    if (Array.isArray(e.dates) && e.dates.includes(dateStr)) return true;
-                    return false;
-                }) 
+            const dayEvents = isCurrMonth
+                ? sortCalendarEventsByStartTime(
+                    calendarEvents.filter(e => {
+                        if (e.date === dateStr) return true;
+                        if (Array.isArray(e.dates) && e.dates.includes(dateStr)) return true;
+                        return false;
+                    }),
+                )
                 : [];
             const isToday = Boolean(today) && isCurrMonth && year === todayYear && month === todayMonth && dayNum === todayDate;
 
