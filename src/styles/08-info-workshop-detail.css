@@ -272,6 +272,10 @@
     align-items: flex-start;
 }
 
+.detail-tutor-group + .detail-tutor-group {
+    margin-top: 32px;
+}
+
 
 
 .detail-tags {
