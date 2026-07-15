@@ -36,7 +36,7 @@ export default function HomeWorkshopCell({
     return (
         <div className={`cell cell-workshop ${activePreset === 'workshop' ? 'active' : ''}`}>
             <div className="cell-cover"></div>
-            <div className="cell-content workshop-wrapper" onScroll={onScroll}>
+            <div className={`cell-content workshop-wrapper${selectedWorkshop ? " has-detail" : ""}`} onScroll={onScroll}>
                 {isVisited && (
                     selectedWorkshop ? (
                         <WorkshopDetailOverlay

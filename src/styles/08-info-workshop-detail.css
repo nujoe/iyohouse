@@ -122,6 +122,13 @@
     box-sizing: border-box;
 }
 
+@media (min-width: 1001px) {
+    .workshop-wrapper.has-detail {
+        height: calc(100% + var(--line-gap));
+        margin-top: calc(-1 * var(--line-gap));
+    }
+}
+
 
 .detail-layout {
     display: flex;
