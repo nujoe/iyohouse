@@ -478,7 +478,8 @@ export default function WorkshopDetailOverlay({
         : t.workshop.studentDiscountNotice;
     const tags = getWorkshopTags(workshop.tags);
     const localizedTutors = getLocalizedWorkshopTutors(workshop, language);
-    const tutorLabel = isIyocaWorkshop(workshop.tags) ? t.workshop.clubLeaderLabel : t.workshop.tutorLabel;
+    const isIyoca = isIyocaWorkshop(workshop.tags);
+    const tutorLabel = isIyoca ? t.workshop.clubLeaderLabel : t.workshop.tutorLabel;
 
     return (
         <div className="workshop-detail-container">
@@ -520,7 +521,7 @@ export default function WorkshopDetailOverlay({
 
                         {/* 튜터 정보 */}
                         {localizedTutors.length > 0 && (
-                            <div className="detail-tutor-section">
+                            <div className={`detail-tutor-section${isIyoca ? " detail-club-leader-section" : ""}`}>
                                 {localizedTutors.map((tutor, index) => (
                                     <div className="detail-tutor-group" key={`${tutor.name}-${index}`}>
                                         {tutor.name && (

@@ -276,6 +276,11 @@
     margin-top: 32px;
 }
 
+.detail-club-leader-section .detail-tutor-group + .detail-tutor-group {
+    border-top: 1px solid #eee;
+    padding-top: 24px;
+}
+
 
 
 .detail-tags {

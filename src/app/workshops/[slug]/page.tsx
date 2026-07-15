@@ -116,7 +116,8 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
   const scheduleLabel = getPrimaryScheduleLabel(workshop);
   const jsonLd = buildWorkshopJsonLd(workshop);
   const localizedTutors = getLocalizedWorkshopTutors(workshop, "ko");
-  const tutorLabelPrefix = isIyocaWorkshop(workshop.tags) ? "동아리장 : " : "Tutor. ";
+  const isIyoca = isIyocaWorkshop(workshop.tags);
+  const tutorLabelPrefix = isIyoca ? "동아리장 : " : "Tutor. ";
 
   return (
     <main className="workshop-seo-page">
@@ -182,7 +183,7 @@ export default async function WorkshopPage({ params }: WorkshopPageProps) {
               </section>
 
               {localizedTutors.length > 0 && (
-                <section className="detail-tutor-section">
+                <section className={`detail-tutor-section${isIyoca ? " detail-club-leader-section" : ""}`}>
                   {localizedTutors.map((tutor, index) => (
                     <div className="detail-tutor-group" key={`${tutor.name}-${index}`}>
                       {tutor.name && <div className="detail-tutor-name">{tutorLabelPrefix}{tutor.name}</div>}

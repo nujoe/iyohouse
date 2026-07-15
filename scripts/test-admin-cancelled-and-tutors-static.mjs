@@ -72,9 +72,14 @@ test("Sanity supports multiple tutors and iyoca uses club leader label", () => {
   const overlay = read("src/components/workshop/WorkshopDetailOverlay.tsx");
   assert.match(overlay, /isIyocaWorkshop\(workshop\.tags\)/, "overlay must choose label using normalized IYOCA tags");
   assert.match(overlay, /getLocalizedWorkshopTutors/, "overlay must render plural tutor details");
+  assert.match(overlay, /detail-club-leader-section/, "overlay must mark IYOCA tutor sections for club leader styling");
 
   const page = read("src/app/workshops/[slug]/page.tsx");
   assert.match(page, /isIyocaWorkshop\(workshop\.tags\)/, "SEO detail page must choose label using normalized IYOCA tags");
   assert.match(page, /getLocalizedWorkshopTutors/, "SEO detail page must render plural tutor details");
-});
+  assert.match(page, /detail-club-leader-section/, "SEO detail page must mark IYOCA tutor sections for club leader styling");
 
+  const styles = read("src/styles/08-info-workshop-detail.css");
+  assert.match(styles, /\.detail-club-leader-section \.detail-tutor-group \+ \.detail-tutor-group/, "club leaders must have a separator rule");
+  assert.match(styles, /border-top:\s*1px solid #eee/, "club leader separators must use a subtle line");
+});
