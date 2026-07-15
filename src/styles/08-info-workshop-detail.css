@@ -117,8 +117,8 @@
     flex-direction: column;
     background: #fff;
     color: #000;
-    padding: 8px;
-    /* Shifted to avoid 8px grid lines */
+    padding: 0 8px 8px;
+    /* Keep the side and bottom grid clearance while allowing the poster to reach the top edge. */
     box-sizing: border-box;
 }
 
