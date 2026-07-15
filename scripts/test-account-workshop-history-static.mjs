@@ -34,6 +34,7 @@ test("profile modal includes tabbed account history without workshop navigation"
   const history = read("src/components/home/AccountWorkshopHistory.tsx");
   assert.match(history, /\/api\/account\/workshop-history/, "history component must load the dedicated account API");
   assert.match(history, /Authorization: `Bearer \$\{accessToken\}`/, "history component must send the active session token");
+  assert.doesNotMatch(history, /\[accessToken, isActive, loadState\]/, "loading state must not abort the active history request");
   assert.match(history, /workshop-history-item[\s\S]*is-reversed/, "history component must alternate poster/text layout");
   assert.match(history, /workshop-history-description/, "history component must render a clamped description");
   assert.doesNotMatch(history, /href=|router\.push|window\.location/, "poster should not navigate to workshop detail yet");

@@ -38,8 +38,6 @@ export default function AccountWorkshopHistory({
       return;
     }
 
-    if (loadState !== "idle") return;
-
     const controller = new AbortController();
 
     async function loadHistory() {
@@ -70,7 +68,7 @@ export default function AccountWorkshopHistory({
     void loadHistory();
 
     return () => controller.abort();
-  }, [accessToken, isActive, loadState]);
+  }, [accessToken, isActive]);
 
   const displayName = profileName?.trim() || "회원";
 
