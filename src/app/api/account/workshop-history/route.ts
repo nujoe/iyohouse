@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createSanityClient } from "next-sanity";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { apiVersion, dataset, projectId } from "@/sanity/env";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -30,8 +31,22 @@ type AccountWorkshopDocument = WorkshopSeoDocument & {
   supabase_workshop_id?: string | null;
 };
 
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
+function getAuthenticatedSupabaseClient(request: Request) {
+  const authorization = request.headers.get("authorization");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (authorization?.startsWith("Bearer ") && url && anonKey) {
+    return createSupabaseClient(url, anonKey, {
+      global: { headers: { Authorization: authorization } },
+    });
+  }
+
+  return createSupabaseServerClient();
+}
+
+export async function GET(request: Request) {
+  const supabase = await getAuthenticatedSupabaseClient(request);
   const {
     data: { user },
     error: authError,

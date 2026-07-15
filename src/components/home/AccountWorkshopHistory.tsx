@@ -18,16 +18,27 @@ type AccountWorkshopHistoryItem = {
 type AccountWorkshopHistoryProps = {
   isActive: boolean;
   profileName?: string | null;
+  accessToken?: string | null;
 };
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
-export default function AccountWorkshopHistory({ isActive, profileName }: AccountWorkshopHistoryProps) {
+export default function AccountWorkshopHistory({
+  isActive,
+  profileName,
+  accessToken,
+}: AccountWorkshopHistoryProps) {
   const [items, setItems] = useState<AccountWorkshopHistoryItem[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("idle");
 
   useEffect(() => {
-    if (!isActive || loadState !== "idle") return;
+    if (!isActive) {
+      setItems([]);
+      setLoadState("idle");
+      return;
+    }
+
+    if (loadState !== "idle") return;
 
     const controller = new AbortController();
 
@@ -39,6 +50,7 @@ export default function AccountWorkshopHistory({ isActive, profileName }: Accoun
           method: "GET",
           cache: "no-store",
           signal: controller.signal,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         });
 
         if (!response.ok) {
@@ -58,7 +70,7 @@ export default function AccountWorkshopHistory({ isActive, profileName }: Accoun
     void loadHistory();
 
     return () => controller.abort();
-  }, [isActive, loadState]);
+  }, [accessToken, isActive, loadState]);
 
   const displayName = profileName?.trim() || "회원";
 

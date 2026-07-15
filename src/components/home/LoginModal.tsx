@@ -41,6 +41,7 @@ function getKoreanAuthError(message: string) {
 export default function LoginModal({ isOpen, onClose, initialMode = "login" }: LoginModalProps) {
     const {
         user,
+        session,
         profile,
         isProfileComplete,
         signOut,
@@ -335,6 +336,7 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: L
                                         <AccountWorkshopHistory
                                             isActive={accountActiveTab === "history"}
                                             profileName={profile?.full_name}
+                                            accessToken={session?.access_token}
                                         />
                                     )}
                                 </div>

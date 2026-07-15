@@ -14,6 +14,7 @@ test("account workshop history API is authenticated and returns confirmed regist
 
   const route = read("src/app/api/account/workshop-history/route.ts");
   assert.match(route, /auth\.getUser\(\)/, "API must authenticate the current user");
+  assert.match(route, /request\.headers\.get\("authorization"\)/, "API must accept the current browser session token");
   assert.match(route, /status['"]?\s*,?\s*['"]confirmed|eq\(['"]status['"],\s*['"]confirmed['"]\)/, "API must filter confirmed registrations");
   assert.match(route, /eq\(['"]user_id['"],\s*user\.id\)/, "API must scope registrations to the current user");
   assert.match(route, /supabase_workshop_id/, "API must join Sanity workshop data by Supabase workshop id");
@@ -32,6 +33,7 @@ test("profile modal includes tabbed account history without workshop navigation"
 
   const history = read("src/components/home/AccountWorkshopHistory.tsx");
   assert.match(history, /\/api\/account\/workshop-history/, "history component must load the dedicated account API");
+  assert.match(history, /Authorization: `Bearer \$\{accessToken\}`/, "history component must send the active session token");
   assert.match(history, /workshop-history-item[\s\S]*is-reversed/, "history component must alternate poster/text layout");
   assert.match(history, /workshop-history-description/, "history component must render a clamped description");
   assert.doesNotMatch(history, /href=|router\.push|window\.location/, "poster should not navigate to workshop detail yet");
