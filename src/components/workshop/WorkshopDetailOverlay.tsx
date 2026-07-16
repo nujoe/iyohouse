@@ -31,6 +31,9 @@ const WORKSHOP_POST_CURRICULUM_INFO_FIELDS = [
 
 type WorkshopInfoField = (typeof WORKSHOP_PRIMARY_INFO_FIELDS | typeof WORKSHOP_POST_CURRICULUM_INFO_FIELDS)[number];
 
+// Keep the existing policy markup available until the revised workshop copy is ready.
+const SHOW_REFUND_POLICY = false;
+
 interface WorkshopDetailOverlayProps {
     workshop: any;
     t: any;
@@ -569,8 +572,8 @@ export default function WorkshopDetailOverlay({
                             </div>
                         )}
 
-                        {/* 취소 및 환불 정책 아코디언 */}
-                        <div className="detail-refund-accordion">
+                        {/* 취소 및 환불 정책 아코디언: 새 정책 문구 확정 전까지 비노출 */}
+                        {SHOW_REFUND_POLICY && <div className="detail-refund-accordion">
                             <button
                                 type="button"
                                 className="refund-accordion-trigger"
@@ -610,7 +613,7 @@ export default function WorkshopDetailOverlay({
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        </div>}
 
                         <div className="detail-footer-actions">
                             <div className="price-tag">{t.workshop.priceLabel(displayPrice)}</div>
