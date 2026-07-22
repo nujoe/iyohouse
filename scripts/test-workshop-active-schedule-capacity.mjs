@@ -87,6 +87,10 @@ requireIncludes("src/sanity/actions/toggleWorkshopActiveAction.tsx", [
 
 requireIncludes("src/sanity/config.ts", [
   "ToggleWorkshopActiveAction",
+  "GenerateWorkshopEnglishAction",
+]);
+
+requireExcludes("src/sanity/config.ts", [
   "SyncWorkshopDbAction",
 ]);
 
@@ -103,12 +107,12 @@ requireExcludes("src/app/api/workshops/data/route.ts", [
   "isActive == false && defined(number)",
 ]);
 
-requireMatches("src/app/api/admin/sync-workshops/route.ts", [
-  [/isActive/, "admin sync must read the Sanity active flag."],
-  [/schedule\[\]/, "admin sync must read Sanity schedule entries."],
-  [/schedule_capacities/, "admin sync must persist schedule capacity data."],
-  [/getScheduleKey/, "admin sync must derive stable schedule keys."],
-  [/ws\.isActive === false \? 'inactive'/, "admin sync must mark inactive workshops as inactive in Supabase."],
+requireMatches("src/lib/admin/syncWorkshopRuntime.ts", [
+  [/isActive/, "runtime sync must read the Sanity active flag."],
+  [/schedule\[\]/, "runtime sync must read Sanity schedule entries."],
+  [/schedule_capacities/, "runtime sync must persist schedule capacity data."],
+  [/getScheduleKey/, "runtime sync must derive stable schedule keys."],
+  [/workshop\.isActive === false \? 'inactive'/, "runtime sync must mark inactive workshops as inactive in Supabase."],
 ]);
 
 requireIncludes("supabase/migrations/20260622000000_add_workshop_schedule_capacities.sql", [
