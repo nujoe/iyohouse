@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   createNicepayPaymentPayload,
+  getNicepayAvailableCheckoutMethods,
   getNicepayConfig,
   isNicepayConfigured,
-  nicepayCheckoutMethodInput,
+  type NicepayCheckoutMethod,
 } from "@/lib/payment/nicepay";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,10 @@ type CheckoutRegistration = {
   workshops?: { title?: string | null } | { title?: string | null }[] | null;
 };
 
+function getCheckoutMethod(value: unknown): NicepayCheckoutMethod | null {
+  return value === "cardAndEasyPay" || value === "vbank" ? value : null;
+}
+
 export async function POST(request: Request) {
   try {
     const config = getNicepayConfig();
@@ -38,18 +44,35 @@ export async function POST(request: Request) {
     if (!isNicepayConfigured(config)) {
       return NextResponse.json(
         { success: false, error: "NICEPAY 환경 변수가 설정되어 있지 않습니다." },
-        { status: 500 },
+        { status: 503 },
       );
     }
 
     const supabase = await createClient();
     const checkoutRequest = await request.json() as CheckoutRequest;
     const { registration_id, orderName, scheduleLabel, workshopId, workshopTitle } = checkoutRequest;
+    const method = getCheckoutMethod(checkoutRequest.method);
 
     if (!registration_id) {
       return NextResponse.json(
         { success: false, error: "신청 ID가 필요합니다." },
         { status: 400 },
+      );
+    }
+
+    if (!method) {
+      return NextResponse.json(
+        { success: false, error: "지원하지 않는 결제 수단입니다." },
+        { status: 400 },
+      );
+    }
+
+    const availableMethods = getNicepayAvailableCheckoutMethods();
+
+    if (!availableMethods[method]) {
+      return NextResponse.json(
+        { success: false, error: "현재 사용할 수 없는 결제 수단입니다." },
+        { status: 503 },
       );
     }
 
@@ -122,9 +145,36 @@ export async function POST(request: Request) {
       userId: user.id,
       orderName: orderName || workshopTitle || registrationWorkshopTitle || "IYOHOUSE Workshop",
       origin,
+      method,
       mallReserved,
-      ...nicepayCheckoutMethodInput(checkoutRequest),
     });
+
+    if (method === "vbank") {
+      const expiresAt = new Date(
+        Date.now() + config.vbankValidHours * 60 * 60 * 1000,
+      ).toISOString();
+      const adminClient = getSupabaseServerClient();
+      const { data: reserved, error: reservationError } = await adminClient.rpc(
+        "reserve_virtual_account_registration",
+        {
+          p_registration_id: registration.id,
+          p_user_id: user.id,
+          p_expires_at: expiresAt,
+        },
+      );
+
+      if (reservationError || reserved !== true) {
+        console.error("reserve_virtual_account_registration RPC failed:", {
+          registrationId: registration.id,
+          hasError: Boolean(reservationError),
+        });
+
+        return NextResponse.json(
+          { success: false, error: "가상계좌 결제 대기 시간을 확보하지 못했습니다." },
+          { status: 409 },
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,

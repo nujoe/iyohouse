@@ -16,6 +16,14 @@ type PaymentRegistration = {
   status: "pending" | "confirmed" | "cancelled" | "expired";
 };
 
+type PaymentLedger = {
+  registration_id: string;
+  amount: number;
+  payment_method: string | null;
+  status: string;
+  provider_status: string | null;
+};
+
 function scalarPayload(payload: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(payload).map(([key, value]) => [
@@ -31,16 +39,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function cancelPendingRegistration(registrationId: string) {
-  const supabase = getSupabaseServerClient();
-
-  await supabase
-    .from("workshop_registrations_v2")
-    .update({ status: "cancelled" })
-    .eq("id", registrationId)
-    .eq("status", "pending");
-}
-
 async function cancelActiveRegistration(registrationId: string) {
   const supabase = getSupabaseServerClient();
 
@@ -49,6 +47,18 @@ async function cancelActiveRegistration(registrationId: string) {
     .update({ status: "cancelled" })
     .eq("id", registrationId)
     .in("status", ["pending", "confirmed"]);
+}
+
+function logIgnoredWebhook(
+  registrationId: string,
+  providerStatus: string,
+  payload: Record<string, unknown>,
+) {
+  console.warn("NICEPAY webhook ignored:", {
+    registrationId,
+    providerStatus: providerStatus || "webhook_received",
+    payload: safeNicepayPayload(payload),
+  });
 }
 
 function nicepayOkResponse() {
@@ -90,7 +100,6 @@ export async function POST(request: Request) {
     const amount = Number(fields.amount || 0);
     const status = fields.status || "";
     const resultCode = fields.resultCode || "";
-    const failedProviderStatus = "payment_failed";
 
     if (!orderId || !tid || !amount || !fields.ediDate || !fields.signature) {
       return NextResponse.json(
@@ -127,7 +136,113 @@ export async function POST(request: Request) {
       );
     }
 
-    if (resultCode === "0000" && status === "paid") {
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .select("registration_id, amount, payment_method, status, provider_status")
+      .eq("payment_key", tid)
+      .eq("order_id", orderId)
+      .maybeSingle<PaymentLedger>();
+
+    if (paymentError) {
+      return NextResponse.json(
+        { success: false, error: "결제 원장을 조회하지 못했습니다." },
+        { status: 500 },
+      );
+    }
+
+    if (
+      payment
+      && (payment.registration_id !== registration.id || Number(payment.amount) !== amount)
+    ) {
+      return NextResponse.json(
+        { success: false, error: "NICEPAY 거래가 신청 정보와 일치하지 않습니다." },
+        { status: 400 },
+      );
+    }
+
+    const isVirtualAccount = payment?.payment_method === "가상계좌";
+    const reportedPaymentMethod = getNicepayPaymentMethod(fields);
+
+    if (isVirtualAccount && resultCode === "0000" && status === "paid") {
+      if (
+        registration.status === "confirmed"
+        && payment.status === "success"
+        && payment.provider_status === "paid"
+      ) {
+        logIgnoredWebhook(registration.id, status, payload);
+        return nicepayOkResponse();
+      }
+
+      if (
+        registration.status !== "pending"
+        || payment.status !== "pending"
+        || payment.provider_status !== "ready"
+      ) {
+        logIgnoredWebhook(registration.id, status, payload);
+        return nicepayOkResponse();
+      }
+
+      const { error: rpcError } = await supabase.rpc("confirm_virtual_account_deposit", {
+        p_registration_id: registration.id,
+        p_tid: tid,
+        p_order_id: registration.order_id,
+        p_amount: Number(registration.amount),
+      });
+
+      if (rpcError) {
+        return NextResponse.json(
+          { success: false, error: "가상계좌 입금 상태를 반영하지 못했습니다." },
+          { status: 500 },
+        );
+      }
+
+      return nicepayOkResponse();
+    }
+
+    if (isVirtualAccount && ["expired", "failed", "cancelled"].includes(status)) {
+      const duplicateFailure = (
+        (payment.status === "failed" || payment.status === "cancelled")
+        && payment.provider_status === status
+        && registration.status === "cancelled"
+      );
+
+      if (duplicateFailure) {
+        logIgnoredWebhook(registration.id, status, payload);
+        return nicepayOkResponse();
+      }
+
+      if (
+        registration.status !== "pending"
+        || payment.status !== "pending"
+        || payment.provider_status !== "ready"
+      ) {
+        logIgnoredWebhook(registration.id, status, payload);
+        return nicepayOkResponse();
+      }
+
+      const { error: rpcError } = await supabase.rpc("fail_virtual_account_payment", {
+        p_registration_id: registration.id,
+        p_tid: tid,
+        p_order_id: registration.order_id,
+        p_provider_status: status,
+      });
+
+      if (rpcError) {
+        return NextResponse.json(
+          { success: false, error: "가상계좌 실패 상태를 반영하지 못했습니다." },
+          { status: 500 },
+        );
+      }
+
+      return nicepayOkResponse();
+    }
+
+    if (isVirtualAccount || reportedPaymentMethod === "가상계좌") {
+      logIgnoredWebhook(registration.id, status, payload);
+      return nicepayOkResponse();
+    }
+
+    if (resultCode === "0000" && status === "paid" && !payment) {
       const { error: rpcError } = await supabase.rpc("confirm_payment_registration", {
         p_registration_id: registration.id,
         p_payment_key: tid,
@@ -147,32 +262,28 @@ export async function POST(request: Request) {
     }
 
     if (status === "cancelled") {
-      await cancelActiveRegistration(registration.id);
+      if (payment) {
+        await cancelActiveRegistration(registration.id);
+      } else {
+        logIgnoredWebhook(registration.id, status, payload);
+      }
 
       return nicepayOkResponse();
     }
 
-    if (["expired", "failed"].includes(status) || resultCode !== "0000") {
-      await cancelPendingRegistration(registration.id);
+    if (!payment && (["expired", "failed"].includes(status) || resultCode !== "0000")) {
+      logIgnoredWebhook(registration.id, status, payload);
 
       return nicepayOkResponse();
     }
 
     if (status === "partialCancelled") {
-      console.warn("NICEPAY partial cancel webhook received:", {
-        registrationId: registration.id,
-        providerStatus: status,
-        payload: safeNicepayPayload(payload),
-      });
+      logIgnoredWebhook(registration.id, status, payload);
 
       return nicepayOkResponse();
     }
 
-    console.warn("NICEPAY webhook ignored:", {
-      registrationId: registration.id,
-      providerStatus: status || failedProviderStatus || "webhook_received",
-      payload: safeNicepayPayload(payload),
-    });
+    logIgnoredWebhook(registration.id, status, payload);
 
     return nicepayOkResponse();
   } catch (error: unknown) {

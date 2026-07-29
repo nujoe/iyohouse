@@ -4,6 +4,7 @@ import {
   approveNicepayPaymentAuth,
   cancelNicepayPayment,
   getNicepayPaymentMethod,
+  getNicepayVirtualAccount,
   safeNicepayPayload,
 } from "@/lib/payment/nicepay";
 
@@ -104,20 +105,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (registration.status === "confirmed") {
-      return NextResponse.redirect(
-        redirectUrl(request, "/payment/success", {
-          registration_id: registration.id,
-          order_id: registration.order_id,
-          amount: registration.amount,
-          workshop: workshopId,
-          workshop_title: workshopTitle,
-        }),
-        { status: 303 },
-      );
-    }
-
-    if (registration.status !== "pending") {
+    if (registration.status !== "pending" && registration.status !== "confirmed") {
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {
           registration_id: registration.id,
@@ -143,6 +131,150 @@ export async function POST(request: Request) {
           registration_id: registration.id,
           order_id: registration.order_id,
           message: approval.message,
+        }),
+        { status: 303 },
+      );
+    }
+
+    const paymentMethod = getNicepayPaymentMethod(approval.payload);
+
+    if (registration.status === "confirmed") {
+      if (paymentMethod === "가상계좌") {
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/pending", {
+            order_id: registration.order_id,
+            workshop: workshopId,
+            workshop_title: workshopTitle,
+          }),
+          { status: 303 },
+        );
+      }
+
+      if (approval.providerStatus === "paid" && paymentMethod) {
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/success", {
+            registration_id: registration.id,
+            order_id: registration.order_id,
+            amount: registration.amount,
+            workshop: workshopId,
+            workshop_title: workshopTitle,
+          }),
+          { status: 303 },
+        );
+      }
+
+      return NextResponse.redirect(
+        redirectUrl(request, "/payment/fail", {
+          registration_id: registration.id,
+          order_id: registration.order_id,
+          message: "이미 처리된 결제의 승인 상태가 일치하지 않습니다.",
+        }),
+        { status: 303 },
+      );
+    }
+
+    if (paymentMethod === "가상계좌" && approval.providerStatus === "ready") {
+      const virtualAccount = getNicepayVirtualAccount(approval.payload);
+
+      if (!virtualAccount) {
+        const compensation = await cancelNicepayPayment({
+          tid: approval.tid,
+          orderId: registration.order_id,
+          cancelAmt: Number(registration.amount),
+          reason: "IYOHOUSE invalid virtual account issuance",
+        });
+
+        if (compensation.ok) {
+          await markPendingRegistrationCancelled(registration.id, "invalid_vbank_issuance_compensated");
+        }
+
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/fail", {
+            registration_id: registration.id,
+            order_id: registration.order_id,
+            message: compensation.ok
+              ? "가상계좌 발급 정보가 올바르지 않아 결제를 취소했습니다."
+              : "가상계좌 발급 정보를 저장하지 못했습니다. 운영자에게 문의해 주세요.",
+          }),
+          { status: 303 },
+        );
+      }
+
+      const { data: issuanceRecorded, error: issuanceError } = await supabase.rpc(
+        "record_virtual_account_issuance",
+        {
+          p_registration_id: registration.id,
+          p_tid: approval.tid,
+          p_order_id: registration.order_id,
+          p_amount: Number(registration.amount),
+          p_vbank_code: virtualAccount.code,
+          p_vbank_name: virtualAccount.name,
+          p_vbank_number: virtualAccount.number,
+          p_vbank_holder: virtualAccount.holder,
+          p_payment_method: "가상계좌",
+          p_provider_status: "ready",
+          p_expires_at: virtualAccount.expiresAt,
+        },
+      );
+
+      if (issuanceError || issuanceRecorded !== true) {
+        console.error("record_virtual_account_issuance RPC failed:", {
+          registrationId: registration.id,
+          hasError: Boolean(issuanceError),
+        });
+
+        const compensation = await cancelNicepayPayment({
+          tid: approval.tid,
+          orderId: registration.order_id,
+          cancelAmt: Number(registration.amount),
+          reason: "IYOHOUSE virtual account recording failed",
+        });
+
+        if (compensation.ok) {
+          await markPendingRegistrationCancelled(registration.id, "vbank_recording_failed_compensated");
+        }
+
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/fail", {
+            registration_id: registration.id,
+            order_id: registration.order_id,
+            message: compensation.ok
+              ? "가상계좌 발급 처리 중 오류가 발생해 결제를 취소했습니다."
+              : "가상계좌는 발급되었으나 저장하지 못했습니다. 운영자에게 문의해 주세요.",
+          }),
+          { status: 303 },
+        );
+      }
+
+      return NextResponse.redirect(
+        redirectUrl(request, "/payment/pending", {
+          order_id: registration.order_id,
+          workshop: workshopId,
+          workshop_title: workshopTitle,
+        }),
+        { status: 303 },
+      );
+    }
+
+    if (approval.providerStatus !== "paid" || paymentMethod === "가상계좌" || !paymentMethod) {
+      const compensation = await cancelNicepayPayment({
+        tid: approval.tid,
+        orderId: registration.order_id,
+        cancelAmt: Number(registration.amount),
+        reason: "IYOHOUSE unexpected NICEPAY approval state",
+      });
+
+      if (compensation.ok) {
+        await markPendingRegistrationCancelled(registration.id, "unexpected_approval_state_compensated");
+      }
+
+      return NextResponse.redirect(
+        redirectUrl(request, "/payment/fail", {
+          registration_id: registration.id,
+          order_id: registration.order_id,
+          message: compensation.ok
+            ? "결제 승인 상태가 올바르지 않아 결제를 취소했습니다."
+            : "결제 승인 상태를 확인하지 못했습니다. 운영자에게 문의해 주세요.",
         }),
         { status: 303 },
       );

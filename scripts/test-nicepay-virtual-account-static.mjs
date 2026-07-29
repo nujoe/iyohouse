@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,6 +9,15 @@ import { pathToFileURL } from "node:url";
 const root = process.cwd();
 const nicepay = readFileSync(join(root, "src/lib/payment/nicepay.ts"), "utf8");
 const checkout = readFileSync(join(root, "src/app/api/payment/checkout/route.ts"), "utf8");
+const confirm = readFileSync(join(root, "src/app/api/payment/confirm/route.ts"), "utf8");
+const webhook = readFileSync(join(root, "src/app/api/payment/webhook/route.ts"), "utf8");
+const readRoute = (relativePath) => {
+  const routePath = join(root, relativePath);
+
+  return existsSync(routePath) ? readFileSync(routePath, "utf8") : "";
+};
+const methods = readRoute("src/app/api/payment/methods/route.ts");
+const pending = readRoute("src/app/api/payment/pending/route.ts");
 const outputDir = mkdtempSync(join(tmpdir(), "iyohouse-nicepay-test-"));
 
 try {
@@ -92,6 +101,42 @@ test("NICEPAY virtual-account checkout contract is defined", () => {
   assert.match(nicepay, /getNicepayVirtualAccount/, "must extract issued virtual account data");
 });
 
+test("virtual-account routes use the lifecycle RPCs and owner-scoped status", () => {
+  assert.match(checkout, /reserve_virtual_account_registration/);
+  assert.match(confirm, /record_virtual_account_issuance/);
+  assert.match(confirm, /payment\/pending/);
+  assert.match(webhook, /confirm_virtual_account_deposit/);
+  assert.match(webhook, /fail_virtual_account_payment/);
+  assert.match(methods, /getNicepayAvailableCheckoutMethods/);
+  assert.match(pending, /user_id/);
+
+  assert.match(
+    checkout,
+    /p_registration_id:\s*registration\.id[\s\S]*?p_user_id:\s*user\.id[\s\S]*?p_expires_at:/,
+    "vbank reservation must use the exact owner-scoped RPC arguments",
+  );
+  assert.match(
+    pending,
+    /\.eq\("order_id",\s*orderId\)[\s\S]*?\.eq\("user_id",\s*user\.id\)/,
+    "pending details must query the registration by both order and owner",
+  );
+  assert.match(
+    pending,
+    /\.from\("payments"\)[\s\S]*?\.eq\("registration_id",\s*registration\.id\)/,
+    "pending details must load only the owner's registration ledger",
+  );
+  assert.match(
+    confirm,
+    /paymentMethod\s*===\s*"가상계좌"[\s\S]*?approval\.providerStatus\s*===\s*"ready"/,
+    "issuance must require the final NICEPAY method and ready state",
+  );
+  assert.match(
+    webhook,
+    /\.eq\("payment_key",\s*tid\)[\s\S]*?\.eq\("order_id",\s*orderId\)/,
+    "webhook ledger transitions must be scoped by TID and order",
+  );
+});
+
 test("vbank is unavailable by default", () => {
   withNicepayEnv({ IYO_NICEPAY_METHODS: "cardAndEasyPay,vbank" }, () => {
     assert.deepEqual(nicepayModule.getNicepayAvailableCheckoutMethods(), {
@@ -147,11 +192,11 @@ test("explicit empty and null methods are rejected", () => {
   });
 });
 
-test("checkout request method input preserves omitted and explicit values", () => {
+test("checkout route rejects omitted methods while the payload helper preserves property presence", () => {
   assert.match(
     checkout,
-    /nicepayCheckoutMethodInput\(checkoutRequest\)/,
-    "checkout must preserve request method property presence",
+    /const method = getCheckoutMethod\(checkoutRequest\.method\)[\s\S]*?if \(!method\)/,
+    "checkout must explicitly reject an omitted or unknown request method",
   );
 
   withNicepayEnv({ IYO_NICEPAY_METHOD: "card" }, () => {
