@@ -182,6 +182,30 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
     "utf8",
   );
 
+  const getFunction = (name) => {
+    const match = sql.match(new RegExp(
+      `CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$\\$;`,
+    ));
+
+    assert.ok(match, `${name} must be defined as a complete SQL function`);
+    return match[0];
+  };
+  const assertServiceRoleOnly = (name) => {
+    assert.match(
+      sql,
+      new RegExp(
+        `REVOKE ALL ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) FROM PUBLIC;[\\s\\S]+?`
+          + `REVOKE ALL ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) FROM authenticated;[\\s\\S]+?`
+          + `GRANT EXECUTE ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) TO service_role;`,
+      ),
+      `${name} must be service-role-only`,
+    );
+  };
+  const reserve = getFunction("reserve_virtual_account_registration");
+  const issuance = getFunction("record_virtual_account_issuance");
+  const deposit = getFunction("confirm_virtual_account_deposit");
+  const failure = getFunction("fail_virtual_account_payment");
+
   assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_status TEXT/);
   assert.match(sql, /ADD COLUMN IF NOT EXISTS vbank_number TEXT/);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.reserve_virtual_account_registration/);
@@ -190,4 +214,50 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.fail_virtual_account_payment/);
   assert.match(sql, /FOR UPDATE/, "payment lifecycle functions must lock their registration");
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.confirm_virtual_account_deposit[\s\S]+TO service_role/);
+
+  for (const [name, functionSql] of [
+    ["reserve_virtual_account_registration", reserve],
+    ["record_virtual_account_issuance", issuance],
+    ["confirm_virtual_account_deposit", deposit],
+    ["fail_virtual_account_payment", failure],
+  ]) {
+    assert.match(functionSql, /SECURITY DEFINER/);
+    assert.match(functionSql, /SET search_path = public/);
+    assert.match(
+      functionSql,
+      /FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE/,
+      `${name} must lock its registration`,
+    );
+    assertServiceRoleOnly(name);
+  }
+
+  assert.match(reserve, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(issuance, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(issuance, /v_tid_payment\.registration_id IS DISTINCT FROM p_registration_id/);
+  assert.match(issuance, /v_tid_payment\.order_id IS DISTINCT FROM p_order_id/);
+  assert.match(issuance, /v_tid_payment\.amount IS DISTINCT FROM p_amount/);
+  assert.match(issuance, /v_tid_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
+  assert.match(
+    issuance,
+    /v_tid_payment\.registration_id IS NOT DISTINCT FROM p_registration_id[\s\S]+?v_tid_payment\.order_id IS NOT DISTINCT FROM p_order_id[\s\S]+?v_tid_payment\.amount IS NOT DISTINCT FROM p_amount/,
+    "same-TID issuance retries must require the same non-null registration, order, and amount",
+  );
+
+  assert.match(deposit, /v_registration\.status IS NOT DISTINCT FROM 'confirmed'/);
+  assert.match(deposit, /v_payment\.status IS NOT DISTINCT FROM 'success'/);
+  assert.match(deposit, /v_payment\.provider_status IS NOT DISTINCT FROM 'paid'/);
+  assert.match(deposit, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(deposit, /v_payment\.status IS DISTINCT FROM 'pending'/);
+  assert.match(deposit, /v_payment\.provider_status IS DISTINCT FROM 'ready'/);
+  assert.match(deposit, /v_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
+
+  assert.match(failure, /v_payment\.status IS NOT DISTINCT FROM 'failed'/);
+  assert.match(failure, /v_payment\.provider_status IS NOT DISTINCT FROM p_provider_status/);
+  assert.match(failure, /v_registration\.status IS NOT DISTINCT FROM 'cancelled'/);
+  assert.match(failure, /p_provider_status IS DISTINCT FROM 'failed'/);
+  assert.match(failure, /v_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
+  assert.match(failure, /v_payment\.status IS DISTINCT FROM 'pending'/);
+  assert.match(failure, /v_payment\.provider_status IS DISTINCT FROM 'ready'/);
+  assert.match(failure, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(failure, /v_payment\.amount IS DISTINCT FROM v_registration\.amount/);
 });

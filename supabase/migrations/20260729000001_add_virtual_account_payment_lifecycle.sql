@@ -43,7 +43,7 @@ BEGIN
     RAISE EXCEPTION 'Registration does not belong to the supplied user.';
   END IF;
 
-  IF v_registration.status <> 'pending' OR v_registration.expires_at IS NULL OR v_registration.expires_at <= NOW() THEN
+  IF v_registration.status IS DISTINCT FROM 'pending' OR v_registration.expires_at IS NULL OR v_registration.expires_at <= NOW() THEN
     RAISE EXCEPTION 'Registration is not an unexpired pending registration.';
   END IF;
 
@@ -103,15 +103,15 @@ BEGIN
     RAISE EXCEPTION 'Registration not found.';
   END IF;
 
-  IF v_registration.status <> 'pending' OR v_registration.expires_at IS NULL OR v_registration.expires_at <= NOW() THEN
+  IF v_registration.status IS DISTINCT FROM 'pending' OR v_registration.expires_at IS NULL OR v_registration.expires_at <= NOW() THEN
     RAISE EXCEPTION 'Registration is not an unexpired pending registration.';
   END IF;
 
-  IF v_registration.order_id <> p_order_id THEN
+  IF v_registration.order_id IS DISTINCT FROM p_order_id THEN
     RAISE EXCEPTION 'Order ID mismatch.';
   END IF;
 
-  IF v_registration.amount <> p_amount THEN
+  IF v_registration.amount IS DISTINCT FROM p_amount THEN
     RAISE EXCEPTION 'Payment amount mismatch. Expected: %, Got: %', v_registration.amount, p_amount;
   END IF;
 
@@ -122,15 +122,15 @@ BEGIN
   FOR UPDATE;
 
   IF FOUND THEN
-    IF v_tid_payment.registration_id <> p_registration_id THEN
+    IF v_tid_payment.registration_id IS DISTINCT FROM p_registration_id THEN
       RAISE EXCEPTION 'NICEPAY TID is already registered to another registration.';
     END IF;
 
-    IF v_tid_payment.order_id <> p_order_id OR v_tid_payment.amount <> p_amount THEN
+    IF v_tid_payment.order_id IS DISTINCT FROM p_order_id OR v_tid_payment.amount IS DISTINCT FROM p_amount THEN
       RAISE EXCEPTION 'NICEPAY TID does not match the registration order or amount.';
     END IF;
 
-    IF v_tid_payment.payment_method <> '가상계좌' THEN
+    IF v_tid_payment.payment_method IS DISTINCT FROM '가상계좌' THEN
       RAISE EXCEPTION 'NICEPAY TID is not a virtual-account payment.';
     END IF;
 
@@ -184,10 +184,10 @@ BEGIN
     WHERE payment_key = p_tid
     FOR UPDATE;
 
-    IF FOUND AND v_tid_payment.registration_id = p_registration_id
-      AND v_tid_payment.order_id = p_order_id
-      AND v_tid_payment.amount = p_amount
-      AND v_tid_payment.payment_method = '가상계좌' THEN
+    IF FOUND AND v_tid_payment.registration_id IS NOT DISTINCT FROM p_registration_id
+      AND v_tid_payment.order_id IS NOT DISTINCT FROM p_order_id
+      AND v_tid_payment.amount IS NOT DISTINCT FROM p_amount
+      AND v_tid_payment.payment_method IS NOT DISTINCT FROM '가상계좌' THEN
       RETURN TRUE;
     END IF;
 
@@ -235,11 +235,11 @@ BEGIN
     RAISE EXCEPTION 'Registration not found.';
   END IF;
 
-  IF v_registration.order_id <> p_order_id THEN
+  IF v_registration.order_id IS DISTINCT FROM p_order_id THEN
     RAISE EXCEPTION 'Order ID mismatch.';
   END IF;
 
-  IF v_registration.amount <> p_amount THEN
+  IF v_registration.amount IS DISTINCT FROM p_amount THEN
     RAISE EXCEPTION 'Payment amount mismatch. Expected: %, Got: %', v_registration.amount, p_amount;
   END IF;
 
@@ -264,25 +264,25 @@ BEGIN
     RAISE EXCEPTION 'Virtual-account payment not found.';
   END IF;
 
-  IF v_payment.order_id <> p_order_id OR v_payment.amount <> p_amount THEN
+  IF v_payment.order_id IS DISTINCT FROM p_order_id OR v_payment.amount IS DISTINCT FROM p_amount THEN
     RAISE EXCEPTION 'NICEPAY TID does not match the registration order or amount.';
   END IF;
 
-  IF v_payment.payment_method <> '가상계좌' THEN
+  IF v_payment.payment_method IS DISTINCT FROM '가상계좌' THEN
     RAISE EXCEPTION 'NICEPAY TID is not a virtual-account payment.';
   END IF;
 
-  IF v_registration.status = 'confirmed'
-    AND v_payment.status = 'success'
-    AND v_payment.provider_status = 'paid' THEN
+  IF v_registration.status IS NOT DISTINCT FROM 'confirmed'
+    AND v_payment.status IS NOT DISTINCT FROM 'success'
+    AND v_payment.provider_status IS NOT DISTINCT FROM 'paid' THEN
     RETURN TRUE;
   END IF;
 
-  IF v_registration.status <> 'pending' THEN
+  IF v_registration.status IS DISTINCT FROM 'pending' THEN
     RAISE EXCEPTION 'Registration is not in pending state (current state: %).', v_registration.status;
   END IF;
 
-  IF v_payment.status <> 'pending' OR v_payment.provider_status <> 'ready' THEN
+  IF v_payment.status IS DISTINCT FROM 'pending' OR v_payment.provider_status IS DISTINCT FROM 'ready' THEN
     RAISE EXCEPTION 'Virtual-account payment is not awaiting deposit.';
   END IF;
 
@@ -320,8 +320,9 @@ BEGIN
   IF p_registration_id IS NULL
     OR NULLIF(BTRIM(p_tid), '') IS NULL
     OR NULLIF(BTRIM(p_order_id), '') IS NULL
-    OR p_provider_status IS NULL
-    OR p_provider_status NOT IN ('failed', 'expired', 'cancelled') THEN
+    OR (p_provider_status IS DISTINCT FROM 'failed'
+        AND p_provider_status IS DISTINCT FROM 'expired'
+        AND p_provider_status IS DISTINCT FROM 'cancelled') THEN
     RAISE EXCEPTION 'A valid virtual-account failure status is required.';
   END IF;
 
@@ -335,7 +336,7 @@ BEGIN
     RAISE EXCEPTION 'Registration not found.';
   END IF;
 
-  IF v_registration.order_id <> p_order_id THEN
+  IF v_registration.order_id IS DISTINCT FROM p_order_id THEN
     RAISE EXCEPTION 'Order ID mismatch.';
   END IF;
 
@@ -360,25 +361,30 @@ BEGIN
     RAISE EXCEPTION 'Virtual-account payment not found.';
   END IF;
 
-  IF v_payment.order_id <> p_order_id OR v_payment.payment_method <> '가상계좌' THEN
+  IF v_payment.order_id IS DISTINCT FROM p_order_id OR v_payment.payment_method IS DISTINCT FROM '가상계좌' THEN
     RAISE EXCEPTION 'NICEPAY TID does not match a virtual-account payment for this order.';
   END IF;
 
-  IF v_payment.status IN ('failed', 'cancelled')
-    AND v_payment.provider_status = p_provider_status
-    AND v_registration.status = 'cancelled' THEN
+  IF v_payment.amount IS DISTINCT FROM v_registration.amount THEN
+    RAISE EXCEPTION 'Virtual-account payment amount does not match the registration amount.';
+  END IF;
+
+  IF (v_payment.status IS NOT DISTINCT FROM 'failed'
+      OR v_payment.status IS NOT DISTINCT FROM 'cancelled')
+    AND v_payment.provider_status IS NOT DISTINCT FROM p_provider_status
+    AND v_registration.status IS NOT DISTINCT FROM 'cancelled' THEN
     RETURN TRUE;
   END IF;
 
-  IF v_payment.status <> 'pending' OR v_payment.provider_status <> 'ready' THEN
+  IF v_payment.status IS DISTINCT FROM 'pending' OR v_payment.provider_status IS DISTINCT FROM 'ready' THEN
     RAISE EXCEPTION 'Virtual-account payment is not awaiting deposit.';
   END IF;
 
-  IF v_registration.status NOT IN ('pending', 'cancelled') THEN
-    RAISE EXCEPTION 'Registration is not pending or cancelled (current state: %).', v_registration.status;
+  IF v_registration.status IS DISTINCT FROM 'pending' THEN
+    RAISE EXCEPTION 'Registration is not in pending state (current state: %).', v_registration.status;
   END IF;
 
-  v_payment_status := CASE WHEN p_provider_status = 'cancelled' THEN 'cancelled' ELSE 'failed' END;
+  v_payment_status := CASE WHEN p_provider_status IS NOT DISTINCT FROM 'cancelled' THEN 'cancelled' ELSE 'failed' END;
 
   UPDATE public.payments
   SET status = v_payment_status,
@@ -388,7 +394,7 @@ BEGIN
   UPDATE public.workshop_registrations_v2
   SET status = 'cancelled'
   WHERE id = p_registration_id
-    AND status = 'pending';
+    AND status IS NOT DISTINCT FROM 'pending';
 
   RETURN TRUE;
 END;
