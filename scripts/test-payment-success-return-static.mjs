@@ -49,7 +49,8 @@ requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
 requireIncludes("src/app/api/payment/checkout/route.ts", [
   "workshopId?: string",
   "workshopTitle?: string",
-  "const { registration_id, orderName, method, scheduleLabel, workshopId, workshopTitle }",
+  "const { registration_id, orderName, scheduleLabel, workshopId, workshopTitle } = checkoutRequest",
+  "const method = getCheckoutMethod(checkoutRequest.method)",
   "mallReserved.set(\"workshop\", workshopId)",
   "mallReserved.set(\"workshop_title\", workshopTitle)",
 ]);
@@ -69,12 +70,11 @@ requireIncludes("src/app/payment/success/page.tsx", [
   "searchParams.get(\"workshop_title\")",
   "결제가 성공적으로 완료되었습니다.",
   "워크숍 신청 페이지로 돌아가기",
-  "payment-success-workshop-title",
-  "login-overlay-wrapper active payment-success-wrapper",
-  "login-modal-card payment-success-card",
-  "login-modal-frame",
-  "login-modal-body",
-  "login-intro payment-success-intro",
+  "nicepay-payment-workshop-title",
+  "nicepay-payment-shell",
+  "nicepay-payment-card",
+  "nicepay-payment-heading",
+  "nicepay-payment-action",
 ]);
 
 requireExcludes("src/app/payment/success/page.tsx", [
@@ -85,14 +85,15 @@ requireExcludes("src/app/payment/success/page.tsx", [
   "searchParams.get(\"registration_id\")",
   "searchParams.get(\"order_id\")",
   "style={{",
+  "login-modal-card",
 ]);
 
-requireIncludes("src/styles/09-auth.css", [
-  ".payment-success-wrapper",
-  ".payment-success-card",
-  ".payment-success-workshop-title",
-  ".payment-success-meta",
-  ".payment-success-return-btn",
+requireIncludes("src/styles/14-payment.css", [
+  ".nicepay-payment-shell",
+  ".nicepay-payment-card",
+  ".nicepay-payment-workshop-title",
+  ".nicepay-payment-details",
+  ".nicepay-payment-action",
 ]);
 
 if (failures.length > 0) {
