@@ -19,6 +19,11 @@ const readRoute = (relativePath) => {
 };
 const methods = readRoute("src/app/api/payment/methods/route.ts");
 const pending = readRoute("src/app/api/payment/pending/route.ts");
+const overlay = readRoute("src/components/workshop/WorkshopDetailOverlay.tsx");
+const modal = readRoute("src/components/workshop/NicepayPaymentMethodModal.tsx");
+const success = readRoute("src/app/payment/success/page.tsx");
+const failPage = readRoute("src/app/payment/fail/page.tsx");
+const globals = readRoute("src/app/globals.css");
 const outputDir = mkdtempSync(join(tmpdir(), "iyohouse-nicepay-test-"));
 
 try {
@@ -137,6 +142,18 @@ test("virtual-account routes use the lifecycle RPCs and owner-scoped status", ()
     /\.eq\("payment_key",\s*tid\)[\s\S]*?\.eq\("order_id",\s*orderId\)/,
     "webhook ledger transitions must be scoped by TID and order",
   );
+});
+
+test("payment UI uses the isolated NICEPAY method and status surfaces", () => {
+  assert.match(overlay, /NicepayPaymentMethodModal/);
+  assert.match(modal, /aria-label="결제수단 선택 닫기"/);
+  assert.match(modal, /카드·간편결제/);
+  assert.match(modal, /가상계좌/);
+  assert.match(overlay, /method,?\s*:\s*selectedMethod/);
+  assert.equal(existsSync(join(root, "src/app/payment/pending/page.tsx")), true);
+  assert.match(globals, /14-payment\.css/);
+  assert.doesNotMatch(success, /login-modal-card/);
+  assert.doesNotMatch(failPage, /style=\{\{/);
 });
 
 test("persisted checkout intent serializes vbank starts and protects the winning ledger", () => {

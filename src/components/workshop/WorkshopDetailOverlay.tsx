@@ -7,6 +7,9 @@ import { useToast } from "@/context/ToastContext";
 import { TEXT } from "@/lib/i18n/translations";
 import MixedWorkshopTitle from "@/components/workshop/MixedWorkshopTitle";
 import WorkshopDetailPoster from "@/components/workshop/WorkshopDetailPoster";
+import NicepayPaymentMethodModal, {
+    type NicepayCheckoutMethod,
+} from "@/components/workshop/NicepayPaymentMethodModal";
 import { parseCapacity } from "@/lib/workshopUtils";
 import { getWorkshopTagColor, getWorkshopTags, isIyocaWorkshop } from "@/lib/workshopTags";
 import {
@@ -57,6 +60,11 @@ type NicepayCheckoutResponse = {
     error?: string;
     scriptUrl?: string;
     payload?: Record<string, unknown>;
+};
+
+type NicepayPaymentMethodsResponse = {
+    cardAndEasyPay: boolean;
+    vbank: boolean;
 };
 
 const NICEPAY_READY_TIMEOUT_MS = 8000;
@@ -221,12 +229,16 @@ export default function WorkshopDetailOverlay({
     const [showRefundPolicy, setShowRefundPolicy] = useState(false);
     const [nicepayScriptUrl, setNicepayScriptUrl] = useState("");
     const [isPaymentStarting, setIsPaymentStarting] = useState(false);
+    const [paymentMethods, setPaymentMethods] = useState<NicepayPaymentMethodsResponse | null>(null);
+    const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
         setSelectedSession(null);
         setShowSchedule(false);
         setIsStudentDiscountSelected(false);
+        setPaymentMethods(null);
+        setIsPaymentMethodModalOpen(false);
     }, [workshop?._id, workshop?.id]);
 
     useEffect(() => {
@@ -360,7 +372,53 @@ export default function WorkshopDetailOverlay({
         }
 
         setIsPaymentStarting(true);
+
+        try {
+            const response = await fetch("/api/payment/methods");
+            const methods = await response.json() as Partial<NicepayPaymentMethodsResponse> & { error?: string };
+
+            if (!response.ok) {
+                throw new Error(methods.error || t.workshop.paymentMisconfigured);
+            }
+
+            setPaymentMethods({
+                cardAndEasyPay: methods.cardAndEasyPay === true,
+                vbank: methods.vbank === true,
+            });
+            setIsPaymentMethodModalOpen(true);
+        } catch (error: any) {
+            console.error("결제수단 조회 에러:", error);
+            showToast("error", getUserFacingPaymentError(error.message, "결제수단을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
+        } finally {
+            setIsPaymentStarting(false);
+        }
+    }, [
+        isPaymentStarting,
+        user,
+        isProfileComplete,
+        t,
+        isWorkshopClosedForPayment,
+        hasSelectableSchedule,
+        isScheduleFull,
+        selectedSession,
+        onRequireLogin,
+        goToCompleteProfile,
+        showToast,
+    ]);
+
+    const startWorkshopPayment = useCallback(async (ws: any, selectedMethod: NicepayCheckoutMethod) => {
+        if (isPaymentStarting || !paymentMethods?.[selectedMethod]) return;
+
+        setIsPaymentMethodModalOpen(false);
+        setIsPaymentStarting(true);
         let pendingRegistrationId: string | null = null;
+        const dbWorkshopId = ws.supabase_workshop_id;
+
+        if (!dbWorkshopId) {
+            setIsPaymentStarting(false);
+            showToast("error", TEXT.ko.workshop.missingDbId);
+            return;
+        }
 
         try {
             const selectedSchedule = selectedSession ? getLocalizedScheduleSession(selectedSession, language) : null;
@@ -412,7 +470,7 @@ export default function WorkshopDetailOverlay({
                     scheduleLabel,
                     workshopId: workshopId ? String(workshopId) : undefined,
                     workshopTitle,
-                    method: "card",
+                    method: selectedMethod,
                 }),
             });
             const checkout = await checkoutResponse.json() as NicepayCheckoutResponse;
@@ -449,20 +507,18 @@ export default function WorkshopDetailOverlay({
         }
     }, [
         isPaymentStarting,
-        user,
-        isProfileComplete,
+        paymentMethods,
         t,
-        isWorkshopClosedForPayment,
-        hasSelectableSchedule,
-        isScheduleFull,
         selectedSession,
-        nicepayScriptUrl,
-        onRequireLogin,
-        goToCompleteProfile,
         supabase,
         language,
-        isStudentDiscountSelected
+        isStudentDiscountSelected,
+        showToast,
     ]);
+
+    const closePaymentMethodModal = useCallback(() => {
+        setIsPaymentMethodModalOpen(false);
+    }, []);
 
     const selectedScheduleFull = selectedSession ? isScheduleFull(workshop, selectedSession) : false;
     const workshopClosedForPayment = isWorkshopClosedForPayment(workshop);
@@ -486,6 +542,16 @@ export default function WorkshopDetailOverlay({
 
     return (
         <div className="workshop-detail-container">
+            <NicepayPaymentMethodModal
+                open={isPaymentMethodModalOpen}
+                cardAndEasyPayEnabled={paymentMethods?.cardAndEasyPay === true}
+                vbankEnabled={paymentMethods?.vbank === true}
+                busy={isPaymentStarting}
+                onClose={closePaymentMethodModal}
+                onSelect={(selectedMethod) => {
+                    void startWorkshopPayment(workshop, selectedMethod);
+                }}
+            />
             <div className="detail-layout">
                 <WorkshopDetailPoster workshop={workshop} />
                 <div className="detail-right">
