@@ -803,6 +803,16 @@ test("forward reconciliation migration owns result contracts, capacity locks, an
     sql,
     /REVOKE ALL ON FUNCTION public\.get_virtual_account_checkout_state[\s\S]*?GRANT EXECUTE ON FUNCTION public\.get_virtual_account_checkout_state[\s\S]*?TO service_role/,
   );
+  assert.doesNotMatch(
+    sql,
+    /REVOKE\s+ALL\s+ON\s+FUNCTION[^;]+\s+TO\s+/i,
+    "function privilege revocations must use PostgreSQL FROM syntax",
+  );
+  assert.match(
+    sql,
+    /REVOKE ALL ON FUNCTION public\.reconcile_virtual_account_deposit\(UUID, TEXT, TEXT, INTEGER, JSONB\) FROM authenticated;[\s\S]*?GRANT EXECUTE ON FUNCTION public\.reconcile_virtual_account_deposit\(UUID, TEXT, TEXT, INTEGER, JSONB\) TO service_role;/,
+    "virtual-account reconciliation must revoke client execution before granting service-role execution",
+  );
 });
 
 test("confirm ignores browser method markers and blocks active VBank attempts before approval", () => {

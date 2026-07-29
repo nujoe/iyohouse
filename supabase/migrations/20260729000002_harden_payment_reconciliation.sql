@@ -517,7 +517,7 @@ GRANT EXECUTE ON FUNCTION public.reconcile_payment_registration(UUID, TEXT, TEXT
 
 REVOKE ALL ON FUNCTION public.reconcile_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER, JSONB) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reconcile_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER, JSONB) FROM anon;
-REVOKE ALL ON FUNCTION public.reconcile_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER, JSONB) TO service_role;
+REVOKE ALL ON FUNCTION public.reconcile_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER, JSONB) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.reconcile_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER, JSONB) TO service_role;
 
 REVOKE ALL ON FUNCTION public.confirm_payment_registration(UUID, TEXT, TEXT, INTEGER, TEXT) FROM PUBLIC;
