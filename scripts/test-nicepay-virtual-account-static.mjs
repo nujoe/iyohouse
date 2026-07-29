@@ -175,3 +175,19 @@ test("a disabled vbank default is rejected", () => {
     assert.throws(() => createPayload(), /NICEPAY virtual-account checkout is disabled/);
   });
 });
+
+test("virtual-account database lifecycle uses locked service-role RPCs", () => {
+  const sql = readFileSync(
+    join(root, "supabase/migrations/20260729000001_add_virtual_account_payment_lifecycle.sql"),
+    "utf8",
+  );
+
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_status TEXT/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS vbank_number TEXT/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.reserve_virtual_account_registration/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.record_virtual_account_issuance/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.confirm_virtual_account_deposit/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.fail_virtual_account_payment/);
+  assert.match(sql, /FOR UPDATE/, "payment lifecycle functions must lock their registration");
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.confirm_virtual_account_deposit[\s\S]+TO service_role/);
+});
