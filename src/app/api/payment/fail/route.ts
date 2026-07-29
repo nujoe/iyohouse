@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
-import {
-  isPendingReadyVirtualAccountPayment,
-  type NicepayPaymentLedger,
-} from '@/lib/payment/nicepay'
+import { getSupabaseServerClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
@@ -34,59 +31,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: '이미 처리된 신청입니다.' })
     }
 
-    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('환경 변수 누락: NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY')
-      return NextResponse.json(
-        { success: false, error: '서버 설정 오류: 환경 변수가 누락되었습니다.' },
-        { status: 500 },
-      )
-    }
-
-    const serviceRoleClient = createSupabaseClient(
-      supabaseUrl,
-      serviceRoleKey,
+    const serviceRoleClient = getSupabaseServerClient()
+    const { data: releaseResult, error: releaseError } = await serviceRoleClient.rpc(
+      'release_virtual_account_checkout',
+      {
+        p_registration_id: registration.id,
+        p_user_id: user.id,
+      },
     )
 
-    const { data: existingPayment, error: paymentError } = await serviceRoleClient
-      .from('payments')
-      .select('registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at')
-      .eq('registration_id', registration.id)
-      .maybeSingle<NicepayPaymentLedger>()
-
-    if (paymentError) {
-      console.error('기존 가상계좌 조회 에러:', paymentError)
-      return NextResponse.json(
-        { success: false, error: '기존 가상계좌 상태를 확인하지 못했습니다.' },
-        { status: 500 },
-      )
+    if (
+      releaseError
+      || (releaseResult !== 'preserved' && releaseResult !== 'cancelled' && releaseResult !== 'unchanged')
+    ) {
+      console.error('가상계좌 결제 정리 RPC 에러:', {
+        registrationId: registration.id,
+        outcome: releaseResult,
+        hasError: Boolean(releaseError),
+      })
+      return NextResponse.json({ success: false, error: '상태 업데이트 중 에러가 발생했습니다.' }, { status: 500 })
     }
 
-    if (isPendingReadyVirtualAccountPayment(existingPayment, {
-      registrationId: registration.id,
-      orderId: registration.order_id,
-      amount: Number(registration.amount),
-    })) {
+    if (releaseResult === 'preserved') {
       return NextResponse.json({
         success: true,
         pending: true,
         order_id: registration.order_id,
       })
-    }
-
-    const { error: updateError } = await serviceRoleClient
-      .from('workshop_registrations_v2')
-      .update({ status: 'cancelled' })
-      .eq('id', registration_id)
-      .eq('status', 'pending')
-
-    if (updateError) {
-      console.error('취소 업데이트 에러:', updateError)
-      return NextResponse.json({ success: false, error: '상태 업데이트 중 에러가 발생했습니다.' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
