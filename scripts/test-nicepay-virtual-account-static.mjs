@@ -190,21 +190,57 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
     assert.ok(match, `${name} must be defined as a complete SQL function`);
     return match[0];
   };
-  const assertServiceRoleOnly = (name) => {
-    assert.match(
-      sql,
-      new RegExp(
-        `REVOKE ALL ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) FROM PUBLIC;[\\s\\S]+?`
-          + `REVOKE ALL ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) FROM authenticated;[\\s\\S]+?`
-          + `GRANT EXECUTE ON FUNCTION public\\.${name}\\([\\s\\S]+?\\) TO service_role;`,
-      ),
-      `${name} must be service-role-only`,
+  const rpcDefinitions = [
+    {
+      name: "reserve_virtual_account_registration",
+      signature: "UUID, UUID, TIMESTAMPTZ",
+    },
+    {
+      name: "record_virtual_account_issuance",
+      signature: "UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ",
+    },
+    {
+      name: "confirm_virtual_account_deposit",
+      signature: "UUID, TEXT, TEXT, INTEGER",
+    },
+    {
+      name: "fail_virtual_account_payment",
+      signature: "UUID, TEXT, TEXT, TEXT",
+    },
+  ].map((definition) => ({ ...definition, functionSql: getFunction(definition.name) }));
+  const permissionSectionStart = sql.indexOf(
+    "REVOKE ALL ON FUNCTION public.reserve_virtual_account_registration",
+  );
+
+  assert.notEqual(permissionSectionStart, -1, "new RPC permission section must exist");
+
+  const permissionSection = sql.slice(permissionSectionStart);
+  const newRpcNamePattern = rpcDefinitions.map(({ name }) => name).join("|");
+  const assertServiceRoleOnly = ({ name, signature }) => {
+    const functionSignature = `public\\.${name}\\(${signature}\\)`;
+    const grantMatches = [
+      ...permissionSection.matchAll(new RegExp(
+        `GRANT EXECUTE ON FUNCTION ${functionSignature} TO ([^;]+);`,
+        "g",
+      )),
+    ];
+
+    assert.match(permissionSection, new RegExp(
+      `REVOKE ALL ON FUNCTION ${functionSignature} FROM PUBLIC;`,
+    ));
+    assert.match(permissionSection, new RegExp(
+      `REVOKE ALL ON FUNCTION ${functionSignature} FROM authenticated;`,
+    ));
+    assert.deepEqual(
+      grantMatches.map((match) => match[1].trim()),
+      ["service_role"],
+      `${name} must grant EXECUTE only to service_role`,
     );
   };
-  const reserve = getFunction("reserve_virtual_account_registration");
-  const issuance = getFunction("record_virtual_account_issuance");
-  const deposit = getFunction("confirm_virtual_account_deposit");
-  const failure = getFunction("fail_virtual_account_payment");
+  const reserve = rpcDefinitions[0].functionSql;
+  const issuance = rpcDefinitions[1].functionSql;
+  const deposit = rpcDefinitions[2].functionSql;
+  const failure = rpcDefinitions[3].functionSql;
 
   assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_status TEXT/);
   assert.match(sql, /ADD COLUMN IF NOT EXISTS vbank_number TEXT/);
@@ -215,12 +251,9 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(sql, /FOR UPDATE/, "payment lifecycle functions must lock their registration");
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.confirm_virtual_account_deposit[\s\S]+TO service_role/);
 
-  for (const [name, functionSql] of [
-    ["reserve_virtual_account_registration", reserve],
-    ["record_virtual_account_issuance", issuance],
-    ["confirm_virtual_account_deposit", deposit],
-    ["fail_virtual_account_payment", failure],
-  ]) {
+  for (const definition of rpcDefinitions) {
+    const { name, functionSql } = definition;
+
     assert.match(functionSql, /SECURITY DEFINER/);
     assert.match(functionSql, /SET search_path = public/);
     assert.match(
@@ -228,21 +261,36 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
       /FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE/,
       `${name} must lock its registration`,
     );
-    assertServiceRoleOnly(name);
+    assertServiceRoleOnly(definition);
   }
+  assert.doesNotMatch(
+    permissionSection,
+    new RegExp(
+      `GRANT EXECUTE ON FUNCTION public\\.(?:${newRpcNamePattern})\\([^;]+\\) TO (?:anon|authenticated|PUBLIC)(?:;|,)`,
+      "i",
+    ),
+    "new RPCs must not grant EXECUTE to anon, authenticated, or PUBLIC",
+  );
 
+  assert.match(reserve, /v_registration\.user_id IS DISTINCT FROM p_user_id/);
   assert.match(reserve, /v_registration\.status IS DISTINCT FROM 'pending'/);
   assert.match(issuance, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(issuance, /v_registration\.order_id IS DISTINCT FROM p_order_id/);
+  assert.match(issuance, /v_registration\.amount IS DISTINCT FROM p_amount/);
   assert.match(issuance, /v_tid_payment\.registration_id IS DISTINCT FROM p_registration_id/);
   assert.match(issuance, /v_tid_payment\.order_id IS DISTINCT FROM p_order_id/);
   assert.match(issuance, /v_tid_payment\.amount IS DISTINCT FROM p_amount/);
   assert.match(issuance, /v_tid_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
   assert.match(
     issuance,
-    /v_tid_payment\.registration_id IS NOT DISTINCT FROM p_registration_id[\s\S]+?v_tid_payment\.order_id IS NOT DISTINCT FROM p_order_id[\s\S]+?v_tid_payment\.amount IS NOT DISTINCT FROM p_amount/,
-    "same-TID issuance retries must require the same non-null registration, order, and amount",
+    /v_tid_payment\.registration_id IS NOT DISTINCT FROM p_registration_id[\s\S]+?v_tid_payment\.order_id IS NOT DISTINCT FROM p_order_id[\s\S]+?v_tid_payment\.amount IS NOT DISTINCT FROM p_amount[\s\S]+?v_tid_payment\.payment_method IS NOT DISTINCT FROM '가상계좌'/,
+    "same-TID issuance retries must require the same virtual-account registration, order, and amount",
   );
 
+  assert.match(deposit, /v_registration\.order_id IS DISTINCT FROM p_order_id/);
+  assert.match(deposit, /v_registration\.amount IS DISTINCT FROM p_amount/);
+  assert.match(deposit, /v_payment\.order_id IS DISTINCT FROM p_order_id/);
+  assert.match(deposit, /v_payment\.amount IS DISTINCT FROM p_amount/);
   assert.match(deposit, /v_registration\.status IS NOT DISTINCT FROM 'confirmed'/);
   assert.match(deposit, /v_payment\.status IS NOT DISTINCT FROM 'success'/);
   assert.match(deposit, /v_payment\.provider_status IS NOT DISTINCT FROM 'paid'/);
@@ -251,13 +299,19 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(deposit, /v_payment\.provider_status IS DISTINCT FROM 'ready'/);
   assert.match(deposit, /v_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
 
+  assert.match(failure, /v_registration\.order_id IS DISTINCT FROM p_order_id/);
+  assert.match(failure, /v_payment\.order_id IS DISTINCT FROM p_order_id/);
   assert.match(failure, /v_payment\.status IS NOT DISTINCT FROM 'failed'/);
+  assert.match(failure, /v_payment\.status IS NOT DISTINCT FROM 'cancelled'/);
   assert.match(failure, /v_payment\.provider_status IS NOT DISTINCT FROM p_provider_status/);
   assert.match(failure, /v_registration\.status IS NOT DISTINCT FROM 'cancelled'/);
   assert.match(failure, /p_provider_status IS DISTINCT FROM 'failed'/);
+  assert.match(failure, /p_provider_status IS DISTINCT FROM 'expired'/);
+  assert.match(failure, /p_provider_status IS DISTINCT FROM 'cancelled'/);
   assert.match(failure, /v_payment\.payment_method IS DISTINCT FROM '가상계좌'/);
   assert.match(failure, /v_payment\.status IS DISTINCT FROM 'pending'/);
   assert.match(failure, /v_payment\.provider_status IS DISTINCT FROM 'ready'/);
   assert.match(failure, /v_registration\.status IS DISTINCT FROM 'pending'/);
   assert.match(failure, /v_payment\.amount IS DISTINCT FROM v_registration\.amount/);
+  assert.match(failure, /p_provider_status IS NOT DISTINCT FROM 'cancelled'/);
 });
