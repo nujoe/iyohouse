@@ -12,6 +12,8 @@ const checkout = readFileSync(join(root, "src/app/api/payment/checkout/route.ts"
 const confirm = readFileSync(join(root, "src/app/api/payment/confirm/route.ts"), "utf8");
 const webhook = readFileSync(join(root, "src/app/api/payment/webhook/route.ts"), "utf8");
 const fail = readFileSync(join(root, "src/app/api/payment/fail/route.ts"), "utf8");
+const envExample = readFileSync(join(root, ".env.example"), "utf8");
+const documentation = readFileSync(join(root, "docs/nicepay-payment-integration.md"), "utf8");
 const readRoute = (relativePath) => {
   const routePath = join(root, relativePath);
 
@@ -105,6 +107,20 @@ test("NICEPAY virtual-account checkout contract is defined", () => {
   assert.match(nicepay, /IYO_NICEPAY_VBANK_VALID_HOURS/, "must configure vbank expiry in hours");
   assert.match(nicepay, /getNicepayAvailableCheckoutMethods/, "must expose non-secret method availability");
   assert.match(nicepay, /getNicepayVirtualAccount/, "must extract issued virtual account data");
+});
+
+test("virtual-account rollout documentation keeps issuance disabled until webhook registration", () => {
+  assert.match(envExample, /IYO_NICEPAY_METHODS=cardAndEasyPay,vbank/);
+  assert.match(envExample, /IYO_NICEPAY_VBANK_VALID_HOURS=3/);
+  assert.match(envExample, /IYO_NICEPAY_VBANK_ENABLED=0/);
+  assert.match(documentation, /https:\/\/www\.iyohouse\.com\/api\/payment\/webhook/);
+  assert.match(documentation, /가상계좌/);
+  assert.match(documentation, /200 OK/);
+  assert.doesNotMatch(
+    documentation,
+    /NICEPAY 관리자 콘솔에 returnUrl\/webhook URL을 실제 배포 도메인으로 등록합니다/,
+    "VBank webhook registration must not be documented as a pre-deploy action",
+  );
 });
 
 test("virtual-account routes use the lifecycle RPCs and owner-scoped status", () => {
