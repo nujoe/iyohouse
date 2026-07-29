@@ -156,6 +156,29 @@ test("payment UI uses the isolated NICEPAY method and status surfaces", () => {
   assert.doesNotMatch(failPage, /style=\{\{/);
 });
 
+test("VBank client cleanup releases the checkout attempt returned by checkout", () => {
+  assert.match(
+    overlay,
+    /let checkoutAttemptId: string \| null = null;[\s\S]*?checkoutAttemptId = selectedMethod === "vbank"[\s\S]*?new URLSearchParams\(String\(checkout\.payload\.mallReserved \|\| ""\)\)\.get\("checkout_attempt_id"\)/,
+    "VBank checkout must retain the exact persisted attempt ID returned in mallReserved",
+  );
+  assert.match(
+    overlay,
+    /fnError: \(result: unknown\) => \{[\s\S]*?cancelPendingPaymentRegistration\(registration_id, checkoutAttemptId\)/,
+    "VBank SDK errors must release their matching checkout attempt",
+  );
+  assert.match(
+    overlay,
+    /if \(pendingRegistrationId\) \{[\s\S]*?cancelPendingPaymentRegistration\(pendingRegistrationId, checkoutAttemptId\)/,
+    "VBank checkout setup errors must release their matching checkout attempt",
+  );
+  assert.match(
+    overlay,
+    /checkoutAttemptId \? \{ checkout_attempt_id: checkoutAttemptId \} : \{\}/,
+    "card cleanup must remain registration-only when no VBank attempt ID exists",
+  );
+});
+
 test("admin projects only active ready virtual-account deposits", () => {
   const admin = readRoute("src/lib/admin/workshopAdmin.ts");
 

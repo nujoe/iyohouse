@@ -193,14 +193,20 @@ function getScheduleKey(session: any) {
         .join('-');
 }
 
-async function cancelPendingPaymentRegistration(registrationId: string | null | undefined) {
+async function cancelPendingPaymentRegistration(
+    registrationId: string | null | undefined,
+    checkoutAttemptId: string | null = null,
+) {
     if (!registrationId) return;
 
     try {
         const response = await fetch("/api/payment/fail", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ registration_id: registrationId }),
+            body: JSON.stringify({
+                registration_id: registrationId,
+                ...(checkoutAttemptId ? { checkout_attempt_id: checkoutAttemptId } : {}),
+            }),
         });
 
         if (!response.ok) {
@@ -412,6 +418,7 @@ export default function WorkshopDetailOverlay({
         setIsPaymentMethodModalOpen(false);
         setIsPaymentStarting(true);
         let pendingRegistrationId: string | null = null;
+        let checkoutAttemptId: string | null = null;
         const dbWorkshopId = ws.supabase_workshop_id;
 
         if (!dbWorkshopId) {
@@ -479,6 +486,10 @@ export default function WorkshopDetailOverlay({
                 throw new Error(checkout.error || t.workshop.paymentMisconfigured);
             }
 
+            checkoutAttemptId = selectedMethod === "vbank"
+                ? new URLSearchParams(String(checkout.payload.mallReserved || "")).get("checkout_attempt_id")
+                : null;
+
             setNicepayScriptUrl(checkout.scriptUrl);
             await loadNicepayScript(checkout.scriptUrl);
 
@@ -489,7 +500,7 @@ export default function WorkshopDetailOverlay({
             window.AUTHNICE.requestPay({
                 ...checkout.payload,
                 fnError: (result: unknown) => {
-                    void cancelPendingPaymentRegistration(registration_id);
+                    void cancelPendingPaymentRegistration(registration_id, checkoutAttemptId);
                     setIsRegistered(false);
                     showToast("error", nicepayErrorMessage(result));
                     setIsPaymentStarting(false);
@@ -497,7 +508,7 @@ export default function WorkshopDetailOverlay({
             });
         } catch (error: any) {
             if (pendingRegistrationId) {
-                await cancelPendingPaymentRegistration(pendingRegistrationId);
+                await cancelPendingPaymentRegistration(pendingRegistrationId, checkoutAttemptId);
                 setIsRegistered(false);
             }
             console.error("신청/결제 요청 에러:", error);
