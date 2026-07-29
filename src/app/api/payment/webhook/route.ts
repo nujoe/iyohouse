@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import {
+  canAcknowledgeNicepayCardCancellation,
   getNicepayPaymentMethod,
   safeNicepayPayload,
   verifyNicepayResultSignature,
@@ -42,11 +43,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 async function cancelActiveRegistration(registrationId: string) {
   const supabase = getSupabaseServerClient();
 
-  await supabase
+  const { data: updatedRegistration, error: updateError } = await supabase
     .from("workshop_registrations_v2")
     .update({ status: "cancelled" })
     .eq("id", registrationId)
-    .in("status", ["pending", "confirmed"]);
+    .in("status", ["pending", "confirmed"])
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (updateError) {
+    return { ok: false as const };
+  }
+
+  if (canAcknowledgeNicepayCardCancellation({
+    updateSucceeded: Boolean(updatedRegistration),
+    currentStatus: null,
+  })) {
+    return { ok: true as const };
+  }
+
+  const { data: currentRegistration, error: currentError } = await supabase
+    .from("workshop_registrations_v2")
+    .select("status")
+    .eq("id", registrationId)
+    .maybeSingle<{ status: string }>();
+
+  return {
+    ok: !currentError && canAcknowledgeNicepayCardCancellation({
+      updateSucceeded: false,
+      currentStatus: currentRegistration?.status || null,
+    }),
+  };
 }
 
 function logIgnoredWebhook(
@@ -263,7 +290,14 @@ export async function POST(request: Request) {
 
     if (status === "cancelled") {
       if (payment) {
-        await cancelActiveRegistration(registration.id);
+        const cancellation = await cancelActiveRegistration(registration.id);
+
+        if (!cancellation.ok) {
+          return NextResponse.json(
+            { success: false, error: "신청 취소 상태를 반영하지 못했습니다." },
+            { status: 500 },
+          );
+        }
       } else {
         logIgnoredWebhook(registration.id, status, payload);
       }

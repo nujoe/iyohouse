@@ -5,7 +5,11 @@ import {
   cancelNicepayPayment,
   getNicepayPaymentMethod,
   getNicepayVirtualAccount,
+  isMatchingConfirmedNicepayPayment,
+  isPendingReadyVirtualAccountPayment,
   safeNicepayPayload,
+  shouldCancelRegistrationAfterIssuanceConflict,
+  type NicepayPaymentLedger,
 } from "@/lib/payment/nicepay";
 
 export const runtime = "nodejs";
@@ -139,6 +143,55 @@ export async function POST(request: Request) {
     const paymentMethod = getNicepayPaymentMethod(approval.payload);
 
     if (registration.status === "confirmed") {
+      const { data: confirmedPayment, error: confirmedPaymentError } = await supabase
+        .from("payments")
+        .select("registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at")
+        .eq("payment_key", approval.tid)
+        .eq("order_id", registration.order_id)
+        .eq("registration_id", registration.id)
+        .maybeSingle<NicepayPaymentLedger>();
+
+      if (confirmedPaymentError) {
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/fail", {
+            registration_id: registration.id,
+            order_id: registration.order_id,
+            message: "기존 결제 원장을 확인하지 못했습니다. 운영자에게 문의해 주세요.",
+          }),
+          { status: 303 },
+        );
+      }
+
+      const matchesConfirmedPayment = paymentMethod
+        ? isMatchingConfirmedNicepayPayment(confirmedPayment, {
+            registrationId: registration.id,
+            tid: approval.tid,
+            orderId: registration.order_id,
+            amount: Number(registration.amount),
+            paymentMethod,
+          })
+        : false;
+
+      if (!matchesConfirmedPayment) {
+        const compensation = await cancelNicepayPayment({
+          tid: approval.tid,
+          orderId: registration.order_id,
+          cancelAmt: Number(registration.amount),
+          reason: "IYOHOUSE duplicate confirmed registration payment",
+        });
+
+        return NextResponse.redirect(
+          redirectUrl(request, "/payment/fail", {
+            registration_id: registration.id,
+            order_id: registration.order_id,
+            message: compensation.ok
+              ? "이미 처리된 신청의 추가 결제를 취소했습니다."
+              : "추가 결제를 취소하지 못했습니다. 운영자에게 즉시 문의해 주세요.",
+          }),
+          { status: 303 },
+        );
+      }
+
       if (paymentMethod === "가상계좌") {
         return NextResponse.redirect(
           redirectUrl(request, "/payment/pending", {
@@ -223,6 +276,29 @@ export async function POST(request: Request) {
           hasError: Boolean(issuanceError),
         });
 
+        const { data: existingPayment, error: existingPaymentError } = await supabase
+          .from("payments")
+          .select("registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at")
+          .eq("registration_id", registration.id)
+          .maybeSingle<NicepayPaymentLedger>();
+        const activePaymentFound = !existingPaymentError
+          && isPendingReadyVirtualAccountPayment(existingPayment, {
+            registrationId: registration.id,
+            orderId: registration.order_id,
+            amount: Number(registration.amount),
+          });
+
+        if (activePaymentFound && existingPayment?.payment_key === approval.tid) {
+          return NextResponse.redirect(
+            redirectUrl(request, "/payment/pending", {
+              order_id: registration.order_id,
+              workshop: workshopId,
+              workshop_title: workshopTitle,
+            }),
+            { status: 303 },
+          );
+        }
+
         const compensation = await cancelNicepayPayment({
           tid: approval.tid,
           orderId: registration.order_id,
@@ -230,8 +306,23 @@ export async function POST(request: Request) {
           reason: "IYOHOUSE virtual account recording failed",
         });
 
-        if (compensation.ok) {
+        if (shouldCancelRegistrationAfterIssuanceConflict({
+          activePaymentFound,
+          lookupSucceeded: !existingPaymentError,
+          compensationSucceeded: compensation.ok,
+        })) {
           await markPendingRegistrationCancelled(registration.id, "vbank_recording_failed_compensated");
+        }
+
+        if (activePaymentFound && compensation.ok) {
+          return NextResponse.redirect(
+            redirectUrl(request, "/payment/pending", {
+              order_id: registration.order_id,
+              workshop: workshopId,
+              workshop_title: workshopTitle,
+            }),
+            { status: 303 },
+          );
         }
 
         return NextResponse.redirect(

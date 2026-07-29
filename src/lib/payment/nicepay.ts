@@ -36,6 +36,28 @@ type NicepayVirtualAccount = {
   expiresAt: string;
 };
 
+export type NicepayPaymentLedger = {
+  registration_id: string;
+  payment_key: string;
+  order_id: string;
+  amount: number;
+  payment_method: string | null;
+  status: string;
+  provider_status: string | null;
+  expires_at: string | null;
+};
+
+type NicepayPaymentIdentity = {
+  registrationId: string;
+  orderId: string;
+  amount: number;
+};
+
+type NicepayConfirmedPaymentIdentity = NicepayPaymentIdentity & {
+  tid: string;
+  paymentMethod: string;
+};
+
 type NicepayAuthPayload = Record<string, string>;
 
 type NicepayRegistration = {
@@ -268,6 +290,59 @@ export function getNicepayVirtualAccount(payload: Record<string, unknown>): Nice
     holder: holder.trim(),
     expiresAt,
   };
+}
+
+export function isPendingReadyVirtualAccountPayment(
+  payment: NicepayPaymentLedger | null,
+  expected: NicepayPaymentIdentity,
+  now = Date.now(),
+) {
+  if (!payment?.expires_at) return false;
+
+  const expiresAt = Date.parse(payment.expires_at);
+
+  return payment.registration_id === expected.registrationId
+    && payment.order_id === expected.orderId
+    && Number(payment.amount) === expected.amount
+    && payment.payment_method === "가상계좌"
+    && payment.status === "pending"
+    && payment.provider_status === "ready"
+    && Number.isFinite(expiresAt)
+    && expiresAt > now;
+}
+
+export function shouldCancelRegistrationAfterIssuanceConflict({
+  activePaymentFound,
+  lookupSucceeded,
+  compensationSucceeded,
+}: {
+  activePaymentFound: boolean;
+  lookupSucceeded: boolean;
+  compensationSucceeded: boolean;
+}) {
+  return lookupSucceeded && !activePaymentFound && compensationSucceeded;
+}
+
+export function isMatchingConfirmedNicepayPayment(
+  payment: NicepayPaymentLedger | null,
+  expected: NicepayConfirmedPaymentIdentity,
+) {
+  return payment?.registration_id === expected.registrationId
+    && payment.payment_key === expected.tid
+    && payment.order_id === expected.orderId
+    && Number(payment.amount) === expected.amount
+    && payment.payment_method === expected.paymentMethod
+    && payment.status === "success";
+}
+
+export function canAcknowledgeNicepayCardCancellation({
+  updateSucceeded,
+  currentStatus,
+}: {
+  updateSucceeded: boolean;
+  currentStatus: string | null;
+}) {
+  return updateSucceeded || currentStatus === "cancelled";
 }
 
 export function isNicepayConfigured(config = getNicepayConfig()) {

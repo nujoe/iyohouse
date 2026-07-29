@@ -11,6 +11,7 @@ const nicepay = readFileSync(join(root, "src/lib/payment/nicepay.ts"), "utf8");
 const checkout = readFileSync(join(root, "src/app/api/payment/checkout/route.ts"), "utf8");
 const confirm = readFileSync(join(root, "src/app/api/payment/confirm/route.ts"), "utf8");
 const webhook = readFileSync(join(root, "src/app/api/payment/webhook/route.ts"), "utf8");
+const fail = readFileSync(join(root, "src/app/api/payment/fail/route.ts"), "utf8");
 const readRoute = (relativePath) => {
   const routePath = join(root, relativePath);
 
@@ -134,6 +135,240 @@ test("virtual-account routes use the lifecycle RPCs and owner-scoped status", ()
     webhook,
     /\.eq\("payment_key",\s*tid\)[\s\S]*?\.eq\("order_id",\s*orderId\)/,
     "webhook ledger transitions must be scoped by TID and order",
+  );
+});
+
+test("an active virtual-account ledger blocks repeat checkout and survives issuance conflicts", () => {
+  assert.equal(
+    typeof nicepayModule.isPendingReadyVirtualAccountPayment,
+    "function",
+    "must expose a behavioral active-ledger check",
+  );
+  assert.equal(
+    typeof nicepayModule.shouldCancelRegistrationAfterIssuanceConflict,
+    "function",
+    "must expose a behavioral issuance-conflict decision",
+  );
+
+  const activePayment = {
+    registration_id: "registration-1",
+    payment_key: "tid-existing",
+    order_id: "order-1",
+    amount: 10000,
+    payment_method: "가상계좌",
+    status: "pending",
+    provider_status: "ready",
+    expires_at: "2026-07-29T15:00:00Z",
+  };
+  const expected = {
+    registrationId: "registration-1",
+    orderId: "order-1",
+    amount: 10000,
+  };
+  const now = Date.parse("2026-07-29T12:00:00Z");
+
+  assert.equal(
+    nicepayModule.isPendingReadyVirtualAccountPayment(activePayment, expected, now),
+    true,
+  );
+  assert.equal(
+    nicepayModule.isPendingReadyVirtualAccountPayment(
+      { ...activePayment, provider_status: "paid" },
+      expected,
+      now,
+    ),
+    false,
+  );
+  assert.equal(
+    nicepayModule.isPendingReadyVirtualAccountPayment(
+      { ...activePayment, expires_at: "2026-07-29T11:59:59Z" },
+      expected,
+      now,
+    ),
+    false,
+  );
+  for (const mismatch of [
+    { registration_id: "registration-2" },
+    { order_id: "order-2" },
+    { amount: 10001 },
+  ]) {
+    assert.equal(
+      nicepayModule.isPendingReadyVirtualAccountPayment(
+        { ...activePayment, ...mismatch },
+        expected,
+        now,
+      ),
+      false,
+      "an unrelated ledger must not block checkout",
+    );
+  }
+  assert.equal(
+    nicepayModule.shouldCancelRegistrationAfterIssuanceConflict({
+      activePaymentFound: true,
+      lookupSucceeded: true,
+      compensationSucceeded: true,
+    }),
+    false,
+    "a valid prior ledger must keep the registration pending",
+  );
+  assert.equal(
+    nicepayModule.shouldCancelRegistrationAfterIssuanceConflict({
+      activePaymentFound: false,
+      lookupSucceeded: true,
+      compensationSucceeded: true,
+    }),
+    true,
+    "a compensated issuance with no prior ledger may cancel the registration",
+  );
+  assert.equal(
+    nicepayModule.shouldCancelRegistrationAfterIssuanceConflict({
+      activePaymentFound: false,
+      lookupSucceeded: false,
+      compensationSucceeded: true,
+    }),
+    false,
+    "an uncertain ledger lookup must not cancel the registration",
+  );
+
+  const activeCheckIndex = checkout.indexOf("isPendingReadyVirtualAccountPayment");
+  const reserveIndex = checkout.indexOf("reserve_virtual_account_registration");
+  const payloadIndex = checkout.indexOf("createNicepayPaymentPayload({");
+
+  assert.notEqual(activeCheckIndex, -1, "checkout must check for an active virtual-account ledger");
+  assert.ok(activeCheckIndex < reserveIndex, "active-ledger rejection must occur before reservation");
+  assert.ok(activeCheckIndex < payloadIndex, "active-ledger rejection must occur before payload creation");
+  assert.match(
+    checkout.slice(activeCheckIndex, reserveIndex),
+    /status:\s*409/,
+    "repeat checkout must be rejected before NICEPAY can be opened",
+  );
+
+  const failGuardIndex = fail.indexOf("isPendingReadyVirtualAccountPayment");
+  const failCancellationIndex = fail.indexOf(".update({ status: 'cancelled' })");
+
+  assert.notEqual(failGuardIndex, -1, "generic checkout cleanup must detect an active account");
+  assert.ok(
+    failGuardIndex < failCancellationIndex,
+    "generic checkout cleanup must preserve the active registration before cancellation",
+  );
+
+  const conflictStart = confirm.indexOf("if (issuanceError || issuanceRecorded !== true)");
+  const conflictEnd = confirm.indexOf("return NextResponse.redirect(\n        redirectUrl(request, \"/payment/pending\"", conflictStart);
+  const conflictBlock = confirm.slice(conflictStart, conflictEnd);
+
+  assert.match(conflictBlock, /isPendingReadyVirtualAccountPayment/);
+  assert.match(conflictBlock, /shouldCancelRegistrationAfterIssuanceConflict/);
+});
+
+test("confirmed callbacks require an exact ledger identity before idempotent redirect", () => {
+  assert.equal(
+    typeof nicepayModule.isMatchingConfirmedNicepayPayment,
+    "function",
+    "must expose a behavioral confirmed-ledger identity check",
+  );
+
+  const payment = {
+    registration_id: "registration-1",
+    payment_key: "tid-original",
+    order_id: "order-1",
+    amount: 10000,
+    payment_method: "카드",
+    status: "success",
+    provider_status: null,
+    expires_at: null,
+  };
+  const expected = {
+    registrationId: "registration-1",
+    tid: "tid-original",
+    orderId: "order-1",
+    amount: 10000,
+    paymentMethod: "카드",
+  };
+
+  assert.equal(nicepayModule.isMatchingConfirmedNicepayPayment(payment, expected), true);
+  assert.equal(
+    nicepayModule.isMatchingConfirmedNicepayPayment(
+      payment,
+      { ...expected, tid: "tid-second" },
+    ),
+    false,
+    "a second approved TID must not be treated as an idempotent replay",
+  );
+  assert.equal(
+    nicepayModule.isMatchingConfirmedNicepayPayment(
+      payment,
+      { ...expected, paymentMethod: "카카오페이" },
+    ),
+    false,
+    "the final provider method must match the ledger",
+  );
+  for (const mismatch of [
+    { registrationId: "registration-2" },
+    { orderId: "order-2" },
+    { amount: 10001 },
+  ]) {
+    assert.equal(
+      nicepayModule.isMatchingConfirmedNicepayPayment(
+        payment,
+        { ...expected, ...mismatch },
+      ),
+      false,
+      "every confirmed callback identity field must match the ledger",
+    );
+  }
+
+  const confirmedStart = confirm.indexOf('if (registration.status === "confirmed")');
+  const confirmedEnd = confirm.indexOf(
+    'if (paymentMethod === "가상계좌" && approval.providerStatus === "ready")',
+    confirmedStart,
+  );
+  const confirmedBlock = confirm.slice(confirmedStart, confirmedEnd);
+  const identityCheckIndex = confirmedBlock.indexOf("isMatchingConfirmedNicepayPayment");
+  const compensationIndex = confirmedBlock.indexOf("cancelNicepayPayment");
+  const successIndex = confirmedBlock.indexOf('"/payment/success"');
+
+  assert.notEqual(identityCheckIndex, -1, "confirmed callbacks must verify the stored ledger");
+  assert.ok(compensationIndex > identityCheckIndex, "a ledger mismatch must enter compensation");
+  assert.ok(successIndex > identityCheckIndex, "success must occur only after the identity check");
+  assert.match(
+    confirmedBlock,
+    /compensation\.ok[\s\S]*?추가 결제를 취소하지 못했습니다/,
+    "compensation failure must return a clear failure path",
+  );
+  assert.doesNotMatch(
+    confirmedBlock,
+    /markPendingRegistrationCancelled/,
+    "confirmed callback compensation must never change registration state",
+  );
+});
+
+test("card cancellation acknowledgement requires an update or already-cancelled state", () => {
+  assert.equal(
+    typeof nicepayModule.canAcknowledgeNicepayCardCancellation,
+    "function",
+    "must expose a behavioral cancellation acknowledgement decision",
+  );
+  assert.equal(
+    nicepayModule.canAcknowledgeNicepayCardCancellation({
+      updateSucceeded: true,
+      currentStatus: "confirmed",
+    }),
+    true,
+  );
+  assert.equal(
+    nicepayModule.canAcknowledgeNicepayCardCancellation({
+      updateSucceeded: false,
+      currentStatus: "cancelled",
+    }),
+    true,
+  );
+  assert.equal(
+    nicepayModule.canAcknowledgeNicepayCardCancellation({
+      updateSucceeded: false,
+      currentStatus: "confirmed",
+    }),
+    false,
+    "an unprocessed cancellation must remain retryable",
   );
 });
 

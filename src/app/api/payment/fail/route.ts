@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import {
+  isPendingReadyVirtualAccountPayment,
+  type NicepayPaymentLedger,
+} from '@/lib/payment/nicepay'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
@@ -48,10 +52,37 @@ export async function POST(request: Request) {
       serviceRoleKey,
     )
 
+    const { data: existingPayment, error: paymentError } = await serviceRoleClient
+      .from('payments')
+      .select('registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at')
+      .eq('registration_id', registration.id)
+      .maybeSingle<NicepayPaymentLedger>()
+
+    if (paymentError) {
+      console.error('기존 가상계좌 조회 에러:', paymentError)
+      return NextResponse.json(
+        { success: false, error: '기존 가상계좌 상태를 확인하지 못했습니다.' },
+        { status: 500 },
+      )
+    }
+
+    if (isPendingReadyVirtualAccountPayment(existingPayment, {
+      registrationId: registration.id,
+      orderId: registration.order_id,
+      amount: Number(registration.amount),
+    })) {
+      return NextResponse.json({
+        success: true,
+        pending: true,
+        order_id: registration.order_id,
+      })
+    }
+
     const { error: updateError } = await serviceRoleClient
       .from('workshop_registrations_v2')
       .update({ status: 'cancelled' })
       .eq('id', registration_id)
+      .eq('status', 'pending')
 
     if (updateError) {
       console.error('취소 업데이트 에러:', updateError)

@@ -5,8 +5,10 @@ import {
   createNicepayPaymentPayload,
   getNicepayAvailableCheckoutMethods,
   getNicepayConfig,
+  isPendingReadyVirtualAccountPayment,
   isNicepayConfigured,
   type NicepayCheckoutMethod,
+  type NicepayPaymentLedger,
 } from "@/lib/payment/nicepay";
 
 export const dynamic = "force-dynamic";
@@ -140,20 +142,44 @@ export async function POST(request: Request) {
       ? registration.workshops[0]?.title
       : registration.workshops?.title;
 
-    const payload = createNicepayPaymentPayload({
-      registration,
-      userId: user.id,
-      orderName: orderName || workshopTitle || registrationWorkshopTitle || "IYOHOUSE Workshop",
-      origin,
-      method,
-      mallReserved,
-    });
-
     if (method === "vbank") {
+      const adminClient = getSupabaseServerClient();
+      const { data: existingPayment, error: existingPaymentError } = await adminClient
+        .from("payments")
+        .select("registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at")
+        .eq("registration_id", registration.id)
+        .maybeSingle<NicepayPaymentLedger>();
+
+      if (existingPaymentError) {
+        console.error("NICEPAY existing virtual-account lookup failed:", {
+          registrationId: registration.id,
+        });
+
+        return NextResponse.json(
+          { success: false, error: "기존 가상계좌 결제 상태를 확인하지 못했습니다." },
+          { status: 500 },
+        );
+      }
+
+      if (isPendingReadyVirtualAccountPayment(existingPayment, {
+        registrationId: registration.id,
+        orderId: registration.order_id,
+        amount: Number(registration.amount),
+      })) {
+        return NextResponse.json(
+          {
+            success: false,
+            pending: true,
+            order_id: registration.order_id,
+            error: "이미 발급된 가상계좌가 있습니다.",
+          },
+          { status: 409 },
+        );
+      }
+
       const expiresAt = new Date(
         Date.now() + config.vbankValidHours * 60 * 60 * 1000,
       ).toISOString();
-      const adminClient = getSupabaseServerClient();
       const { data: reserved, error: reservationError } = await adminClient.rpc(
         "reserve_virtual_account_registration",
         {
@@ -175,6 +201,15 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    const payload = createNicepayPaymentPayload({
+      registration,
+      userId: user.id,
+      orderName: orderName || workshopTitle || registrationWorkshopTitle || "IYOHOUSE Workshop",
+      origin,
+      method,
+      mallReserved,
+    });
 
     return NextResponse.json({
       success: true,

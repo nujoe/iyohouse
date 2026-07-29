@@ -48,4 +48,19 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
     /await cancelPendingRegistration/,
     "no-ledger failure events must not cancel a registration by order alone",
   );
+  assert.match(
+    route,
+    /const cancellation = await cancelActiveRegistration\(registration\.id\)/,
+    "card cancellation must inspect the update outcome",
+  );
+  assert.match(
+    route,
+    /if \(!cancellation\.ok\)[\s\S]*?status:\s*500/,
+    "a card cancellation storage error must remain retryable",
+  );
+  assert.match(
+    route,
+    /canAcknowledgeNicepayCardCancellation/,
+    "card cancellation must acknowledge only a completed transition",
+  );
 });
