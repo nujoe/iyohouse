@@ -47,6 +47,8 @@ export type AdminApplicantRow = {
   snapshot_bio?: string | null;
   price_type?: string | null;
   created_at: string | null;
+  payment_amount?: number | null;
+  payment_method?: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
   schedule_date?: string | null;
@@ -314,6 +316,33 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
   } else {
     cancelledRows = (cancelledWithSchedule.data ?? []) as AdminApplicantRow[];
   }
+
+  const confirmedRegistrationIds = applicantRows.map((applicant) => applicant.id);
+  const { data: payments, error: paymentsError } = confirmedRegistrationIds.length > 0
+    ? await adminClient
+      .from("payments")
+      .select("registration_id, amount, payment_method")
+      .in("registration_id", confirmedRegistrationIds)
+      .eq("status", "success")
+    : { data: [], error: null };
+
+  if (paymentsError) {
+    throw new Error(`결제 원장을 불러오지 못했습니다: ${paymentsError.message}`);
+  }
+
+  const paymentByRegistrationId = new Map(
+    (payments ?? []).map((payment) => [payment.registration_id, payment]),
+  );
+
+  applicantRows = applicantRows.map((applicant) => {
+    const payment = paymentByRegistrationId.get(applicant.id);
+
+    return {
+      ...applicant,
+      payment_amount: payment?.amount ?? null,
+      payment_method: payment?.payment_method ?? null,
+    };
+  });
 
   const [emailTemplateSet, scheduleChangeData] = await Promise.all([
     getWorkshopScheduleEmailTemplates(workshopId),

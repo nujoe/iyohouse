@@ -21,6 +21,8 @@ type AdminApplicantRow = {
   snapshot_bio?: string | null;
   price_type?: string | null;
   created_at: string | null;
+  payment_amount?: number | null;
+  payment_method?: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
   schedule_date?: string | null;
@@ -299,6 +301,8 @@ export default function AdminWorkshopApplicantsClient({
                     <th>연락처</th>
                     <th>자기소개</th>
                     <th>신청일</th>
+                    <th className="admin-payment-amount-cell">결제금액</th>
+                    <th className="admin-payment-method-cell">결제수단</th>
                     <th>일정 변경</th>
                   </tr>
                 </thead>
@@ -323,6 +327,14 @@ export default function AdminWorkshopApplicantsClient({
                       <td>{applicant.snapshot_phone || "-"}</td>
                       <td>{applicant.snapshot_bio || "-"}</td>
                       <td>{formatAdminDateTime(applicant.created_at)}</td>
+                      <td className="admin-payment-amount-cell">
+                        {typeof applicant.payment_amount === "number"
+                          ? `${applicant.payment_amount.toLocaleString()}원`
+                          : "-"}
+                      </td>
+                      <td className="admin-payment-method-cell">
+                        {applicant.payment_method || "기록 없음"}
+                      </td>
                       <td>
                         <div className="admin-schedule-change-cell">
                           <select

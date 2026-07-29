@@ -51,7 +51,7 @@
   - NICEPAY `amount`가 서버 기준 금액과 일치해야 합니다.
   - `authToken + clientId + amount + IYO_NICEPAY_SECRET_KEY` 서명이 일치해야 합니다.
   - NICEPAY 승인 API 결과의 `orderId`, `amount`, 선택적 결과 서명이 내부 신청 정보와 일치해야 합니다.
-- **상태 업데이트 강제**: 결제 완료 후 테이블 상태 변경은 테이블 직접 `update` 연산을 절대 금지하며, 오직 `confirm_payment_registration(p_registration_id UUID, p_payment_key TEXT, p_order_id TEXT, p_amount INTEGER)` RPC를 통해서만 수행해야 합니다. 이 RPC는 서버 라우트에서 service role client로만 호출해야 합니다. `p_payment_key`에는 NICEPAY `tid`를 넣습니다.
+- **상태 업데이트 강제**: 결제 완료 후 테이블 상태 변경은 테이블 직접 `update` 연산을 절대 금지하며, 오직 `confirm_payment_registration(p_registration_id UUID, p_payment_key TEXT, p_order_id TEXT, p_amount INTEGER, p_payment_method TEXT)` RPC를 통해서만 수행해야 합니다. 이 RPC는 서버 라우트에서 service role client로만 호출해야 합니다. `p_payment_key`에는 NICEPAY `tid`를 넣고 `p_payment_method`에는 승인 응답의 최종 결제수단만 넣습니다.
 - **실패 처리 강제**: 결제 실패 또는 취소 후 상태 변경이 필요하면 반드시 서버 라우트 또는 RPC를 통해 `cancelled`로 전환해야 합니다. 클라이언트에서 직접 테이블을 갱신해서는 안 됩니다.
 - **[금지]** 클라이언트 사이드에서 직접 결제 상태를 업데이트하는 API 호출을 절대 금지합니다.
 

@@ -114,7 +114,7 @@ supabase.rpc('create_pending_registration', {
 - generated `order_id`
 - returned payment bootstrap values
 
-`confirm_payment_registration(p_registration_id UUID, p_payment_key TEXT, p_order_id TEXT, p_amount INTEGER)` handles:
+`confirm_payment_registration(p_registration_id UUID, p_payment_key TEXT, p_order_id TEXT, p_amount INTEGER, p_payment_method TEXT)` handles:
 
 - registration existence check
 - order id validation
@@ -122,11 +122,12 @@ supabase.rpc('create_pending_registration', {
 - idempotency check for already confirmed registrations
 - pending-only transition to confirmed
 - payment record creation
+- final NICEPAY payment method recording
 
 Permissions:
 
 - `create_pending_registration(UUID)` is granted to `authenticated`.
-- `confirm_payment_registration(UUID, TEXT, TEXT, INTEGER)` is granted only to `service_role`.
+- `confirm_payment_registration(UUID, TEXT, TEXT, INTEGER, TEXT)` is granted only to `service_role`.
 - pending expiry is service-role only.
 
 ## Payment Success Flow

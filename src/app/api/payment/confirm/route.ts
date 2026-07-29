@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import {
   approveNicepayPaymentAuth,
   cancelNicepayPayment,
+  getNicepayPaymentMethod,
   safeNicepayPayload,
 } from "@/lib/payment/nicepay";
 
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
       p_payment_key: approval.tid,
       p_order_id: registration.order_id,
       p_amount: Number(registration.amount),
+      p_payment_method: getNicepayPaymentMethod(approval.payload),
     });
 
     if (rpcError) {

@@ -36,7 +36,7 @@ IYO_NICEPAY_VBANK_VALID_HOURS=72
 7. 서버가 `authToken + clientId + amount + secretKey` 서명을 검증합니다.
 8. 서버가 NICEPAY 승인 API `/v1/payments/{tid}`를 호출합니다.
 9. 승인 응답의 `orderId`, `amount`, 선택적 결과 서명을 다시 검증합니다.
-10. 검증이 끝나면 `confirm_payment_registration` RPC로 `confirmed` 신청과 `payments` row를 만듭니다.
+10. 검증이 끝나면 `confirm_payment_registration` RPC로 `confirmed` 신청과 `payments` row를 만들고, NICEPAY 최종 결제수단을 기록합니다.
 11. NICEPAY 승인 후 DB 확정이 실패하면 `/v1/payments/{tid}/cancel`로 보상 취소를 시도합니다.
 
 ## 라우트 계약
@@ -72,7 +72,7 @@ IYO_NICEPAY_VBANK_VALID_HOURS=72
 - 신청 테이블: `workshop_registrations_v2`
 - 결제 기록 테이블: `payments`
 - 신청 생성 RPC: `create_pending_registration(p_workshop_id)`
-- 결제 확정 RPC: `confirm_payment_registration(p_registration_id, p_payment_key, p_order_id, p_amount)`
+- 결제 확정 RPC: `confirm_payment_registration(p_registration_id, p_payment_key, p_order_id, p_amount, p_payment_method)`
 
 `p_payment_key`에는 NICEPAY `tid`를 넣습니다. 이 값은 `payments.payment_key`의 UNIQUE 계약과 잘 맞습니다.
 

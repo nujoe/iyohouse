@@ -124,6 +124,31 @@ export function sanitizeNicepayPaymentMethod(method: string): NicepayPaymentMeth
     : "";
 }
 
+export function getNicepayPaymentMethod(payload: Record<string, unknown>): string | null {
+  const rawMethod = payload.PayMethod ?? payload.payMethod ?? payload.method;
+
+  if (typeof rawMethod !== "string" || rawMethod.trim() === "") {
+    return null;
+  }
+
+  const normalized = rawMethod.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  const labels: Record<string, string> = {
+    CARD: "카드",
+    CARDANDEASYPAY: "카드",
+    BANK: "계좌이체",
+    VBANK: "가상계좌",
+    CELLPHONE: "휴대폰결제",
+    KAKAOPAY: "카카오페이",
+    PAYCO: "페이코",
+    SAMSUNGPAY: "삼성페이",
+    SAMSUNGPAYCARD: "삼성페이",
+    NAVERPAY: "네이버페이",
+    NAVERPAYCARD: "네이버페이",
+  };
+
+  return labels[normalized] ?? null;
+}
+
 function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
   const rawMethods = envValue(["IYO_NICEPAY_METHODS"], "");
   const source = rawMethods || fallbackMethod;
@@ -294,6 +319,8 @@ export function safeNicepayPayload(payload: Record<string, unknown>) {
     "failedAt",
     "cancelledAt",
     "receiptUrl",
+    "PayMethod",
+    "payMethod",
   ];
 
   return allowed.reduce<Record<string, string>>((safe, key) => {

@@ -231,6 +231,22 @@
     text-align: center;
 }
 
+.admin-applicants-table {
+    min-width: 1200px;
+}
+
+.admin-payment-amount-cell,
+.admin-payment-method-cell {
+    width: 104px;
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+.admin-applicants-table th:last-child,
+.admin-applicants-table td:last-child {
+    width: 286px;
+}
+
 .admin-empty,
 .admin-empty-panel {
     color: #555;
