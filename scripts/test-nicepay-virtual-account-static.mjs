@@ -158,7 +158,7 @@ test("persisted checkout intent serializes vbank starts and protects the winning
 
   assert.match(
     sql,
-    /CREATE TABLE public\.virtual_account_checkout_intents[\s\S]*?registration_id UUID PRIMARY KEY[\s\S]*?user_id UUID NOT NULL REFERENCES public\.profiles\(id\)[\s\S]*?expires_at TIMESTAMPTZ NOT NULL[\s\S]*?created_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)[\s\S]*?updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)/,
+    /CREATE TABLE public\.virtual_account_checkout_intents[\s\S]*?registration_id UUID PRIMARY KEY[\s\S]*?attempt_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid\(\)[\s\S]*?user_id UUID NOT NULL REFERENCES public\.profiles\(id\)[\s\S]*?expires_at TIMESTAMPTZ NOT NULL[\s\S]*?created_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)[\s\S]*?updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)/,
     "one registration can own only one persisted checkout intent",
   );
   assert.match(
@@ -166,9 +166,10 @@ test("persisted checkout intent serializes vbank starts and protects the winning
     /FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE[\s\S]*?FROM public\.virtual_account_checkout_intents[\s\S]*?FOR UPDATE[\s\S]*?INSERT INTO public\.virtual_account_checkout_intents/,
     "concurrent begin calls must serialize on the registration before intent insertion",
   );
-  assert.match(begin, /RETURN 'intent_exists'/);
-  assert.match(begin, /RETURN 'active_payment_exists'/);
-  assert.match(begin, /RETURN 'started'/);
+  assert.match(begin, /RETURNS JSONB/);
+  assert.match(begin, /jsonb_build_object\('status', 'intent_exists'\)/);
+  assert.match(begin, /jsonb_build_object\('status', 'active_payment_exists'\)/);
+  assert.match(begin, /jsonb_build_object\('status', 'started', 'attempt_id', v_attempt_id\)/);
 
   const intentLockIndex = issuance.indexOf("FROM public.virtual_account_checkout_intents");
   const paymentInsertIndex = issuance.indexOf("INSERT INTO public.payments");
@@ -178,21 +179,23 @@ test("persisted checkout intent serializes vbank starts and protects the winning
   assert.ok(paymentInsertIndex < intentDeleteIndex);
   assert.match(
     issuance.slice(intentLockIndex, paymentInsertIndex),
-    /FOR UPDATE[\s\S]*?IF NOT FOUND/,
+    /attempt_id = p_attempt_id[\s\S]*?FOR UPDATE[\s\S]*?IF NOT FOUND/,
     "new issuance must require and lock the winning intent",
   );
 
   const releasePaymentIndex = release.indexOf("FROM public.payments");
   const releasePreserveIndex = release.indexOf("RETURN 'preserved'");
+  const staleGuardIndex = release.indexOf("RETURN 'stale_attempt'");
   const releaseIntentDeleteIndex = release.indexOf("DELETE FROM public.virtual_account_checkout_intents");
   const releaseCancelIndex = release.indexOf("SET status = 'cancelled'");
 
   assert.ok(releasePaymentIndex >= 0 && releasePaymentIndex < releasePreserveIndex);
+  assert.ok(staleGuardIndex >= 0 && staleGuardIndex < releaseIntentDeleteIndex);
   assert.ok(releasePreserveIndex < releaseIntentDeleteIndex);
   assert.ok(releasePreserveIndex < releaseCancelIndex);
   assert.match(
     release.slice(releasePaymentIndex, releasePreserveIndex),
-    /payment_method IS NOT DISTINCT FROM '가상계좌'[\s\S]*?status IS NOT DISTINCT FROM 'pending'[\s\S]*?provider_status IS NOT DISTINCT FROM 'ready'[\s\S]*?expires_at > NOW\(\)[\s\S]*?FOR UPDATE/,
+    /payment_method IS NOT DISTINCT FROM '가상계좌'[\s\S]*?FOR UPDATE[\s\S]*?v_payment\.checkout_attempt_id IS DISTINCT FROM p_attempt_id[\s\S]*?status IS NOT DISTINCT FROM 'pending'[\s\S]*?provider_status IS NOT DISTINCT FROM 'ready'[\s\S]*?expires_at > NOW\(\)/,
     "losing cleanup must lock and preserve a winning ready ledger",
   );
 
@@ -202,19 +205,103 @@ test("persisted checkout intent serializes vbank starts and protects the winning
   assert.ok(beginIndex >= 0 && beginIndex < payloadIndex);
   assert.match(
     checkout.slice(beginIndex, payloadIndex),
-    /intent_exists[\s\S]*?status:\s*409/,
+    /beginStatus === "intent_exists"[\s\S]*?status:\s*409/,
     "the second serialized begin result must stop before requestPay payload creation",
+  );
+  assert.match(checkout, /mallReserved\.set\("checkout_attempt_id", checkoutAttemptId\)/);
+  assert.match(
+    checkout,
+    /new URL\(String\(payload\.returnUrl\)\)[\s\S]*?searchParams\.set\("checkout_attempt_id", checkoutAttemptId\)/,
+    "the provider return URL must carry the same unguessable attempt ID",
   );
   assert.doesNotMatch(checkout, /\.from\("payments"\)/);
   assert.doesNotMatch(checkout, /reserve_virtual_account_registration/);
 
   assert.match(fail, /release_virtual_account_checkout/);
+  assert.match(fail, /p_attempt_id:\s*checkoutAttemptId/);
   assert.doesNotMatch(fail, /\.from\('payments'\)/);
   assert.doesNotMatch(fail, /\.update\(\{ status: 'cancelled' \}\)/);
 
   assert.match(confirm, /release_virtual_account_checkout/);
+  assert.match(confirm, /p_attempt_id:\s*checkoutAttemptId/);
+  assert.match(
+    confirm,
+    /queryAttemptId && reservedAttemptId && queryAttemptId !== reservedAttemptId[\s\S]*?return null/,
+    "conflicting callback metadata must not select either attempt",
+  );
+  assert.match(
+    confirm,
+    /paymentMethod === "가상계좌" && !checkoutAttemptId[\s\S]*?"\/payment\/fail"[\s\S]*?record_virtual_account_issuance/,
+    "a verified vbank approval without correlation must stop before issuance recording",
+  );
   assert.doesNotMatch(confirm, /markPendingRegistrationCancelled/);
   assert.doesNotMatch(confirm, /isPendingReadyVirtualAccountPayment/);
+});
+
+test("ambiguous issuance errors verify the exact ready ledger before compensation", () => {
+  const conflictStart = confirm.indexOf("if (issuanceError || issuanceRecorded !== true)");
+  const conflictEnd = confirm.indexOf(
+    'if (approval.providerStatus !== "paid"',
+    conflictStart,
+  );
+  const conflictBlock = confirm.slice(conflictStart, conflictEnd);
+  const ledgerReadIndex = conflictBlock.indexOf('.from("payments")');
+  const compensationIndex = conflictBlock.indexOf("cancelNicepayPayment");
+
+  assert.ok(conflictStart >= 0 && conflictEnd > conflictStart);
+  assert.ok(ledgerReadIndex >= 0 && ledgerReadIndex < compensationIndex);
+  assert.match(
+    conflictBlock,
+    /\.eq\("registration_id", registration\.id\)[\s\S]*?\.eq\("order_id", registration\.order_id\)[\s\S]*?\.eq\("payment_key", approval\.tid\)[\s\S]*?\.eq\("amount", Number\(registration\.amount\)\)[\s\S]*?\.eq\("payment_method", "가상계좌"\)/,
+    "the post-error read must use the full approved ledger identity",
+  );
+  assert.match(
+    conflictBlock.slice(ledgerReadIndex, compensationIndex),
+    /issuanceLookupError[\s\S]*?운영자에게 문의[\s\S]*?matchingReadyPayment[\s\S]*?"\/payment\/pending"/,
+    "read errors must stop safely and an exact ready ledger must redirect pending before compensation",
+  );
+});
+
+test("expired ready ledgers transition atomically and expiry callbacks remain idempotent", () => {
+  const sql = readFileSync(
+    join(root, "supabase/migrations/20260729000001_add_virtual_account_payment_lifecycle.sql"),
+    "utf8",
+  );
+  const getFunction = (name) => {
+    const match = sql.match(new RegExp(
+      `CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$\\$;`,
+    ));
+
+    assert.ok(match, `${name} must be defined`);
+    return match[0];
+  };
+  const release = getFunction("release_virtual_account_checkout");
+  const failure = getFunction("fail_virtual_account_payment");
+  const expiredLedgerIndex = release.indexOf("expires_at <= NOW()");
+  const ledgerTransitionIndex = release.indexOf("UPDATE public.payments", expiredLedgerIndex);
+  const registrationTransitionIndex = release.indexOf(
+    "UPDATE public.workshop_registrations_v2",
+    ledgerTransitionIndex,
+  );
+
+  assert.ok(expiredLedgerIndex >= 0);
+  assert.ok(ledgerTransitionIndex > expiredLedgerIndex);
+  assert.ok(registrationTransitionIndex > ledgerTransitionIndex);
+  assert.match(
+    release.slice(ledgerTransitionIndex, registrationTransitionIndex),
+    /SET status = 'failed'[\s\S]*?provider_status = 'expired'/,
+    "local expiry cleanup must transition the ledger before releasing the seat",
+  );
+  assert.match(
+    failure,
+    /v_registration\.status IS DISTINCT FROM 'pending'[\s\S]*?v_registration\.status IS DISTINCT FROM 'cancelled'[\s\S]*?v_registration\.status IS DISTINCT FROM 'expired'/,
+    "provider expiry must finish a ready ledger after prior registration cleanup",
+  );
+  assert.match(
+    webhook,
+    /\["pending", "cancelled", "expired"\]\.includes\(registration\.status\)[\s\S]*?payment\.status !== "pending"[\s\S]*?payment\.provider_status !== "ready"[\s\S]*?fail_virtual_account_payment/,
+    "webhook routing must not skip a ready ledger merely because registration cleanup already ran",
+  );
 });
 
 test("confirmed callbacks require an exact ledger identity before idempotent redirect", () => {
@@ -434,7 +521,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
     },
     {
       name: "record_virtual_account_issuance",
-      signature: "UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ",
+      signature: "UUID, UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ",
     },
     {
       name: "confirm_virtual_account_deposit",
@@ -446,7 +533,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
     },
     {
       name: "release_virtual_account_checkout",
-      signature: "UUID, UUID",
+      signature: "UUID, UUID, UUID",
     },
   ].map((definition) => ({ ...definition, functionSql: getFunction(definition.name) }));
   const newRpcNamePattern = rpcDefinitions.map(({ name }) => name).join("|");
@@ -506,6 +593,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   const release = rpcDefinitions[4].functionSql;
 
   assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_status TEXT/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS checkout_attempt_id UUID/);
   assert.match(sql, /ADD COLUMN IF NOT EXISTS vbank_number TEXT/);
   assert.match(sql, /CREATE TABLE public\.virtual_account_checkout_intents/);
   assert.match(sql, /ALTER TABLE public\.virtual_account_checkout_intents ENABLE ROW LEVEL SECURITY/);
@@ -555,6 +643,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(begin, /FROM public\.payments[\s\S]*?payment_method IS NOT DISTINCT FROM '가상계좌'[\s\S]*?status IS NOT DISTINCT FROM 'pending'[\s\S]*?provider_status IS NOT DISTINCT FROM 'ready'[\s\S]*?expires_at > NOW\(\)[\s\S]*?FOR UPDATE/);
   assert.match(begin, /INSERT INTO public\.virtual_account_checkout_intents/);
   assert.match(begin, /SET expires_at = p_expires_at/);
+  assert.match(begin, /v_attempt_id := gen_random_uuid\(\)/);
   assert.match(issuance, /v_registration\.status IS DISTINCT FROM 'pending'/);
   assert.match(issuance, /v_registration\.order_id IS DISTINCT FROM p_order_id/);
   assert.match(issuance, /v_registration\.amount IS DISTINCT FROM p_amount/);
@@ -572,6 +661,8 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
     /FROM public\.virtual_account_checkout_intents[\s\S]*?WHERE registration_id = p_registration_id[\s\S]*?FOR UPDATE[\s\S]*?IF NOT FOUND/,
     "new issuance must require its persisted intent",
   );
+  assert.match(issuance, /attempt_id = p_attempt_id/);
+  assert.match(issuance, /checkout_attempt_id[\s\S]*?p_attempt_id/);
   assert.match(
     issuance,
     /INSERT INTO public\.payments[\s\S]*?DELETE FROM public\.virtual_account_checkout_intents[\s\S]*?WHERE registration_id = p_registration_id/,
@@ -595,7 +686,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(failure, /v_payment\.status IS NOT DISTINCT FROM 'failed'/);
   assert.match(failure, /v_payment\.status IS NOT DISTINCT FROM 'cancelled'/);
   assert.match(failure, /v_payment\.provider_status IS NOT DISTINCT FROM p_provider_status/);
-  assert.match(failure, /v_registration\.status IS NOT DISTINCT FROM 'cancelled'/);
+  assert.match(failure, /v_registration\.status IS DISTINCT FROM 'cancelled'/);
   assert.match(failure, /p_provider_status IS DISTINCT FROM 'failed'/);
   assert.match(failure, /p_provider_status IS DISTINCT FROM 'expired'/);
   assert.match(failure, /p_provider_status IS DISTINCT FROM 'cancelled'/);
@@ -603,17 +694,21 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(failure, /v_payment\.status IS DISTINCT FROM 'pending'/);
   assert.match(failure, /v_payment\.provider_status IS DISTINCT FROM 'ready'/);
   assert.match(failure, /v_registration\.status IS DISTINCT FROM 'pending'/);
+  assert.match(failure, /v_registration\.status IS DISTINCT FROM 'cancelled'/);
+  assert.match(failure, /v_registration\.status IS DISTINCT FROM 'expired'/);
   assert.match(failure, /v_payment\.amount IS DISTINCT FROM v_registration\.amount/);
   assert.match(failure, /p_provider_status IS NOT DISTINCT FROM 'cancelled'/);
 
   assert.match(release, /v_registration\.user_id IS DISTINCT FROM p_user_id/);
+  assert.match(release, /v_intent\.attempt_id IS DISTINCT FROM p_attempt_id/);
+  assert.match(release, /v_payment\.checkout_attempt_id IS DISTINCT FROM p_attempt_id/);
   assert.match(
     release,
-    /FROM public\.payments[\s\S]*?payment_method IS NOT DISTINCT FROM '가상계좌'[\s\S]*?status IS NOT DISTINCT FROM 'pending'[\s\S]*?provider_status IS NOT DISTINCT FROM 'ready'[\s\S]*?expires_at > NOW\(\)[\s\S]*?FOR UPDATE/,
+    /FROM public\.payments[\s\S]*?payment_method IS NOT DISTINCT FROM '가상계좌'[\s\S]*?FOR UPDATE[\s\S]*?v_payment\.status IS NOT DISTINCT FROM 'pending'[\s\S]*?v_payment\.provider_status IS NOT DISTINCT FROM 'ready'/,
   );
   assert.match(
     release,
-    /IF FOUND THEN[\s\S]*?RETURN 'preserved';[\s\S]*?DELETE FROM public\.virtual_account_checkout_intents[\s\S]*?SET status = 'cancelled'[\s\S]*?status IS NOT DISTINCT FROM 'pending'/,
-    "release must preserve a ready ledger or atomically clear intent and cancel pending registration",
+    /RETURN 'stale_attempt';[\s\S]*?RETURN 'preserved';[\s\S]*?SET status = 'failed'[\s\S]*?provider_status = 'expired'[\s\S]*?DELETE FROM public\.virtual_account_checkout_intents[\s\S]*?attempt_id = p_attempt_id[\s\S]*?SET status = 'cancelled'[\s\S]*?status IS NOT DISTINCT FROM 'pending'/,
+    "release must reject stale attempts, preserve active ledgers, and expire ready ledgers atomically",
   );
 });

@@ -54,19 +54,44 @@ function redirectUrl(request: Request, pathname: string, params: Record<string, 
   return url;
 }
 
-type CheckoutReleaseOutcome = "preserved" | "cancelled" | "unchanged";
+type CheckoutReleaseOutcome = "preserved" | "cancelled" | "expired" | "unchanged";
+
+function getCheckoutAttemptId(request: Request, reservedParams: URLSearchParams) {
+  const queryAttemptId = new URL(request.url).searchParams.get("checkout_attempt_id");
+  const reservedAttemptId = reservedParams.get("checkout_attempt_id");
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (queryAttemptId && reservedAttemptId && queryAttemptId !== reservedAttemptId) {
+    return null;
+  }
+
+  const attemptId = queryAttemptId || reservedAttemptId;
+
+  return attemptId && uuidPattern.test(attemptId) ? attemptId : null;
+}
 
 async function releaseVirtualAccountCheckout(
   registration: Pick<PaymentRegistration, "id" | "user_id">,
+  checkoutAttemptId: string | null,
   reason: string,
 ) {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.rpc("release_virtual_account_checkout", {
     p_registration_id: registration.id,
     p_user_id: registration.user_id,
+    p_attempt_id: checkoutAttemptId,
   });
 
-  if (error || (data !== "preserved" && data !== "cancelled" && data !== "unchanged")) {
+  if (
+    error
+    || (
+      data !== "preserved"
+      && data !== "cancelled"
+      && data !== "expired"
+      && data !== "unchanged"
+      && data !== "stale_attempt"
+    )
+  ) {
     console.error("release_virtual_account_checkout RPC failed:", {
       registrationId: registration.id,
       reason,
@@ -75,6 +100,15 @@ async function releaseVirtualAccountCheckout(
     });
 
     return { ok: false as const };
+  }
+
+  if (data === "stale_attempt") {
+    console.warn("NICEPAY checkout release ignored for a stale attempt:", {
+      registrationId: registration.id,
+      reason,
+    });
+
+    return { ok: false as const, outcome: data };
   }
 
   console.warn("NICEPAY checkout released:", {
@@ -91,6 +125,7 @@ export async function POST(request: Request) {
   const reservedParams = new URLSearchParams(auth.mallReserved || "");
   const workshopId = reservedParams.get("workshop") || undefined;
   const workshopTitle = reservedParams.get("workshop_title") || undefined;
+  const checkoutAttemptId = getCheckoutAttemptId(request, reservedParams);
   const orderId = auth.orderId || "";
   const supabase = getSupabaseServerClient();
 
@@ -116,7 +151,11 @@ export async function POST(request: Request) {
     }
 
     if (auth.authResultCode !== "0000") {
-      const release = await releaseVirtualAccountCheckout(registration, "auth_failed");
+      const release = await releaseVirtualAccountCheckout(
+        registration,
+        checkoutAttemptId,
+        "auth_failed",
+      );
 
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {
@@ -148,7 +187,11 @@ export async function POST(request: Request) {
 
     if (!approval.ok) {
       console.error("NICEPAY approval failed:", approval.message, safeNicepayPayload(auth));
-      const release = await releaseVirtualAccountCheckout(registration, "approval_failed");
+      const release = await releaseVirtualAccountCheckout(
+        registration,
+        checkoutAttemptId,
+        "approval_failed",
+      );
 
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {
@@ -248,6 +291,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (paymentMethod === "가상계좌" && !checkoutAttemptId) {
+      return NextResponse.redirect(
+        redirectUrl(request, "/payment/fail", {
+          registration_id: registration.id,
+          order_id: registration.order_id,
+          message: "가상계좌 결제 시도를 확인할 수 없습니다. 결제 상태 확인 후 다시 시도해 주세요.",
+        }),
+        { status: 303 },
+      );
+    }
+
     if (paymentMethod === "가상계좌" && approval.providerStatus === "ready") {
       const virtualAccount = getNicepayVirtualAccount(approval.payload);
 
@@ -264,6 +318,7 @@ export async function POST(request: Request) {
         if (compensation.ok) {
           release = await releaseVirtualAccountCheckout(
             registration,
+            checkoutAttemptId,
             "invalid_vbank_issuance_compensated",
           );
         }
@@ -297,6 +352,7 @@ export async function POST(request: Request) {
         "record_virtual_account_issuance",
         {
           p_registration_id: registration.id,
+          p_attempt_id: checkoutAttemptId,
           p_tid: approval.tid,
           p_order_id: registration.order_id,
           p_amount: Number(registration.amount),
@@ -315,6 +371,56 @@ export async function POST(request: Request) {
           registrationId: registration.id,
           hasError: Boolean(issuanceError),
         });
+
+        const { data: issuancePayment, error: issuanceLookupError } = await supabase
+          .from("payments")
+          .select("registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at")
+          .eq("registration_id", registration.id)
+          .eq("order_id", registration.order_id)
+          .eq("payment_key", approval.tid)
+          .eq("amount", Number(registration.amount))
+          .eq("payment_method", "가상계좌")
+          .eq("checkout_attempt_id", checkoutAttemptId)
+          .maybeSingle<NicepayPaymentLedger>();
+
+        if (issuanceLookupError) {
+          return NextResponse.redirect(
+            redirectUrl(request, "/payment/fail", {
+              registration_id: registration.id,
+              order_id: registration.order_id,
+              message: "가상계좌 저장 결과를 확인하지 못했습니다. 취소하지 말고 운영자에게 문의해 주세요.",
+            }),
+            { status: 303 },
+          );
+        }
+
+        const matchingReadyPayment = issuancePayment
+          && issuancePayment.status === "pending"
+          && issuancePayment.provider_status === "ready"
+          && Boolean(issuancePayment.expires_at)
+          && Date.parse(issuancePayment.expires_at || "") > Date.now();
+
+        if (matchingReadyPayment) {
+          return NextResponse.redirect(
+            redirectUrl(request, "/payment/pending", {
+              order_id: registration.order_id,
+              workshop: workshopId,
+              workshop_title: workshopTitle,
+            }),
+            { status: 303 },
+          );
+        }
+
+        if (issuancePayment) {
+          return NextResponse.redirect(
+            redirectUrl(request, "/payment/fail", {
+              registration_id: registration.id,
+              order_id: registration.order_id,
+              message: "가상계좌 원장 상태가 확정되지 않았습니다. 취소하지 말고 운영자에게 문의해 주세요.",
+            }),
+            { status: 303 },
+          );
+        }
 
         const compensation = await cancelNicepayPayment({
           tid: approval.tid,
@@ -336,6 +442,7 @@ export async function POST(request: Request) {
 
         const release = await releaseVirtualAccountCheckout(
           registration,
+          checkoutAttemptId,
           "vbank_recording_failed_compensated",
         );
 
@@ -385,6 +492,7 @@ export async function POST(request: Request) {
       if (compensation.ok) {
         release = await releaseVirtualAccountCheckout(
           registration,
+          checkoutAttemptId,
           "unexpected_approval_state_compensated",
         );
       }
@@ -428,6 +536,7 @@ export async function POST(request: Request) {
       if (compensation.ok) {
         release = await releaseVirtualAccountCheckout(
           registration,
+          checkoutAttemptId,
           "confirmation_failed_compensated",
         );
       } else {

@@ -230,7 +230,7 @@ export async function POST(request: Request) {
       const duplicateFailure = (
         (payment.status === "failed" || payment.status === "cancelled")
         && payment.provider_status === status
-        && registration.status === "cancelled"
+        && (registration.status === "cancelled" || registration.status === "expired")
       );
 
       if (duplicateFailure) {
@@ -239,7 +239,7 @@ export async function POST(request: Request) {
       }
 
       if (
-        registration.status !== "pending"
+        !["pending", "cancelled", "expired"].includes(registration.status)
         || payment.status !== "pending"
         || payment.provider_status !== "ready"
       ) {

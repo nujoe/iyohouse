@@ -37,6 +37,11 @@ function getCheckoutMethod(value: unknown): NicepayCheckoutMethod | null {
   return value === "cardAndEasyPay" || value === "vbank" ? value : null;
 }
 
+function isUuid(value: unknown): value is string {
+  return typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 export async function POST(request: Request) {
   try {
     const config = getNicepayConfig();
@@ -139,6 +144,7 @@ export async function POST(request: Request) {
     const registrationWorkshopTitle = Array.isArray(registration.workshops)
       ? registration.workshops[0]?.title
       : registration.workshops?.title;
+    let checkoutAttemptId: string | null = null;
 
     if (method === "vbank") {
       const adminClient = getSupabaseServerClient();
@@ -165,13 +171,18 @@ export async function POST(request: Request) {
         );
       }
 
-      if (beginResult === "intent_exists" || beginResult === "active_payment_exists") {
+      const beginPayload = beginResult && typeof beginResult === "object"
+        ? beginResult as Record<string, unknown>
+        : null;
+      const beginStatus = beginPayload?.status;
+
+      if (beginStatus === "intent_exists" || beginStatus === "active_payment_exists") {
         return NextResponse.json(
           {
             success: false,
             pending: true,
             order_id: registration.order_id,
-            error: beginResult === "intent_exists"
+            error: beginStatus === "intent_exists"
               ? "이미 가상계좌 발급이 진행 중입니다."
               : "이미 발급된 가상계좌가 있습니다.",
           },
@@ -179,10 +190,14 @@ export async function POST(request: Request) {
         );
       }
 
-      if (beginResult !== "started") {
+      if (
+        beginStatus !== "started"
+        || !beginPayload
+        || !isUuid(beginPayload.attempt_id)
+      ) {
         console.error("begin_virtual_account_checkout returned an unexpected result:", {
           registrationId: registration.id,
-          result: beginResult,
+          status: typeof beginStatus === "string" ? beginStatus : "invalid",
         });
 
         return NextResponse.json(
@@ -191,7 +206,9 @@ export async function POST(request: Request) {
         );
       }
 
+      checkoutAttemptId = beginPayload.attempt_id;
       mallReserved.set("checkout_method", "vbank");
+      mallReserved.set("checkout_attempt_id", checkoutAttemptId);
     }
 
     const payload = createNicepayPaymentPayload({
@@ -202,6 +219,12 @@ export async function POST(request: Request) {
       method,
       mallReserved,
     });
+
+    if (checkoutAttemptId) {
+      const returnUrl = new URL(String(payload.returnUrl));
+      returnUrl.searchParams.set("checkout_attempt_id", checkoutAttemptId);
+      payload.returnUrl = returnUrl.toString();
+    }
 
     return NextResponse.json({
       success: true,

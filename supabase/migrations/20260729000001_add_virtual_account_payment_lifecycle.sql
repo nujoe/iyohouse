@@ -4,6 +4,7 @@ ALTER TABLE public.payments
   ADD COLUMN IF NOT EXISTS issued_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS checkout_attempt_id UUID,
   ADD COLUMN IF NOT EXISTS vbank_code TEXT,
   ADD COLUMN IF NOT EXISTS vbank_name TEXT,
   ADD COLUMN IF NOT EXISTS vbank_number TEXT,
@@ -12,9 +13,14 @@ ALTER TABLE public.payments
 CREATE INDEX IF NOT EXISTS idx_payments_registration_status_provider_status
   ON public.payments (registration_id, status, provider_status);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_checkout_attempt_id
+  ON public.payments (checkout_attempt_id)
+  WHERE checkout_attempt_id IS NOT NULL;
+
 CREATE TABLE public.virtual_account_checkout_intents (
   registration_id UUID PRIMARY KEY
     REFERENCES public.workshop_registrations_v2(id) ON DELETE CASCADE,
+  attempt_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -32,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.begin_virtual_account_checkout(
   p_user_id UUID,
   p_expires_at TIMESTAMPTZ
 )
-RETURNS TEXT
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -41,6 +47,7 @@ DECLARE
   v_registration public.workshop_registrations_v2%ROWTYPE;
   v_intent public.virtual_account_checkout_intents%ROWTYPE;
   v_payment public.payments%ROWTYPE;
+  v_attempt_id UUID;
 BEGIN
   IF p_registration_id IS NULL OR p_user_id IS NULL OR p_expires_at IS NULL OR p_expires_at <= NOW() THEN
     RAISE EXCEPTION 'A registration owner and future virtual-account expiry are required.';
@@ -71,7 +78,7 @@ BEGIN
   FOR UPDATE;
 
   IF FOUND THEN
-    RETURN 'intent_exists';
+    RETURN jsonb_build_object('status', 'intent_exists');
   END IF;
 
   SELECT *
@@ -88,8 +95,10 @@ BEGIN
   FOR UPDATE;
 
   IF FOUND THEN
-    RETURN 'active_payment_exists';
+    RETURN jsonb_build_object('status', 'active_payment_exists');
   END IF;
+
+  v_attempt_id := gen_random_uuid();
 
   UPDATE public.workshop_registrations_v2
   SET expires_at = p_expires_at
@@ -97,20 +106,23 @@ BEGIN
 
   INSERT INTO public.virtual_account_checkout_intents (
     registration_id,
+    attempt_id,
     user_id,
     expires_at
   ) VALUES (
     p_registration_id,
+    v_attempt_id,
     p_user_id,
     p_expires_at
   );
 
-  RETURN 'started';
+  RETURN jsonb_build_object('status', 'started', 'attempt_id', v_attempt_id);
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.record_virtual_account_issuance(
   p_registration_id UUID,
+  p_attempt_id UUID,
   p_tid TEXT,
   p_order_id TEXT,
   p_amount INTEGER,
@@ -134,6 +146,7 @@ DECLARE
   v_registration_payment public.payments%ROWTYPE;
 BEGIN
   IF p_registration_id IS NULL
+    OR p_attempt_id IS NULL
     OR NULLIF(BTRIM(p_tid), '') IS NULL
     OR NULLIF(BTRIM(p_order_id), '') IS NULL
     OR p_amount IS NULL
@@ -189,6 +202,10 @@ BEGIN
       RAISE EXCEPTION 'NICEPAY TID is not a virtual-account payment.';
     END IF;
 
+    IF v_tid_payment.checkout_attempt_id IS DISTINCT FROM p_attempt_id THEN
+      RAISE EXCEPTION 'NICEPAY TID does not match the checkout attempt.';
+    END IF;
+
     RETURN TRUE;
   END IF;
 
@@ -196,6 +213,7 @@ BEGIN
   INTO v_intent
   FROM public.virtual_account_checkout_intents
   WHERE registration_id = p_registration_id
+    AND attempt_id = p_attempt_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -221,6 +239,7 @@ BEGIN
   BEGIN
     INSERT INTO public.payments (
       registration_id,
+      checkout_attempt_id,
       amount,
       payment_method,
       payment_key,
@@ -235,6 +254,7 @@ BEGIN
       vbank_holder
     ) VALUES (
       p_registration_id,
+      p_attempt_id,
       p_amount,
       '가상계좌',
       p_tid,
@@ -258,9 +278,11 @@ BEGIN
     IF FOUND AND v_tid_payment.registration_id IS NOT DISTINCT FROM p_registration_id
       AND v_tid_payment.order_id IS NOT DISTINCT FROM p_order_id
       AND v_tid_payment.amount IS NOT DISTINCT FROM p_amount
-      AND v_tid_payment.payment_method IS NOT DISTINCT FROM '가상계좌' THEN
+      AND v_tid_payment.payment_method IS NOT DISTINCT FROM '가상계좌'
+      AND v_tid_payment.checkout_attempt_id IS NOT DISTINCT FROM p_attempt_id THEN
       DELETE FROM public.virtual_account_checkout_intents
-      WHERE registration_id = p_registration_id;
+      WHERE registration_id = p_registration_id
+        AND attempt_id = p_attempt_id;
 
       RETURN TRUE;
     END IF;
@@ -273,7 +295,8 @@ BEGIN
   WHERE id = p_registration_id;
 
   DELETE FROM public.virtual_account_checkout_intents
-  WHERE registration_id = p_registration_id;
+  WHERE registration_id = p_registration_id
+    AND attempt_id = p_attempt_id;
 
   RETURN TRUE;
 END;
@@ -448,8 +471,18 @@ BEGIN
 
   IF (v_payment.status IS NOT DISTINCT FROM 'failed'
       OR v_payment.status IS NOT DISTINCT FROM 'cancelled')
-    AND v_payment.provider_status IS NOT DISTINCT FROM p_provider_status
-    AND v_registration.status IS NOT DISTINCT FROM 'cancelled' THEN
+    AND v_payment.provider_status IS NOT DISTINCT FROM p_provider_status THEN
+    UPDATE public.workshop_registrations_v2
+    SET status = 'cancelled'
+    WHERE id = p_registration_id
+      AND status IS NOT DISTINCT FROM 'pending';
+
+    IF v_registration.status IS DISTINCT FROM 'pending'
+      AND v_registration.status IS DISTINCT FROM 'cancelled'
+      AND v_registration.status IS DISTINCT FROM 'expired' THEN
+      RAISE EXCEPTION 'Registration is not in a terminal failure state (current state: %).', v_registration.status;
+    END IF;
+
     RETURN TRUE;
   END IF;
 
@@ -457,8 +490,10 @@ BEGIN
     RAISE EXCEPTION 'Virtual-account payment is not awaiting deposit.';
   END IF;
 
-  IF v_registration.status IS DISTINCT FROM 'pending' THEN
-    RAISE EXCEPTION 'Registration is not in pending state (current state: %).', v_registration.status;
+  IF v_registration.status IS DISTINCT FROM 'pending'
+    AND v_registration.status IS DISTINCT FROM 'cancelled'
+    AND v_registration.status IS DISTINCT FROM 'expired' THEN
+    RAISE EXCEPTION 'Registration cannot accept a virtual-account failure (current state: %).', v_registration.status;
   END IF;
 
   v_payment_status := CASE WHEN p_provider_status IS NOT DISTINCT FROM 'cancelled' THEN 'cancelled' ELSE 'failed' END;
@@ -479,7 +514,8 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.release_virtual_account_checkout(
   p_registration_id UUID,
-  p_user_id UUID
+  p_user_id UUID,
+  p_attempt_id UUID
 )
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -488,6 +524,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_registration public.workshop_registrations_v2%ROWTYPE;
+  v_intent public.virtual_account_checkout_intents%ROWTYPE;
   v_payment public.payments%ROWTYPE;
   v_cancelled_count INTEGER;
 BEGIN
@@ -510,24 +547,72 @@ BEGIN
   END IF;
 
   SELECT *
+  INTO v_intent
+  FROM public.virtual_account_checkout_intents
+  WHERE registration_id = p_registration_id
+  FOR UPDATE;
+
+  SELECT *
   INTO v_payment
   FROM public.payments
   WHERE registration_id = p_registration_id
     AND order_id IS NOT DISTINCT FROM v_registration.order_id
     AND amount IS NOT DISTINCT FROM v_registration.amount
     AND payment_method IS NOT DISTINCT FROM '가상계좌'
-    AND status IS NOT DISTINCT FROM 'pending'
-    AND provider_status IS NOT DISTINCT FROM 'ready'
-    AND expires_at IS NOT NULL
-    AND expires_at > NOW()
   FOR UPDATE;
 
-  IF FOUND THEN
+  IF v_intent.registration_id IS NOT NULL
+    AND (p_attempt_id IS NULL OR v_intent.attempt_id IS DISTINCT FROM p_attempt_id) THEN
+    RETURN 'stale_attempt';
+  END IF;
+
+  IF v_payment.id IS NOT NULL
+    AND (p_attempt_id IS NULL OR v_payment.checkout_attempt_id IS DISTINCT FROM p_attempt_id) THEN
+    RETURN 'stale_attempt';
+  END IF;
+
+  IF v_payment.id IS NOT NULL
+    AND v_payment.status IS NOT DISTINCT FROM 'pending'
+    AND v_payment.provider_status IS NOT DISTINCT FROM 'ready'
+    AND v_payment.expires_at IS NOT NULL
+    AND v_payment.expires_at > NOW() THEN
     RETURN 'preserved';
   END IF;
 
-  DELETE FROM public.virtual_account_checkout_intents
-  WHERE registration_id = p_registration_id;
+  IF v_payment.id IS NOT NULL
+    AND v_payment.status IS NOT DISTINCT FROM 'pending'
+    AND v_payment.provider_status IS NOT DISTINCT FROM 'ready'
+    AND (v_payment.expires_at IS NULL OR v_payment.expires_at <= NOW()) THEN
+    UPDATE public.payments
+    SET status = 'failed',
+        provider_status = 'expired'
+    WHERE id = v_payment.id
+      AND status IS NOT DISTINCT FROM 'pending'
+      AND provider_status IS NOT DISTINCT FROM 'ready';
+
+    UPDATE public.workshop_registrations_v2
+    SET status = 'cancelled'
+    WHERE id = p_registration_id
+      AND status IS NOT DISTINCT FROM 'pending';
+
+    DELETE FROM public.virtual_account_checkout_intents
+    WHERE registration_id = p_registration_id
+      AND attempt_id = p_attempt_id;
+
+    RETURN 'expired';
+  END IF;
+
+  IF v_payment.id IS NOT NULL THEN
+    RETURN 'unchanged';
+  END IF;
+
+  IF v_intent.registration_id IS NOT NULL THEN
+    DELETE FROM public.virtual_account_checkout_intents
+    WHERE registration_id = p_registration_id
+      AND attempt_id = p_attempt_id;
+  ELSIF p_attempt_id IS NOT NULL THEN
+    RETURN 'stale_attempt';
+  END IF;
 
   UPDATE public.workshop_registrations_v2
   SET status = 'cancelled'
@@ -549,10 +634,10 @@ REVOKE ALL ON FUNCTION public.begin_virtual_account_checkout(UUID, UUID, TIMESTA
 REVOKE ALL ON FUNCTION public.begin_virtual_account_checkout(UUID, UUID, TIMESTAMPTZ) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.begin_virtual_account_checkout(UUID, UUID, TIMESTAMPTZ) TO service_role;
 
-REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM anon;
-REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public.record_virtual_account_issuance(UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) TO service_role;
+REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM anon;
+REVOKE ALL ON FUNCTION public.record_virtual_account_issuance(UUID, UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.record_virtual_account_issuance(UUID, UUID, TEXT, TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ) TO service_role;
 
 REVOKE ALL ON FUNCTION public.confirm_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.confirm_virtual_account_deposit(UUID, TEXT, TEXT, INTEGER) FROM anon;
@@ -564,7 +649,7 @@ REVOKE ALL ON FUNCTION public.fail_virtual_account_payment(UUID, TEXT, TEXT, TEX
 REVOKE ALL ON FUNCTION public.fail_virtual_account_payment(UUID, TEXT, TEXT, TEXT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.fail_virtual_account_payment(UUID, TEXT, TEXT, TEXT) TO service_role;
 
-REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID) FROM anon;
-REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public.release_virtual_account_checkout(UUID, UUID) TO service_role;
+REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.release_virtual_account_checkout(UUID, UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.release_virtual_account_checkout(UUID, UUID, UUID) TO service_role;
