@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import {
   canAcknowledgeNicepayCardCancellation,
+  getNicepayConfirmationAction,
   getNicepayPaymentMethod,
   safeNicepayPayload,
   verifyNicepayResultSignature,
@@ -191,30 +192,16 @@ export async function POST(request: Request) {
     const reportedPaymentMethod = getNicepayPaymentMethod(fields);
 
     if (isVirtualAccount && resultCode === "0000" && status === "paid") {
-      if (
-        registration.status === "confirmed"
-        && payment.status === "success"
-        && payment.provider_status === "paid"
-      ) {
-        logIgnoredWebhook(registration.id, status, payload);
-        return nicepayOkResponse();
-      }
-
-      if (
-        registration.status !== "pending"
-        || payment.status !== "pending"
-        || payment.provider_status !== "ready"
-      ) {
-        logIgnoredWebhook(registration.id, status, payload);
-        return nicepayOkResponse();
-      }
-
-      const { data: depositConfirmed, error: rpcError } = await supabase.rpc("confirm_virtual_account_deposit", {
+      const { data: depositResult, error: rpcError } = await supabase.rpc(
+        "reconcile_virtual_account_deposit",
+        {
         p_registration_id: registration.id,
         p_tid: tid,
         p_order_id: registration.order_id,
         p_amount: Number(registration.amount),
-      });
+          p_provider_payload: payload,
+        },
+      );
 
       if (rpcError) {
         return NextResponse.json(
@@ -223,8 +210,21 @@ export async function POST(request: Request) {
         );
       }
 
-      if (depositConfirmed !== true) {
-        logIgnoredWebhook(registration.id, status, payload);
+      const depositAction = getNicepayConfirmationAction(depositResult);
+
+      if (depositAction === "processing") {
+        return NextResponse.json(
+          { success: false, error: "가상계좌 입금 결과가 확정되지 않았습니다." },
+          { status: 500 },
+        );
+      }
+
+      if (depositAction === "compensate") {
+        console.error("NICEPAY paid virtual account requires manual reconciliation:", {
+          registrationId: registration.id,
+          tid,
+          payload: safeNicepayPayload(payload),
+        });
       }
 
       return nicepayOkResponse();
@@ -273,20 +273,48 @@ export async function POST(request: Request) {
       return nicepayOkResponse();
     }
 
-    if (resultCode === "0000" && status === "paid" && !payment) {
-      const { error: rpcError } = await supabase.rpc("confirm_payment_registration", {
+    if (resultCode === "0000" && status === "paid" && !isVirtualAccount && reportedPaymentMethod !== "가상계좌") {
+      if (!reportedPaymentMethod) {
+        return NextResponse.json(
+          { success: false, error: "NICEPAY 웹훅 결제수단이 누락되었습니다." },
+          { status: 500 },
+        );
+      }
+
+      const { data: reconciliationResult, error: rpcError } = await supabase.rpc(
+        "reconcile_payment_registration",
+        {
         p_registration_id: registration.id,
         p_payment_key: tid,
         p_order_id: registration.order_id,
         p_amount: Number(registration.amount),
-        p_payment_method: getNicepayPaymentMethod(fields),
-      });
+          p_payment_method: reportedPaymentMethod,
+          p_provider_payload: payload,
+        },
+      );
 
       if (rpcError) {
         return NextResponse.json(
           { success: false, error: rpcError.message },
           { status: 500 },
         );
+      }
+
+      const action = getNicepayConfirmationAction(reconciliationResult);
+
+      if (action === "processing") {
+        return NextResponse.json(
+          { success: false, error: "결제 원장 반영 결과가 확정되지 않았습니다." },
+          { status: 500 },
+        );
+      }
+
+      if (action === "compensate") {
+        console.error("NICEPAY paid card/easy payment requires manual reconciliation:", {
+          registrationId: registration.id,
+          tid,
+          payload: safeNicepayPayload(payload),
+        });
       }
 
       return nicepayOkResponse();

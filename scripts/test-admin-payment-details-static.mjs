@@ -28,7 +28,11 @@ test("payment confirmation persists only a normalized NICEPAY payment method", (
   );
 
   const webhook = read("src/app/api/payment/webhook/route.ts");
-  assert.match(webhook, /p_payment_method:\s*getNicepayPaymentMethod\(fields\)/, "payment webhook must persist its verified NICEPAY method");
+  assert.match(
+    webhook,
+    /const reportedPaymentMethod = getNicepayPaymentMethod\(fields\)[\s\S]*?p_payment_method:\s*reportedPaymentMethod/,
+    "payment webhook must persist its verified NICEPAY method",
+  );
 
   const migration = read("supabase/migrations/20260729000000_add_payment_method_to_confirmation.sql");
   assert.match(migration, /confirm_payment_registration\(\s*p_registration_id UUID,\s*p_payment_key TEXT,\s*p_order_id TEXT,\s*p_amount INTEGER,\s*p_payment_method TEXT/s, "migration must add a five-argument RPC overload");

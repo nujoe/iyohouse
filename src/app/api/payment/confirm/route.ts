@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/admin";
 import {
   approveNicepayPaymentAuth,
   cancelNicepayPayment,
+  getNicepayConfirmationAction,
   getNicepayPaymentMethod,
   getNicepayVirtualAccount,
   isMatchingConfirmedNicepayPayment,
@@ -55,13 +56,10 @@ function redirectUrl(request: Request, pathname: string, params: Record<string, 
 }
 
 type CheckoutReleaseOutcome = "preserved" | "cancelled" | "expired" | "unchanged";
-type CheckoutMethod = "cardAndEasyPay" | "vbank";
-
-function getCheckoutMethod(reservedParams: URLSearchParams): CheckoutMethod | null {
-  const method = reservedParams.get("checkout_method");
-
-  return method === "cardAndEasyPay" || method === "vbank" ? method : null;
-}
+type VirtualAccountCheckoutState = {
+  state: "active_intent" | "ready_ledger" | "none";
+  attemptId: string | null;
+};
 
 function getCheckoutAttemptId(request: Request, reservedParams: URLSearchParams) {
   const queryAttemptId = new URL(request.url).searchParams.get("checkout_attempt_id");
@@ -141,13 +139,54 @@ async function validateVirtualAccountCheckoutAttempt(
   return !error && data === true;
 }
 
+async function getVirtualAccountCheckoutState(registrationId: string) {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("get_virtual_account_checkout_state", {
+    p_registration_id: registrationId,
+  });
+
+  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+    return { ok: false as const };
+  }
+
+  const state = (data as Record<string, unknown>).state;
+  const attemptId = (data as Record<string, unknown>).attempt_id;
+
+  if (state !== "active_intent" && state !== "ready_ledger" && state !== "none") {
+    return { ok: false as const };
+  }
+
+  return {
+    ok: true as const,
+    state: {
+      state,
+      attemptId: typeof attemptId === "string" ? attemptId : null,
+    } as VirtualAccountCheckoutState,
+  };
+}
+
+function processingRedirect(
+  request: Request,
+  registration: Pick<PaymentRegistration, "id" | "order_id">,
+  message: string,
+) {
+  return NextResponse.redirect(
+    redirectUrl(request, "/payment/fail", {
+      registration_id: registration.id,
+      order_id: registration.order_id,
+      processing: "true",
+      message,
+    }),
+    { status: 303 },
+  );
+}
+
 export async function POST(request: Request) {
   const auth = await parseNicepayRequest(request);
   const reservedParams = new URLSearchParams(auth.mallReserved || "");
   const workshopId = reservedParams.get("workshop") || undefined;
   const workshopTitle = reservedParams.get("workshop_title") || undefined;
   const checkoutAttemptId = getCheckoutAttemptId(request, reservedParams);
-  const checkoutMethod = getCheckoutMethod(reservedParams);
   const orderId = auth.orderId || "";
   const supabase = getSupabaseServerClient();
 
@@ -172,26 +211,35 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!checkoutMethod) {
+    const checkoutStateResult = await getVirtualAccountCheckoutState(registration.id);
+
+    if (!checkoutStateResult.ok) {
+      return processingRedirect(
+        request,
+        registration,
+        "가상계좌 결제 시도 상태를 확인 중입니다. 결제를 다시 시도하지 말고 잠시 후 확인해 주세요.",
+      );
+    }
+
+    const virtualAccountCheckoutState = checkoutStateResult.state;
+
+    if (virtualAccountCheckoutState.state === "ready_ledger") {
       return NextResponse.redirect(
-        redirectUrl(request, "/payment/fail", {
-          registration_id: registration.id,
+        redirectUrl(request, "/payment/pending", {
           order_id: registration.order_id,
-          message: "결제 수단 정보를 확인할 수 없습니다. 결제 상태 확인 후 다시 시도해 주세요.",
+          workshop: workshopId,
+          workshop_title: workshopTitle,
         }),
         { status: 303 },
       );
     }
 
-    if (checkoutMethod === "vbank") {
-      if (!checkoutAttemptId) {
-        return NextResponse.redirect(
-          redirectUrl(request, "/payment/fail", {
-            registration_id: registration.id,
-            order_id: registration.order_id,
-            message: "가상계좌 결제 시도를 확인할 수 없습니다. 결제 상태 확인 후 다시 시도해 주세요.",
-          }),
-          { status: 303 },
+    if (virtualAccountCheckoutState.state === "active_intent") {
+      if (!checkoutAttemptId || checkoutAttemptId !== virtualAccountCheckoutState.attemptId) {
+        return processingRedirect(
+          request,
+          registration,
+          "가상계좌 결제 시도 정보가 일치하지 않습니다. 결제를 다시 시도하지 말고 상태를 확인해 주세요.",
         );
       }
 
@@ -201,43 +249,10 @@ export async function POST(request: Request) {
       );
 
       if (!attemptIsValid) {
-        const { data: recordedPayment, error: recordedPaymentError } = await supabase
-          .from("payments")
-          .select("registration_id, payment_key, order_id, amount, payment_method, status, provider_status, expires_at")
-          .eq("registration_id", registration.id)
-          .eq("payment_key", auth.tid || "")
-          .eq("order_id", registration.order_id)
-          .eq("amount", Number(registration.amount))
-          .eq("payment_method", "가상계좌")
-          .eq("checkout_attempt_id", checkoutAttemptId)
-          .maybeSingle<NicepayPaymentLedger>();
-
-        if (
-          !recordedPaymentError
-          && recordedPayment?.status === "pending"
-          && recordedPayment.provider_status === "ready"
-          && Boolean(recordedPayment.expires_at)
-          && Date.parse(recordedPayment.expires_at || "") > Date.now()
-        ) {
-          return NextResponse.redirect(
-            redirectUrl(request, "/payment/pending", {
-              order_id: registration.order_id,
-              workshop: workshopId,
-              workshop_title: workshopTitle,
-            }),
-            { status: 303 },
-          );
-        }
-
-        return NextResponse.redirect(
-          redirectUrl(request, "/payment/fail", {
-            registration_id: registration.id,
-            order_id: registration.order_id,
-            message: recordedPaymentError
-              ? "가상계좌 결제 시도를 확인하지 못했습니다. 취소하지 말고 운영자에게 문의해 주세요."
-              : "가상계좌 결제 시도가 만료되었거나 일치하지 않습니다. 결제 상태를 확인해 주세요.",
-          }),
-          { status: 303 },
+        return processingRedirect(
+          request,
+          registration,
+          "가상계좌 결제 시도를 확인 중입니다. 결제를 다시 시도하지 말고 잠시 후 확인해 주세요.",
         );
       }
     }
@@ -383,12 +398,60 @@ export async function POST(request: Request) {
       );
     }
 
-    if (paymentMethod === "가상계좌" && (checkoutMethod !== "vbank" || !checkoutAttemptId)) {
+    // The actual NICEPAY method is checked only after approval. A VBank result
+    // without the server-validated active intent is compensated immediately so
+    // it cannot become an untracked issued account.
+    if (
+      paymentMethod === "가상계좌"
+      && virtualAccountCheckoutState.state !== "active_intent"
+    ) {
+      const compensation = await cancelNicepayPayment({
+        tid: approval.tid,
+        orderId: registration.order_id,
+        cancelAmt: Number(registration.amount),
+        reason: "IYOHOUSE uncorrelated virtual account approval",
+      });
+
       return NextResponse.redirect(
         redirectUrl(request, "/payment/fail", {
           registration_id: registration.id,
           order_id: registration.order_id,
-          message: "가상계좌 결제 시도를 확인할 수 없습니다. 결제 상태 확인 후 다시 시도해 주세요.",
+          message: compensation.ok
+            ? "가상계좌 결제 시도를 확인할 수 없어 승인을 취소했습니다."
+            : "가상계좌 결제 시도를 확인할 수 없고 승인 취소도 실패했습니다. 운영자에게 문의해 주세요.",
+        }),
+        { status: 303 },
+      );
+    }
+
+    if (
+      virtualAccountCheckoutState.state === "active_intent"
+      && paymentMethod !== "가상계좌"
+    ) {
+      const compensation = await cancelNicepayPayment({
+        tid: approval.tid,
+        orderId: registration.order_id,
+        cancelAmt: Number(registration.amount),
+        reason: "IYOHOUSE virtual account attempt returned a non-vbank approval",
+      });
+
+      const release = compensation.ok
+        ? await releaseVirtualAccountCheckout(
+            registration,
+            checkoutAttemptId,
+            "vbank_attempt_wrong_final_method_compensated",
+          )
+        : null;
+
+      return NextResponse.redirect(
+        redirectUrl(request, "/payment/fail", {
+          registration_id: registration.id,
+          order_id: registration.order_id,
+          message: !compensation.ok
+            ? "가상계좌 결제 승인 상태가 일치하지 않고 취소도 실패했습니다. 운영자에게 문의해 주세요."
+            : !release?.ok
+              ? "가상계좌 결제를 취소했지만 신청 상태를 정리하지 못했습니다. 운영자에게 문의해 주세요."
+              : "가상계좌 결제 승인 상태가 일치하지 않아 취소했습니다.",
         }),
         { status: 303 },
       );
@@ -605,16 +668,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: rpcError } = await supabase.rpc("confirm_payment_registration", {
+    const { data: reconciliationResult, error: rpcError } = await supabase.rpc(
+      "reconcile_payment_registration",
+      {
       p_registration_id: registration.id,
       p_payment_key: approval.tid,
       p_order_id: registration.order_id,
       p_amount: Number(registration.amount),
       p_payment_method: paymentMethod,
-    });
+        p_provider_payload: approval.payload,
+      },
+    );
 
     if (rpcError) {
-      console.error("confirm_payment_registration RPC failed:", rpcError);
+      console.error("reconcile_payment_registration RPC failed:", rpcError);
 
       const { data: recordedPayment, error: recordedPaymentError } = await supabase
         .from("payments")
@@ -627,13 +694,10 @@ export async function POST(request: Request) {
         .maybeSingle<NicepayPaymentLedger>();
 
       if (recordedPaymentError) {
-        return NextResponse.redirect(
-          redirectUrl(request, "/payment/fail", {
-            registration_id: registration.id,
-            order_id: registration.order_id,
-            message: "결제 원장 확인이 지연되고 있습니다. 취소하지 말고 잠시 후 다시 확인해 주세요.",
-          }),
-          { status: 303 },
+        return processingRedirect(
+          request,
+          registration,
+          "결제 원장 확인이 지연되고 있습니다. 취소하지 말고 잠시 후 다시 확인해 주세요.",
         );
       }
 
@@ -655,47 +719,52 @@ export async function POST(request: Request) {
           { status: 303 },
         );
       }
+      // A transport/database error after provider approval is not proof of a
+      // terminal rejection. The signed webhook can safely run the same RPC.
+      return processingRedirect(
+        request,
+        registration,
+        "결제 처리 결과를 확인 중입니다. 취소하지 말고 잠시 후 다시 확인해 주세요.",
+      );
+    }
 
-      const compensation = await cancelNicepayPayment({
-        tid: approval.tid,
-        orderId: registration.order_id,
-        cancelAmt: Number(registration.amount),
-        reason: "IYOHOUSE registration confirmation failed",
-      });
+    const confirmationAction = getNicepayConfirmationAction(reconciliationResult);
 
-      let release: Awaited<ReturnType<typeof releaseVirtualAccountCheckout>> | null = null;
-
-      if (compensation.ok) {
-        release = await releaseVirtualAccountCheckout(
-          registration,
-          checkoutAttemptId,
-          "confirmation_failed_compensated",
-        );
-      } else {
-        console.error("NICEPAY compensation cancel failed:", compensation.message, compensation.payload);
-      }
-
+    if (confirmationAction === "confirmed") {
       return NextResponse.redirect(
-        redirectUrl(request, "/payment/fail", {
+        redirectUrl(request, "/payment/success", {
           registration_id: registration.id,
           order_id: registration.order_id,
-          message: !compensation.ok
-            ? "결제는 승인되었으나 신청 확정 및 취소에 실패했습니다. 운영자에게 문의해 주세요."
-            : !release?.ok
-              ? "결제 취소 후 신청 상태를 정리하지 못했습니다. 운영자에게 문의해 주세요."
-              : "신청 확정 중 오류가 발생해 결제를 취소했습니다.",
+          amount: registration.amount,
+          workshop: workshopId,
+          workshop_title: workshopTitle,
         }),
         { status: 303 },
       );
     }
 
+    if (confirmationAction === "processing") {
+      return processingRedirect(
+        request,
+        registration,
+        "결제 처리 결과를 확인 중입니다. 취소하지 말고 잠시 후 다시 확인해 주세요.",
+      );
+    }
+
+    const compensation = await cancelNicepayPayment({
+      tid: approval.tid,
+      orderId: registration.order_id,
+      cancelAmt: Number(registration.amount),
+      reason: "IYOHOUSE terminal registration reconciliation",
+    });
+
     return NextResponse.redirect(
-      redirectUrl(request, "/payment/success", {
+      redirectUrl(request, "/payment/fail", {
         registration_id: registration.id,
         order_id: registration.order_id,
-        amount: registration.amount,
-        workshop: workshopId,
-        workshop_title: workshopTitle,
+        message: compensation.ok
+          ? "신청 상태가 확정될 수 없어 결제를 취소했습니다."
+          : "신청 상태가 확정될 수 있고 결제 취소에 실패했습니다. 운영자에게 문의해 주세요.",
       }),
       { status: 303 },
     );

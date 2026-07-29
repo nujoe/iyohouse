@@ -87,7 +87,7 @@ requireIncludes("src/app/api/payment/checkout/route.ts", [
 requireIncludes("src/app/api/payment/confirm/route.ts", [
   "parseNicepayRequest",
   "approveNicepayPaymentAuth",
-  "confirm_payment_registration",
+  "reconcile_payment_registration",
   "p_payment_key",
   "authResultCode",
   "cancelNicepayPayment",
@@ -102,8 +102,8 @@ if (!/const paymentMethod = getNicepayPaymentMethod\(approval\.payload\)[\s\S]*?
 
 requireIncludes("src/app/api/payment/webhook/route.ts", [
   "verifyNicepayResultSignature",
-  "confirm_payment_registration",
-  "confirm_virtual_account_deposit",
+  "reconcile_payment_registration",
+  "reconcile_virtual_account_deposit",
   "fail_virtual_account_payment",
   "workshop_registrations_v2",
   "cancelled",

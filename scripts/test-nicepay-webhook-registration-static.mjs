@@ -35,7 +35,7 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
-    /confirm_payment_registration/,
+    /reconcile_payment_registration/,
     "card and easy-payment paid events must retain generic confirmation",
   );
   assert.match(

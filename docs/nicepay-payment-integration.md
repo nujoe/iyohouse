@@ -39,8 +39,8 @@ IYO_NICEPAY_VBANK_ENABLED=0
 7. 서버가 `authToken + clientId + amount + secretKey` 서명을 검증합니다.
 8. 서버가 NICEPAY 승인 API `/v1/payments/{tid}`를 호출합니다.
 9. 승인 응답의 `orderId`, `amount`, 선택적 결과 서명을 다시 검증합니다.
-10. 검증이 끝나면 `confirm_payment_registration` RPC로 `confirmed` 신청과 `payments` row를 만들고, NICEPAY 최종 결제수단을 기록합니다.
-11. NICEPAY 승인 후 DB 확정이 실패하면 `/v1/payments/{tid}/cancel`로 보상 취소를 시도합니다.
+10. 검증이 끝나면 `reconcile_payment_registration` RPC가 잠긴 신청, 워크숍 정원, 결제 원장을 함께 확정하고 NICEPAY 최종 결제수단을 기록합니다.
+11. 명시적인 만료/정원 초과 같은 terminal 결과에만 `/v1/payments/{tid}/cancel` 보상 취소를 시도합니다. DB/전송 결과가 불명확하면 결제를 취소하지 않고 signed webhook이 같은 원장을 재조정하도록 처리 중 상태로 둡니다.
 
 ## 라우트 계약
 
@@ -91,7 +91,7 @@ IYO_NICEPAY_VBANK_ENABLED=0
 
 NICEPAY 관리자 webhook 등록은 이 배포 전에는 수행하지 않습니다. 반드시 다음 순서로 진행합니다.
 
-1. Supabase에 `20260729000001_add_virtual_account_payment_lifecycle.sql`을 적용합니다.
+1. Supabase에 아직 적용하지 않은 가상계좌 migration을 번호 순서대로 모두 적용합니다. 최소한 `20260729000001_add_virtual_account_payment_lifecycle.sql` 다음 `20260729000002_harden_payment_reconciliation.sql`까지 적용해야 합니다. 이미 `00001`만 적용한 환경도 `00002`를 반드시 추가 적용합니다.
 2. `IYO_NICEPAY_VBANK_ENABLED=0`으로 코드를 배포합니다. 카드와 간편결제는 계속 동작하고 가상계좌 버튼은 비활성화됩니다.
 3. 배포가 완료된 뒤 NICEPAY 관리자에서 정확히 `https://www.iyohouse.com/api/payment/webhook`을 등록하고 가상계좌 callback을 선택합니다. 기존 카드 callback 선택은 유지합니다.
 4. NICEPAY 등록 probe가 배포된 route에서 HTTP `200 OK`를 받는지 확인합니다.
@@ -104,3 +104,16 @@ NICEPAY 관리자 webhook 등록은 이 배포 전에는 수행하지 않습니�
 - NICEPAY 취소 API 호출 UI
 - 정기결제/빌링키
 - 입금 계좌 수동 확인형 결제
+
+## 가상계좌 수동 조정
+
+만료 또는 정원 초과 뒤 `paid` webhook이 오면 결제사 사실을 `payments.provider_status = 'paid_reconciliation_required'`로 보존합니다. 신청은 확정되지 않고 정원도 증가하지 않습니다. 이 상태는 자동 환불하지 않습니다. 운영자는 아래 조회로 TID, provider payload, 사유를 확인한 뒤 NICEPAY 계약상 가능한 환불 또는 수동 처리 절차를 수행합니다.
+
+```sql
+SELECT payment_key AS tid, order_id, registration_id, amount,
+       provider_status, reconciliation_reason, reconciliation_required_at,
+       provider_payload
+FROM public.payments
+WHERE provider_status = 'paid_reconciliation_required'
+ORDER BY reconciliation_required_at DESC;
+```

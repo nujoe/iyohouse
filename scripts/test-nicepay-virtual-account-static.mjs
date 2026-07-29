@@ -138,7 +138,7 @@ test("virtual-account routes use the lifecycle RPCs and owner-scoped status", ()
   assert.match(confirm, /record_virtual_account_issuance/);
   assert.match(confirm, /release_virtual_account_checkout/);
   assert.match(confirm, /payment\/pending/);
-  assert.match(webhook, /confirm_virtual_account_deposit/);
+  assert.match(webhook, /reconcile_virtual_account_deposit/);
   assert.match(webhook, /fail_virtual_account_payment/);
   assert.match(methods, /getNicepayAvailableCheckoutMethods/);
   assert.match(pending, /user_id/);
@@ -309,8 +309,8 @@ test("persisted checkout intent serializes vbank starts and protects the winning
   );
   assert.match(
     confirm,
-    /paymentMethod === "가상계좌" && \(checkoutMethod !== "vbank" \|\| !checkoutAttemptId\)[\s\S]*?"\/payment\/fail"[\s\S]*?record_virtual_account_issuance/,
-    "a verified vbank approval without correlation must stop before issuance recording",
+    /paymentMethod === "가상계좌"[\s\S]*?virtualAccountCheckoutState\.state !== "active_intent"[\s\S]*?cancelNicepayPayment[\s\S]*?record_virtual_account_issuance/,
+    "an uncorrelated verified vbank approval must be compensated before issuance recording",
   );
   assert.doesNotMatch(confirm, /markPendingRegistrationCancelled/);
   assert.doesNotMatch(confirm, /isPendingReadyVirtualAccountPayment/);
@@ -578,46 +578,45 @@ test("vbank attempt correlation is verified before provider approval", () => {
     /mallReserved\.set\("checkout_method", method\)[\s\S]*?mallReserved\.set\("checkout_attempt_id", checkoutAttemptId\)/,
     "checkout must return the selected method and exact vbank token through NICEPAY metadata",
   );
-  const vbankGate = confirm.slice(
-    confirm.indexOf('if (checkoutMethod === "vbank")'),
-    approvalIndex,
-  );
+  const vbankGate = confirm.slice(confirm.indexOf("const checkoutStateResult"), approvalIndex);
   assert.match(
     vbankGate,
-    /!checkoutAttemptId[\s\S]*?"\/payment\/fail"[\s\S]*?validateVirtualAccountCheckoutAttempt/,
+    /virtualAccountCheckoutState\.state === "active_intent"[\s\S]*?!checkoutAttemptId[\s\S]*?processingRedirect[\s\S]*?validateVirtualAccountCheckoutAttempt/,
     "missing or mismatched vbank metadata must fail before provider approval",
   );
 });
 
-test("ambiguous card confirmation re-reads the exact ledger before compensation", () => {
+test("ambiguous card confirmation re-reads the exact ledger and never compensates an unknown outcome", () => {
   const rpcStart = confirm.indexOf("if (rpcError)");
-  const rpcEnd = confirm.indexOf(
-    'return NextResponse.redirect(\n      redirectUrl(request, "/payment/success"',
-    rpcStart,
-  );
+  const rpcEnd = confirm.indexOf("const confirmationAction", rpcStart);
   const rpcBlock = confirm.slice(rpcStart, rpcEnd);
   const ledgerReadIndex = rpcBlock.indexOf('.from("payments")');
-  const compensationIndex = rpcBlock.indexOf("cancelNicepayPayment");
 
-  assert.ok(rpcStart >= 0 && ledgerReadIndex >= 0 && compensationIndex > ledgerReadIndex);
+  assert.ok(rpcStart >= 0 && rpcEnd > rpcStart && ledgerReadIndex >= 0);
   assert.match(
     rpcBlock,
     /\.eq\("registration_id", registration\.id\)[\s\S]*?\.eq\("payment_key", approval\.tid\)[\s\S]*?\.eq\("order_id", registration\.order_id\)[\s\S]*?\.eq\("amount", Number\(registration\.amount\)\)[\s\S]*?\.eq\("payment_method", paymentMethod\)/,
     "an ambiguous confirmation result must re-read the exact successful ledger",
   );
   assert.match(
-    rpcBlock.slice(ledgerReadIndex, compensationIndex),
+    rpcBlock.slice(ledgerReadIndex),
     /isMatchingConfirmedNicepayPayment[\s\S]*?"\/payment\/success"/,
     "a concurrent exact confirmation must redirect success without provider compensation",
   );
+  assert.doesNotMatch(
+    rpcBlock,
+    /cancelNicepayPayment/,
+    "a transport or unknown database outcome must stay processing after the exact read",
+  );
+  assert.match(rpcBlock, /processingRedirect/);
 });
 
-test("expired vbank deposits are rejected under registration, ledger, and capacity locks", () => {
+test("expired vbank deposits preserve paid evidence under registration, ledger, and capacity locks", () => {
   const sql = readFileSync(
-    join(root, "supabase/migrations/20260729000001_add_virtual_account_payment_lifecycle.sql"),
+    join(root, "supabase/migrations/20260729000002_harden_payment_reconciliation.sql"),
     "utf8",
   );
-  const deposit = latestSqlFunction(sql, "confirm_virtual_account_deposit");
+  const deposit = latestSqlFunction(sql, "reconcile_virtual_account_deposit");
   const expiredIndex = deposit.indexOf("v_payment.expires_at <= NOW()");
   const expiredPaymentIndex = deposit.indexOf("UPDATE public.payments", expiredIndex);
   const expiredRegistrationIndex = deposit.indexOf("UPDATE public.workshop_registrations_v2", expiredPaymentIndex);
@@ -625,13 +624,13 @@ test("expired vbank deposits are rejected under registration, ledger, and capaci
   assert.ok(expiredIndex >= 0 && expiredPaymentIndex > expiredIndex && expiredRegistrationIndex > expiredPaymentIndex);
   assert.match(
     deposit.slice(expiredPaymentIndex, expiredRegistrationIndex),
-    /SET status = 'failed'[\s\S]*?provider_status = 'expired'/,
-    "an expired payment must be retained as an expired ledger before its reservation is released",
+    /SET status = 'failed'[\s\S]*?provider_status = 'paid_reconciliation_required'[\s\S]*?paid_at = COALESCE\(v_payment\.paid_at, NOW\(\)\)[\s\S]*?provider_payload = COALESCE\(v_payment\.provider_payload, p_provider_payload\)/,
+    "an expired paid deposit must retain provider truth before its reservation is released",
   );
   assert.match(
     deposit.slice(expiredRegistrationIndex),
-    /SET status = 'cancelled'[\s\S]*?RETURN FALSE/,
-    "expired paid callbacks must commit a terminal reconciliation state instead of confirming",
+    /SET status = 'cancelled'[\s\S]*?jsonb_build_object\('outcome', 'reconciliation_required'/,
+    "expired paid callbacks must commit a manual reconciliation state instead of confirming",
   );
   assert.match(
     deposit,
@@ -640,7 +639,7 @@ test("expired vbank deposits are rejected under registration, ledger, and capaci
   );
   assert.match(
     webhook,
-    /const \{ data: depositConfirmed, error: rpcError \}[\s\S]*?depositConfirmed !== true[\s\S]*?return nicepayOkResponse\(\)/,
+    /const \{ data: depositResult, error: rpcError \}[\s\S]*?depositAction === "compensate"[\s\S]*?return nicepayOkResponse\(\)/,
     "a deliberately rejected expired webhook must be acknowledged after its terminal state is stored",
   );
 });
@@ -718,6 +717,134 @@ test("a disabled vbank default is rejected", () => {
   withNicepayEnv({ IYO_NICEPAY_METHOD: "vbank", IYO_NICEPAY_VBANK_ENABLED: "false" }, () => {
     assert.throws(() => createPayload(), /NICEPAY virtual-account checkout is disabled/);
   });
+});
+
+test("ambiguous card confirmation stays in processing until a structured outcome is known", () => {
+  assert.equal(
+    typeof nicepayModule.getNicepayConfirmationAction,
+    "function",
+    "the route needs an executable decision helper for confirmation outcomes",
+  );
+  assert.equal(
+    nicepayModule.getNicepayConfirmationAction({ outcome: "confirmed" }),
+    "confirmed",
+  );
+  assert.equal(
+    nicepayModule.getNicepayConfirmationAction({ outcome: "reconciliation_required", reason: "expired" }),
+    "compensate",
+  );
+  assert.equal(
+    nicepayModule.getNicepayConfirmationAction(null),
+    "processing",
+    "an absent result must never trigger a provider refund",
+  );
+  assert.equal(
+    nicepayModule.getNicepayConfirmationAction({ outcome: "unknown" }),
+    "processing",
+    "an unrecognized result must remain retryable for the signed webhook",
+  );
+});
+
+test("forward reconciliation migration owns result contracts, capacity locks, and paid evidence", () => {
+  const forwardMigrationPath = join(
+    root,
+    "supabase/migrations/20260729000002_harden_payment_reconciliation.sql",
+  );
+  assert.equal(existsSync(forwardMigrationPath), true, "a forward migration must upgrade databases that already ran 00001");
+
+  const sql = readFileSync(forwardMigrationPath, "utf8");
+  const reconcileCard = latestSqlFunction(sql, "reconcile_payment_registration");
+  const reconcileVbank = latestSqlFunction(sql, "reconcile_virtual_account_deposit");
+  const activeIntent = latestSqlFunction(sql, "get_virtual_account_checkout_state");
+
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_payload JSONB/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS reconciliation_required_at TIMESTAMPTZ/);
+  assert.match(sql, /paid_reconciliation_required/);
+  assert.match(
+    reconcileCard,
+    /RETURNS JSONB[\s\S]*?FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE[\s\S]*?expires_at <= NOW\(\)[\s\S]*?FROM public\.workshops[\s\S]*?FOR UPDATE[\s\S]*?v_current_count > v_effective_capacity/,
+    "card confirmation must atomically return explicit terminal outcomes after registration and capacity locks",
+  );
+  assert.match(
+    reconcileCard,
+    /jsonb_build_object\('outcome', 'confirmed'/,
+    "card confirmation must return a successful convergence outcome",
+  );
+  assert.match(
+    reconcileCard,
+    /'outcome', 'reconciliation_required'/,
+    "card confirmation must distinguish successful convergence from a known terminal rejection",
+  );
+  assert.match(
+    reconcileCard,
+    /FROM public\.virtual_account_checkout_intents[\s\S]*?FOR UPDATE[\s\S]*?'reason', 'active_vbank_checkout_intent'/,
+    "a signed card callback cannot bypass a locked active VBank intent",
+  );
+  assert.match(
+    activeIntent,
+    /RETURNS JSONB[\s\S]*?FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE[\s\S]*?FROM public\.virtual_account_checkout_intents[\s\S]*?FOR UPDATE/,
+    "VBank callback classification must be derived from a locked server-side intent",
+  );
+  assert.match(
+    reconcileVbank,
+    /p_provider_payload JSONB[\s\S]*?provider_status = 'paid_reconciliation_required'[\s\S]*?paid_at = COALESCE\(v_payment\.paid_at, NOW\(\)\)[\s\S]*?provider_payload = COALESCE\(v_payment\.provider_payload, p_provider_payload\)/,
+    "late or over-capacity paid deposits must retain immutable provider evidence for reconciliation",
+  );
+  assert.match(
+    reconcileVbank,
+    /v_payment\.status IS DISTINCT FROM 'pending'[\s\S]*?provider_status = 'paid_reconciliation_required'[\s\S]*?RETURN jsonb_build_object\('outcome', 'reconciliation_required'/,
+    "a paid callback after a local expired or failed transition must retain provider truth instead of erroring",
+  );
+  assert.match(
+    sql,
+    /REVOKE ALL ON FUNCTION public\.reconcile_payment_registration[\s\S]*?GRANT EXECUTE ON FUNCTION public\.reconcile_payment_registration[\s\S]*?TO service_role/,
+  );
+  assert.match(
+    sql,
+    /REVOKE ALL ON FUNCTION public\.get_virtual_account_checkout_state[\s\S]*?GRANT EXECUTE ON FUNCTION public\.get_virtual_account_checkout_state[\s\S]*?TO service_role/,
+  );
+});
+
+test("confirm ignores browser method markers and blocks active VBank attempts before approval", () => {
+  const vbankStateIndex = confirm.indexOf("const checkoutStateResult");
+  const approvalIndex = confirm.indexOf("const approval = await approveNicepayPaymentAuth");
+
+  assert.ok(vbankStateIndex >= 0 && vbankStateIndex < approvalIndex);
+  assert.doesNotMatch(
+    confirm,
+    /getCheckoutMethod\(reservedParams\)|checkoutMethod === "vbank"/,
+    "mallReserved checkout_method must not classify VBank approval paths",
+  );
+  assert.match(
+    confirm.slice(vbankStateIndex, approvalIndex),
+    /state === "active_intent"[\s\S]*?!checkoutAttemptId[\s\S]*?processingRedirect[\s\S]*?validateVirtualAccountCheckoutAttempt/,
+    "an active intent without its exact token must stop before provider approval without cleanup",
+  );
+  assert.match(
+    confirm.slice(vbankStateIndex, approvalIndex),
+    /state === "ready_ledger"[\s\S]*?"\/payment\/pending"/,
+    "an already-issued account must converge before another approval request",
+  );
+});
+
+test("webhook persists paid VBank reconciliation requirements instead of silently expiring them", () => {
+  assert.match(webhook, /reconcile_virtual_account_deposit/);
+  assert.match(webhook, /p_provider_payload:\s*payload/);
+  assert.match(
+    webhook,
+    /depositAction === "compensate"[\s\S]*?return nicepayOkResponse\(\)/,
+    "a signed paid callback with a stored manual-reconciliation record is idempotently acknowledged",
+  );
+  assert.match(
+    documentation,
+    /20260729000001_add_virtual_account_payment_lifecycle\.sql[\s\S]*?20260729000002_harden_payment_reconciliation\.sql/,
+    "operators must apply both pending VBank migrations",
+  );
+  assert.match(
+    documentation,
+    /provider_status = 'paid_reconciliation_required'/,
+    "operator documentation must expose an exact reconciliation query/state",
+  );
 });
 
 test("virtual-account database lifecycle uses locked service-role RPCs", () => {

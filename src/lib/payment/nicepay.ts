@@ -28,6 +28,8 @@ type NicepayConfig = {
 
 export type NicepayCheckoutMethod = "cardAndEasyPay" | "vbank";
 
+export type NicepayConfirmationAction = "confirmed" | "compensate" | "processing";
+
 type NicepayVirtualAccount = {
   code: string;
   name: string;
@@ -196,6 +198,29 @@ export function getNicepayPaymentMethod(payload: Record<string, unknown>): strin
   };
 
   return labels[normalized] ?? null;
+}
+
+/**
+ * Database reconciliation is intentionally three-valued. Only a structured
+ * terminal rejection authorizes provider compensation; unavailable or unknown
+ * outcomes must remain recoverable by the signed webhook.
+ */
+export function getNicepayConfirmationAction(result: unknown): NicepayConfirmationAction {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return "processing";
+  }
+
+  const outcome = (result as Record<string, unknown>).outcome;
+
+  if (outcome === "confirmed") {
+    return "confirmed";
+  }
+
+  if (outcome === "reconciliation_required") {
+    return "compensate";
+  }
+
+  return "processing";
 }
 
 function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
