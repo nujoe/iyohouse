@@ -4,6 +4,7 @@ import {
   createNicepayPaymentPayload,
   getNicepayConfig,
   isNicepayConfigured,
+  nicepayCheckoutMethodInput,
 } from "@/lib/payment/nicepay";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const runtime = "nodejs";
 type CheckoutRequest = {
   registration_id?: string;
   orderName?: string;
-  method?: string;
+  method?: unknown;
   scheduleLabel?: string;
   workshopId?: string;
   workshopTitle?: string;
@@ -42,7 +43,8 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { registration_id, orderName, method, scheduleLabel, workshopId, workshopTitle } = await request.json() as CheckoutRequest;
+    const checkoutRequest = await request.json() as CheckoutRequest;
+    const { registration_id, orderName, scheduleLabel, workshopId, workshopTitle } = checkoutRequest;
 
     if (!registration_id) {
       return NextResponse.json(
@@ -120,8 +122,8 @@ export async function POST(request: Request) {
       userId: user.id,
       orderName: orderName || workshopTitle || registrationWorkshopTitle || "IYOHOUSE Workshop",
       origin,
-      method,
       mallReserved,
+      ...nicepayCheckoutMethodInput(checkoutRequest),
     });
 
     return NextResponse.json({

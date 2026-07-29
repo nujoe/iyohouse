@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 const nicepay = readFileSync(join(root, "src/lib/payment/nicepay.ts"), "utf8");
+const checkout = readFileSync(join(root, "src/app/api/payment/checkout/route.ts"), "utf8");
 const outputDir = mkdtempSync(join(tmpdir(), "iyohouse-nicepay-test-"));
 
 try {
@@ -70,12 +71,16 @@ function withNicepayEnv(values, callback) {
 }
 
 function createPayload(method) {
+  return createPayloadWithMethodInput(method === undefined ? {} : { method });
+}
+
+function createPayloadWithMethodInput(methodInput) {
   return nicepayModule.createNicepayPaymentPayload({
     registration,
     userId: "user-1",
     orderName: "IYOHOUSE Workshop",
     origin: "https://iyohouse.example",
-    ...(method === undefined ? {} : { method }),
+    ...methodInput,
   });
 }
 
@@ -139,6 +144,29 @@ test("explicit empty and null methods are rejected", () => {
   withNicepayEnv({ IYO_NICEPAY_METHODS: "cardAndEasyPay" }, () => {
     assert.throws(() => createPayload(""), /Requested NICEPAY checkout method is not configured/);
     assert.throws(() => createPayload(null), /Requested NICEPAY checkout method is not configured/);
+  });
+});
+
+test("checkout request method input preserves omitted and explicit values", () => {
+  assert.match(
+    checkout,
+    /nicepayCheckoutMethodInput\(checkoutRequest\)/,
+    "checkout must preserve request method property presence",
+  );
+
+  withNicepayEnv({ IYO_NICEPAY_METHOD: "card" }, () => {
+    const omitted = nicepayModule.nicepayCheckoutMethodInput({});
+    assert.deepEqual(omitted, {});
+    assert.equal(createPayloadWithMethodInput(omitted).method, "card");
+
+    for (const method of [undefined, null, ""]) {
+      const explicit = nicepayModule.nicepayCheckoutMethodInput({ method });
+      assert.equal(Object.hasOwn(explicit, "method"), true);
+      assert.throws(
+        () => createPayloadWithMethodInput(explicit),
+        /Requested NICEPAY checkout method is not configured/,
+      );
+    }
   });
 });
 

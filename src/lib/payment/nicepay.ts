@@ -228,6 +228,10 @@ function getRequestedCheckoutMethod(method: string): NicepayCheckoutMethod | "" 
   return method === "cardAndEasyPay" || method === "vbank" ? method : "";
 }
 
+export function nicepayCheckoutMethodInput(request: { method?: unknown }) {
+  return Object.hasOwn(request, "method") ? { method: request.method } : {};
+}
+
 function isIso8601(value: string) {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
     && Number.isFinite(Date.parse(value));
