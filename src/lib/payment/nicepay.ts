@@ -51,7 +51,7 @@ type CreateNicepayPaymentPayloadInput = {
   userId: string;
   orderName: string;
   origin: string;
-  method?: string;
+  method?: unknown;
   mallReserved?: URLSearchParams;
 };
 
@@ -335,29 +335,30 @@ function nicepayGoodsName(name: string) {
   return Array.from(cleaned).slice(0, 40).join("") || "IYOHOUSE Workshop";
 }
 
-export function createNicepayPaymentPayload({
-  registration,
-  userId,
-  orderName,
-  origin,
-  method,
-  mallReserved,
-}: CreateNicepayPaymentPayloadInput) {
+export function createNicepayPaymentPayload(input: CreateNicepayPaymentPayloadInput) {
+  const {
+    registration,
+    userId,
+    orderName,
+    origin,
+    method,
+    mallReserved,
+  } = input;
   const config = getNicepayConfig();
   let selectedMethod = config.method;
 
-  if (method) {
-    const requestedMethod = getRequestedCheckoutMethod(method);
+  if (Object.hasOwn(input, "method")) {
+    const requestedMethod = typeof method === "string" ? getRequestedCheckoutMethod(method) : "";
 
     if (!requestedMethod || !config.methods.includes(requestedMethod)) {
       throw new Error("Requested NICEPAY checkout method is not configured.");
     }
 
-    if (requestedMethod === "vbank" && !config.vbankEnabled) {
-      throw new Error("NICEPAY virtual-account checkout is disabled.");
-    }
-
     selectedMethod = requestedMethod;
+  }
+
+  if (selectedMethod === "vbank" && !config.vbankEnabled) {
+    throw new Error("NICEPAY virtual-account checkout is disabled.");
   }
 
   const reserved = mallReserved || new URLSearchParams();
