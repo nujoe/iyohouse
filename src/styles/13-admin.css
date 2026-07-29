@@ -247,6 +247,16 @@
     width: 286px;
 }
 
+.admin-virtual-account-table .admin-virtual-account-amount-cell,
+.admin-virtual-account-table .admin-virtual-account-number-cell,
+.admin-virtual-account-table .admin-virtual-account-expiry-cell {
+    white-space: nowrap;
+}
+
+.admin-virtual-account-table .admin-virtual-account-number-cell {
+    font-variant-numeric: tabular-nums;
+}
+
 .admin-empty,
 .admin-empty-panel {
     color: #555;

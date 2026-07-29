@@ -52,3 +52,27 @@ test("admin applicants read payment ledger details without changing cancelled or
   assert.match(styles, /\.admin-payment-amount-cell/, "payment amount needs a compact explicit column style");
   assert.match(styles, /\.admin-payment-method-cell/, "payment method needs a compact explicit column style");
 });
+
+test("admin renders active virtual-account deposits in a separate read-only table", () => {
+  const client = read("src/components/admin/AdminWorkshopApplicantsClient.tsx");
+  const sectionStart = client.indexOf("function renderPendingVirtualAccountSection");
+
+  assert.notEqual(sectionStart, -1, "pending virtual accounts need an independent section renderer");
+
+  const section = client.slice(sectionStart, client.indexOf("\nexport default", sectionStart));
+  assert.match(section, /가상계좌 입금 대기/, "pending deposits need their own section heading");
+  assert.match(section, />이름</);
+  assert.match(section, />이메일</);
+  assert.match(section, />결제금액</);
+  assert.match(section, />은행</);
+  assert.match(section, />계좌번호</);
+  assert.match(section, />입금기한</);
+  assert.match(section, /admin-table-wrap/, "pending deposits must retain the responsive table wrapper");
+  assert.doesNotMatch(section, /type="checkbox"|일정 변경|취소\/환불/, "pending deposits must remain read-only");
+
+  const page = read("src/app/admin/workshops/[workshopId]/page.tsx");
+  assert.match(page, /pendingVirtualAccounts=\{pendingVirtualAccounts\}/, "page must pass pending accounts to the client");
+
+  const styles = read("src/styles/13-admin.css");
+  assert.match(styles, /\.admin-virtual-account-/, "pending-account styles must remain narrowly scoped");
+});

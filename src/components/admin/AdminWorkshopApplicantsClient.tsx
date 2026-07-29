@@ -34,6 +34,16 @@ type AdminApplicantGroup = {
   applicants: AdminApplicantRow[];
 };
 
+type AdminPendingVirtualAccountRow = {
+  id: string;
+  snapshot_name: string | null;
+  snapshot_email: string | null;
+  amount: number;
+  vbank_name: string | null;
+  masked_vbank_number: string;
+  expires_at: string;
+};
+
 type AdminScheduleOption = {
   key: string;
   label: string;
@@ -50,6 +60,7 @@ type AdminWorkshopApplicantsClientProps = {
   cancelledGroups: AdminApplicantGroup[];
   emailTemplate: AdminWorkshopEmailTemplate | null;
   groups: AdminApplicantGroup[];
+  pendingVirtualAccounts: AdminPendingVirtualAccountRow[];
   scheduleCounts: AdminScheduleCounts;
   scheduleOptions: AdminScheduleOption[];
   workshopId: string;
@@ -72,12 +83,52 @@ function mergeIds(currentIds: string[], idsToAdd: string[]) {
   return Array.from(new Set([...currentIds, ...idsToAdd]));
 }
 
+function renderPendingVirtualAccountSection(pendingVirtualAccounts: AdminPendingVirtualAccountRow[]) {
+  if (pendingVirtualAccounts.length === 0) return null;
+
+  return (
+    <section className="admin-section admin-virtual-account-section">
+      <div className="admin-section-header">
+        <h2>가상계좌 입금 대기</h2>
+        <span>{pendingVirtualAccounts.length}명</span>
+      </div>
+      <div className="admin-table-wrap">
+        <table className="admin-table admin-virtual-account-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th className="admin-virtual-account-amount-cell">결제금액</th>
+              <th>은행</th>
+              <th className="admin-virtual-account-number-cell">계좌번호</th>
+              <th className="admin-virtual-account-expiry-cell">입금기한</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingVirtualAccounts.map((account) => (
+              <tr key={account.id}>
+                <td>{account.snapshot_name || "-"}</td>
+                <td>{account.snapshot_email || "-"}</td>
+                <td className="admin-virtual-account-amount-cell">{account.amount.toLocaleString()}원</td>
+                <td>{account.vbank_name || "-"}</td>
+                <td className="admin-virtual-account-number-cell">{account.masked_vbank_number}</td>
+                <td className="admin-virtual-account-expiry-cell">{formatAdminDateTime(account.expires_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminWorkshopApplicantsClient({
   applicantCount,
   cancelledCount,
   cancelledGroups,
   emailTemplate,
   groups,
+  pendingVirtualAccounts,
   scheduleCounts,
   scheduleOptions,
   workshopId,
@@ -217,6 +268,7 @@ export default function AdminWorkshopApplicantsClient({
           workshopId={workshopId}
         />
         <section className="admin-empty-panel">확정된 신청자가 없습니다.</section>
+        {renderPendingVirtualAccountSection(pendingVirtualAccounts)}
         {hasCancelledApplicants && (
           <section className="admin-section">
             <div className="admin-section-header">
@@ -382,6 +434,8 @@ export default function AdminWorkshopApplicantsClient({
           </section>
         );
       })}
+
+      {renderPendingVirtualAccountSection(pendingVirtualAccounts)}
 
       {hasCancelledApplicants && (
         <section className="admin-section">

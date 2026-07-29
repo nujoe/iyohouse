@@ -60,10 +60,21 @@ export type AdminApplicantGroup = {
   applicants: AdminApplicantRow[];
 };
 
+export type AdminPendingVirtualAccountRow = {
+  id: string;
+  snapshot_name: string | null;
+  snapshot_email: string | null;
+  amount: number;
+  vbank_name: string | null;
+  masked_vbank_number: string;
+  expires_at: string;
+};
+
 export type AdminWorkshopApplicantsData = {
   workshop: Omit<AdminWorkshopRow, "confirmedCount" | "pendingCount">;
   groups: AdminApplicantGroup[];
   applicantCount: number;
+  pendingVirtualAccounts: AdminPendingVirtualAccountRow[];
   cancelledGroups: AdminApplicantGroup[];
   cancelledCount: number;
   emailTemplate: AdminWorkshopEmailTemplate | null;
@@ -317,6 +328,56 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     cancelledRows = (cancelledWithSchedule.data ?? []) as AdminApplicantRow[];
   }
 
+  const { data: pendingRegistrations, error: pendingRegistrationsError } = await adminClient
+    .from("workshop_registrations_v2")
+    .select("id, snapshot_name, snapshot_email, expires_at")
+    .eq("workshop_id", workshopId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (pendingRegistrationsError) {
+    throw new Error(`가상계좌 입금 대기 신청자를 불러오지 못했습니다: ${pendingRegistrationsError.message}`);
+  }
+
+  const activePendingRegistrations = (pendingRegistrations ?? []).filter((registration) => (
+    Boolean(registration.expires_at) && new Date(registration.expires_at).getTime() > Date.now()
+  ));
+  const pendingRegistrationIds = activePendingRegistrations.map((registration) => registration.id);
+  const { data: pendingVirtualAccountPayments, error: pendingVirtualAccountPaymentsError } = pendingRegistrationIds.length > 0
+    ? await adminClient
+      .from("payments")
+      .select("registration_id, amount, vbank_name, vbank_number")
+      .in("registration_id", pendingRegistrationIds)
+      .eq("payment_method", "가상계좌")
+      .eq("status", "pending")
+      .eq("provider_status", "ready")
+    : { data: [], error: null };
+
+  if (pendingVirtualAccountPaymentsError) {
+    throw new Error(`가상계좌 입금 대기 결제 원장을 불러오지 못했습니다: ${pendingVirtualAccountPaymentsError.message}`);
+  }
+
+  const pendingVirtualAccountPaymentByRegistrationId = new Map(
+    (pendingVirtualAccountPayments ?? []).map((payment) => [payment.registration_id, payment]),
+  );
+  const pendingVirtualAccounts = activePendingRegistrations.flatMap((registration) => {
+    const payment = pendingVirtualAccountPaymentByRegistrationId.get(registration.id);
+
+    if (!payment || typeof payment.amount !== "number" || !payment.vbank_number || !registration.expires_at) {
+      return [];
+    }
+
+    return [{
+      id: registration.id,
+      snapshot_name: registration.snapshot_name,
+      snapshot_email: registration.snapshot_email,
+      amount: payment.amount,
+      vbank_name: payment.vbank_name,
+      masked_vbank_number: `****${payment.vbank_number.slice(-4)}`,
+      expires_at: registration.expires_at,
+    }];
+  });
+
   const confirmedRegistrationIds = applicantRows.map((applicant) => applicant.id);
   const { data: payments, error: paymentsError } = confirmedRegistrationIds.length > 0
     ? await adminClient
@@ -361,6 +422,7 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     },
     groups: groupApplicantsBySchedule(applicantRows),
     applicantCount: applicantRows.length,
+    pendingVirtualAccounts,
     cancelledGroups: groupApplicantsBySchedule(cancelledRows),
     cancelledCount: cancelledRows.length,
     emailTemplate,

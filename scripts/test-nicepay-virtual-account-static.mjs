@@ -156,6 +156,18 @@ test("payment UI uses the isolated NICEPAY method and status surfaces", () => {
   assert.doesNotMatch(failPage, /style=\{\{/);
 });
 
+test("admin projects only active ready virtual-account deposits", () => {
+  const admin = readRoute("src/lib/admin/workshopAdmin.ts");
+
+  assert.match(admin, /AdminPendingVirtualAccountRow/, "admin must expose a dedicated pending-account row");
+  assert.match(admin, /pendingVirtualAccounts/, "admin data must carry pending virtual accounts separately");
+  assert.match(admin, /\.eq\("payment_method",\s*"가상계좌"\)/, "pending lookup must be limited to virtual accounts");
+  assert.match(admin, /\.eq\("status",\s*"pending"\)/, "pending lookup must exclude confirmed payment rows");
+  assert.match(admin, /\.eq\("provider_status",\s*"ready"\)/, "pending lookup must show issued accounts only");
+  assert.match(admin, /expires_at.*Date\.now\(\)/s, "expired pending registrations must not be projected");
+  assert.match(admin, /\*\*\*\*\$\{.*slice\(-4\)\}/, "account numbers must be masked to their last four digits");
+});
+
 test("persisted checkout intent serializes vbank starts and protects the winning ledger", () => {
   const sql = readFileSync(
     join(root, "supabase/migrations/20260729000001_add_virtual_account_payment_lifecycle.sql"),
