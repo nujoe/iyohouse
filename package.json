@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:admin-security": "node --test scripts/test-admin-api-security.mjs",
+    "test:nicepay-vbank": "node --test scripts/test-nicepay-virtual-account-static.mjs",
     "test:payment": "node scripts/test-nicepay-payment-static.mjs",
     "test:workshop-schedule-capacity": "node scripts/test-workshop-active-schedule-capacity.mjs"
   },
