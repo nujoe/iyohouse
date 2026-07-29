@@ -27,6 +27,10 @@ function scalarPayload(payload: Record<string, unknown>) {
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function cancelPendingRegistration(registrationId: string) {
   const supabase = getSupabaseServerClient();
 
@@ -59,7 +63,27 @@ function nicepayOkResponse() {
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    const payload = JSON.parse(rawBody) as Record<string, unknown>;
+
+    // NICEPAY sends an empty JSON object while verifying a newly registered webhook URL.
+    if (rawBody.trim() === "") {
+      return nicepayOkResponse();
+    }
+
+    const parsedPayload = JSON.parse(rawBody) as unknown;
+
+    if (!isRecord(parsedPayload)) {
+      return NextResponse.json(
+        { success: false, error: "NICEPAY 웹훅 본문 형식이 올바르지 않습니다." },
+        { status: 400 },
+      );
+    }
+
+    const payload = parsedPayload;
+
+    if (Object.keys(payload).length === 0) {
+      return nicepayOkResponse();
+    }
+
     const fields = scalarPayload(payload);
     const orderId = fields.orderId || "";
     const tid = fields.tid || "";
