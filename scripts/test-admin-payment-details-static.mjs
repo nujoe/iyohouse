@@ -21,7 +21,11 @@ test("payment confirmation persists only a normalized NICEPAY payment method", (
   assert.match(nicepay, /KAKAOPAY/, "helper must recognize easy-payment methods");
 
   const confirm = read("src/app/api/payment/confirm/route.ts");
-  assert.match(confirm, /p_payment_method:\s*getNicepayPaymentMethod\(approval\.payload\)/, "approval route must persist final NICEPAY method");
+  assert.match(
+    confirm,
+    /const paymentMethod = getNicepayPaymentMethod\(approval\.payload\)[\s\S]*?p_payment_method:\s*paymentMethod/,
+    "approval route must persist the final normalized NICEPAY method",
+  );
 
   const webhook = read("src/app/api/payment/webhook/route.ts");
   assert.match(webhook, /p_payment_method:\s*getNicepayPaymentMethod\(fields\)/, "payment webhook must persist its verified NICEPAY method");

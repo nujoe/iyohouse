@@ -141,6 +141,9 @@ export async function POST(request: Request) {
       mallReserved.set("workshop_title", workshopTitle);
     }
 
+    // NICEPAY returns this server-selected method marker with the callback.
+    mallReserved.set("checkout_method", method);
+
     const registrationWorkshopTitle = Array.isArray(registration.workshops)
       ? registration.workshops[0]?.title
       : registration.workshops?.title;
@@ -207,7 +210,6 @@ export async function POST(request: Request) {
       }
 
       checkoutAttemptId = beginPayload.attempt_id;
-      mallReserved.set("checkout_method", "vbank");
       mallReserved.set("checkout_attempt_id", checkoutAttemptId);
     }
 

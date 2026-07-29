@@ -209,7 +209,7 @@ export async function POST(request: Request) {
         return nicepayOkResponse();
       }
 
-      const { error: rpcError } = await supabase.rpc("confirm_virtual_account_deposit", {
+      const { data: depositConfirmed, error: rpcError } = await supabase.rpc("confirm_virtual_account_deposit", {
         p_registration_id: registration.id,
         p_tid: tid,
         p_order_id: registration.order_id,
@@ -221,6 +221,10 @@ export async function POST(request: Request) {
           { success: false, error: "가상계좌 입금 상태를 반영하지 못했습니다." },
           { status: 500 },
         );
+      }
+
+      if (depositConfirmed !== true) {
+        logIgnoredWebhook(registration.id, status, payload);
       }
 
       return nicepayOkResponse();

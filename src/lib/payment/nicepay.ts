@@ -160,6 +160,13 @@ export function sanitizeNicepayPaymentMethod(method: string): NicepayPaymentMeth
     : "";
 }
 
+function normalizeConfiguredNicepayPaymentMethod(method: string): NicepayPaymentMethod | "" {
+  const sanitized = sanitizeNicepayPaymentMethod(method);
+
+  // NICEPAY's hosted modal uses cardAndEasyPay; accept the older card env alias.
+  return sanitized === "card" ? "cardAndEasyPay" : sanitized;
+}
+
 function vbankValidHours() {
   const value = Number(envValue(["IYO_NICEPAY_VBANK_VALID_HOURS"], ""));
 
@@ -197,7 +204,7 @@ function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
   const methods: NicepayPaymentMethod[] = [];
 
   for (const method of source.split(/[\s,]+/)) {
-    const sanitized = sanitizeNicepayPaymentMethod(method);
+    const sanitized = normalizeConfiguredNicepayPaymentMethod(method);
 
     if (sanitized && !methods.includes(sanitized)) {
       methods.push(sanitized);
@@ -206,14 +213,16 @@ function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
 
   if (methods.length > 0) return methods;
 
-  return [sanitizeNicepayPaymentMethod(fallbackMethod) || "card"];
+  return [normalizeConfiguredNicepayPaymentMethod(fallbackMethod) || "cardAndEasyPay"];
 }
 
 export function getNicepayConfig(): NicepayConfig {
   const mode = envValue(["IYO_NICEPAY_MODE"], "test").toLowerCase() === "production"
     ? "production"
     : "test";
-  const fallbackMethod = sanitizeNicepayPaymentMethod(envValue(["IYO_NICEPAY_METHOD"], "card")) || "card";
+  const fallbackMethod = normalizeConfiguredNicepayPaymentMethod(
+    envValue(["IYO_NICEPAY_METHOD"], "card"),
+  ) || "cardAndEasyPay";
   const scriptUrlOverride = envValue(["IYO_NICEPAY_SCRIPT_URL"], "");
   const apiBaseUrlOverride = envValue(["IYO_NICEPAY_API_BASE_URL"], "");
 
