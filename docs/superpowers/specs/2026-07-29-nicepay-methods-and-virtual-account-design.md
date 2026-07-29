@@ -35,15 +35,18 @@ NICEPAY 결제창의 카드·간편결제/가상계좌 화면은 NICEPAY 기본 
 ```text
 IYO_NICEPAY_METHODS=cardAndEasyPay,vbank
 IYO_NICEPAY_VBANK_VALID_HOURS=3
+IYO_NICEPAY_VBANK_ENABLED=1
 ```
 
 NICEPAY 관리자에서 카카오페이·네이버페이·삼성페이 및 가상계좌가 활성화되어 있어야 한다. 가상계좌 요청에는 `vbankHolder`와 3시간 유효기간을 포함한다. 실제 결제수단은 클라이언트의 선택값이 아니라 NICEPAY 승인 응답의 `payMethod`를 저장한다.
+
+가상계좌는 서명 검증된 입금 웹훅이 있어야 확정할 수 있다. 웹훅 URL 등록 및 실제 `200 OK` 검증 전에는 `IYO_NICEPAY_VBANK_ENABLED=0`으로 두어 가상계좌 버튼을 비활성화한다. 웹훅을 등록하고 운영 배포된 `/api/payment/webhook`이 정상 응답하는 것을 확인한 뒤에만 `=1`로 변경한다. 카드·간편결제는 이 플래그와 무관하게 계속 사용한다.
 
 ## 데이터 및 상태 전이
 
 기존 `workshop_registrations_v2`와 `payments`를 확장한다. Sanity 스키마나 워크숍 발행 동기화에는 변경을 만들지 않는다.
 
-`payments`에는 가상계좌 거래 추적에 필요한 최소 필드만 추가한다.
+`payments`에는 가상계좌 거래 추적에 필요한 최소 필드만 추가한다. 기존 `status`는 IYOHOUSE 결제 원장 상태로 유지한다. 가상계좌 발급 시 `pending`, 입금 성공 시 `success`, 실패·만료 시 `failed` 또는 `cancelled`로 기록한다. NICEPAY의 원본 상태는 별도 `provider_status`에 저장한다.
 
 - `provider_status`: `ready`, `paid`, `expired`, `failed`, `cancelled`
 - `issued_at`, `paid_at`, `expires_at`
@@ -51,10 +54,12 @@ NICEPAY 관리자에서 카카오페이·네이버페이·삼성페이 및 가�
 
 계좌번호는 사용자 본인 입금 안내와 관리자 입금 대기 확인에만 사용한다. 일반 공개 API나 다른 사용자의 신청 이력에는 노출하지 않는다.
 
-새 service-role 전용 RPC 두 개가 상태 전이를 잠근다.
+새 service-role 전용 RPC 네 개가 상태 전이를 잠근다.
 
-- `record_virtual_account_issuance`: 동일 주문·금액·pending 상태를 검증한 뒤 `payments`에 `ready` 원장을 만들고 신청 `expires_at`을 NICEPAY 만료시각으로 맞춘다. 동일 TID 재호출은 멱등 처리한다.
+- `reserve_virtual_account_registration`: 결제창을 열기 전에 본인·pending·미만료 상태를 잠그고 신청 `expires_at`을 3시간 뒤로 연장한다.
+- `record_virtual_account_issuance`: 동일 주문·금액·pending 상태를 검증한 뒤 `payments`에 `pending/ready` 원장을 만들고 신청 `expires_at`을 NICEPAY 만료시각으로 맞춘다. 동일 TID 재호출은 멱등 처리한다.
 - `confirm_virtual_account_deposit`: 동일 TID·주문·금액·가상계좌 결제수단·만료 전 상태를 검증한 뒤 `payments`를 `success/paid`로, 신청을 `confirmed`로 한 트랜잭션에서 바꾼다.
+- `fail_virtual_account_payment`: 동일 TID의 아직 확정되지 않은 가상계좌만 `failed/expired` 또는 `cancelled`로 기록하고 신청을 `cancelled`로 바꾼다.
 
 기존 `confirm_payment_registration`은 카드·간편결제 성공과 기존 웹훅 처리에 계속 사용한다. 가상계좌 `ready`에는 사용하지 않는다.
 
@@ -62,13 +67,14 @@ NICEPAY 관리자에서 카카오페이·네이버페이·삼성페이 및 가�
 | --- | --- | --- | --- |
 | 결제창 닫기·인증 실패 | `cancelled` | 생성하지 않음 또는 `failed` | 즉시 복구 |
 | 카드·간편결제 승인 | `confirmed` | `success` / `paid` | 확정 |
-| 가상계좌 발급 | `pending` | `ready` | 3시간 임시 보유 |
+| 가상계좌 발급 | `pending` | `pending` / `ready` | 3시간 임시 보유 |
 | 가상계좌 입금 웹훅 | `confirmed` | `success` / `paid` | 확정 |
-| 가상계좌 만료·실패 웹훅 | `cancelled` | `expired` 또는 `failed` | 복구 |
+| 가상계좌 만료·실패 웹훅 | `cancelled` | `failed` / `expired` 또는 `failed` | 복구 |
 
 ## 서버와 웹훅 안전성
 
 - `/api/payment/checkout`은 모달의 두 요청 값만 허용한다. 허용되지 않은 값은 카드로 조용히 대체하지 않고 오류로 거절한다.
+- 가상계좌 선택 시 `/api/payment/checkout`은 인증·소유권·만료 전 pending 상태를 확인한 직후 신청 `expires_at`을 3시간 뒤로 연장한다. 이 상태가 NICEPAY 발급 전부터 일정을 임시 보유하므로, 발급 응답을 받는 동안 정원이 과판매되지 않는다.
 - `/api/payment/confirm`은 NICEPAY 인증 서명, 주문번호, 금액을 검증한다. 승인 응답이 `vbank + ready`인 경우에만 가상계좌 발급 원장을 기록한다.
 - 가상계좌 발급 뒤 브라우저에서 발생하는 `fnError`나 페이지 이탈은 신청을 취소하지 않는다. 유효한 TID가 만들어진 뒤에는 NICEPAY 웹훅의 `paid`/`expired` 결과가 최종 상태를 정한다.
 - `/api/payment/webhook`은 서명, 주문번호, 금액 외에 가상계좌 원장의 TID와 `ready` 상태까지 일치할 때만 가상계좌 입금을 확정한다.
