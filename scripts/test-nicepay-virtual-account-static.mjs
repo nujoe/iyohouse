@@ -208,33 +208,54 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
       signature: "UUID, TEXT, TEXT, TEXT",
     },
   ].map((definition) => ({ ...definition, functionSql: getFunction(definition.name) }));
-  const permissionSectionStart = sql.indexOf(
-    "REVOKE ALL ON FUNCTION public.reserve_virtual_account_registration",
-  );
-
-  assert.notEqual(permissionSectionStart, -1, "new RPC permission section must exist");
-
-  const permissionSection = sql.slice(permissionSectionStart);
   const newRpcNamePattern = rpcDefinitions.map(({ name }) => name).join("|");
-  const assertServiceRoleOnly = ({ name, signature }) => {
-    const functionSignature = `public\\.${name}\\(${signature}\\)`;
-    const grantMatches = [
-      ...permissionSection.matchAll(new RegExp(
-        `GRANT EXECUTE ON FUNCTION ${functionSignature} TO ([^;]+);`,
+  const assertNewRpcPermissions = (migration) => {
+    const permissionSectionStart = migration.indexOf(
+      "REVOKE ALL ON FUNCTION public.reserve_virtual_account_registration",
+    );
+
+    assert.notEqual(permissionSectionStart, -1, "new RPC permission section must exist");
+
+    const permissionSection = migration.slice(permissionSectionStart);
+    const allGrantMatches = [
+      ...migration.matchAll(new RegExp(
+        `GRANT EXECUTE ON FUNCTION public\\.(${newRpcNamePattern})\\(([^)]*)\\) TO ([^;]+);`,
         "g",
       )),
     ];
 
-    assert.match(permissionSection, new RegExp(
-      `REVOKE ALL ON FUNCTION ${functionSignature} FROM PUBLIC;`,
-    ));
-    assert.match(permissionSection, new RegExp(
-      `REVOKE ALL ON FUNCTION ${functionSignature} FROM authenticated;`,
-    ));
+    assert.ok(allGrantMatches.length > 0, "new RPCs must have EXECUTE grants");
     assert.deepEqual(
-      grantMatches.map((match) => match[1].trim()),
-      ["service_role"],
-      `${name} must grant EXECUTE only to service_role`,
+      allGrantMatches.map((match) => match[3].trim()),
+      Array(allGrantMatches.length).fill("service_role"),
+      "new virtual-account RPC EXECUTE grants must target only service_role",
+    );
+
+    for (const { name, signature } of rpcDefinitions) {
+      const functionSignature = `public\\.${name}\\(${signature}\\)`;
+      const grantMatches = [
+        ...migration.matchAll(new RegExp(`GRANT EXECUTE ON FUNCTION ${functionSignature} TO ([^;]+);`, "g")),
+      ];
+
+      assert.match(permissionSection, new RegExp(
+        `REVOKE ALL ON FUNCTION ${functionSignature} FROM PUBLIC;`,
+      ));
+      assert.match(permissionSection, new RegExp(
+        `REVOKE ALL ON FUNCTION ${functionSignature} FROM authenticated;`,
+      ));
+      assert.deepEqual(
+        grantMatches.map((match) => match[1].trim()),
+        ["service_role"],
+        `${name} must grant EXECUTE only to service_role`,
+      );
+    }
+    assert.doesNotMatch(
+      migration,
+      new RegExp(
+        `GRANT EXECUTE ON FUNCTION public\\.(?:${newRpcNamePattern})\\([^;]+\\) TO (?:anon|authenticated|PUBLIC)(?:;|,)`,
+        "i",
+      ),
+      "new RPCs must not grant EXECUTE to anon, authenticated, or PUBLIC",
     );
   };
   const reserve = rpcDefinitions[0].functionSql;
@@ -261,15 +282,15 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
       /FROM public\.workshop_registrations_v2[\s\S]*?FOR UPDATE/,
       `${name} must lock its registration`,
     );
-    assertServiceRoleOnly(definition);
   }
-  assert.doesNotMatch(
-    permissionSection,
-    new RegExp(
-      `GRANT EXECUTE ON FUNCTION public\\.(?:${newRpcNamePattern})\\([^;]+\\) TO (?:anon|authenticated|PUBLIC)(?:;|,)`,
-      "i",
+  assertNewRpcPermissions(sql);
+  assert.throws(
+    () => assertNewRpcPermissions(
+      "GRANT EXECUTE ON FUNCTION public.reserve_virtual_account_registration(UUID, UUID, TIMESTAMPTZ) TO anon;\n"
+        + sql,
     ),
-    "new RPCs must not grant EXECUTE to anon, authenticated, or PUBLIC",
+    /new virtual-account RPC EXECUTE grants must target only service_role/,
+    "a non-service grant before the revoke section must be rejected",
   );
 
   assert.match(reserve, /v_registration\.user_id IS DISTINCT FROM p_user_id/);
