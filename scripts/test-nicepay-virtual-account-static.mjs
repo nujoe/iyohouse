@@ -236,8 +236,13 @@ test("persisted checkout intent serializes vbank starts and protects the winning
 
   assert.match(
     sql,
-    /CREATE TABLE public\.virtual_account_checkout_intents[\s\S]*?registration_id UUID PRIMARY KEY[\s\S]*?attempt_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid\(\)[\s\S]*?user_id UUID NOT NULL REFERENCES public\.profiles\(id\)[\s\S]*?expires_at TIMESTAMPTZ NOT NULL[\s\S]*?created_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)[\s\S]*?updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)/,
+    /CREATE TABLE(?: IF NOT EXISTS)? public\.virtual_account_checkout_intents[\s\S]*?registration_id UUID PRIMARY KEY[\s\S]*?attempt_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid\(\)[\s\S]*?user_id UUID NOT NULL REFERENCES public\.profiles\(id\)[\s\S]*?expires_at TIMESTAMPTZ NOT NULL[\s\S]*?created_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)[\s\S]*?updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)/,
     "one registration can own only one persisted checkout intent",
+  );
+  assert.match(
+    sql,
+    /CREATE TABLE IF NOT EXISTS public\.virtual_account_checkout_intents/,
+    "the lifecycle migration must be safe to rerun after a partial deployment",
   );
   assert.match(
     begin,
@@ -952,7 +957,7 @@ test("virtual-account database lifecycle uses locked service-role RPCs", () => {
   assert.match(sql, /ADD COLUMN IF NOT EXISTS provider_status TEXT/);
   assert.match(sql, /ADD COLUMN IF NOT EXISTS checkout_attempt_id UUID/);
   assert.match(sql, /ADD COLUMN IF NOT EXISTS vbank_number TEXT/);
-  assert.match(sql, /CREATE TABLE public\.virtual_account_checkout_intents/);
+  assert.match(sql, /CREATE TABLE(?: IF NOT EXISTS)? public\.virtual_account_checkout_intents/);
   assert.match(sql, /ALTER TABLE public\.virtual_account_checkout_intents ENABLE ROW LEVEL SECURITY/);
   assert.match(sql, /REVOKE ALL ON TABLE public\.virtual_account_checkout_intents FROM PUBLIC/);
   assert.match(sql, /REVOKE ALL ON TABLE public\.virtual_account_checkout_intents FROM anon/);

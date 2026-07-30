@@ -17,7 +17,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_checkout_attempt_id
   ON public.payments (checkout_attempt_id)
   WHERE checkout_attempt_id IS NOT NULL;
 
-CREATE TABLE public.virtual_account_checkout_intents (
+CREATE TABLE IF NOT EXISTS public.virtual_account_checkout_intents (
   registration_id UUID PRIMARY KEY
     REFERENCES public.workshop_registrations_v2(id) ON DELETE CASCADE,
   attempt_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
