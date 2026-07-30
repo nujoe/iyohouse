@@ -10,6 +10,21 @@ const route = readFileSync(
 test("NICEPAY webhook registration probe receives OK without weakening payment validation", () => {
   assert.match(
     route,
+    /application\/x-www-form-urlencoded[\s\S]*?URLSearchParams/,
+    "NICEPAY URL notifications must parse form-urlencoded bodies",
+  );
+  assert.match(
+    route,
+    /MOID[\s\S]*?TID[\s\S]*?Amt[\s\S]*?ResultCode/,
+    "NICEPAY notification field aliases must be supported",
+  );
+  assert.match(
+    route,
+    /resultCode === "4110"/,
+    "NICEPAY virtual-account deposit notifications must accept ResultCode 4110",
+  );
+  assert.match(
+    route,
     /rawBody\.trim\(\) === ""[\s\S]*?return nicepayOkResponse\(\)/,
     "empty-body NICEPAY registration probes must receive a 200 OK response",
   );
@@ -20,13 +35,13 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
-    /if \(!orderId \|\| !tid \|\| !amount \|\| !fields\.ediDate \|\| !fields\.signature\)/,
-    "non-empty events must still require the payment identity and signature fields",
+    /if \(!orderId \|\| !tid \|\| !amount\)/,
+    "non-empty events must still require the payment identity fields",
   );
   assert.match(
     route,
-    /if \(!verifyNicepayResultSignature\(fields\)\)/,
-    "non-empty events must still verify the NICEPAY signature",
+    /if \(!isFormPayload && !verifyNicepayResultSignature\(fields\)\)/,
+    "JSON callback events must still verify the NICEPAY signature",
   );
   assert.match(
     route,

@@ -41,6 +41,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function decodeNicepayBody(body: ArrayBuffer, contentType: string) {
+  const charset = contentType.match(/charset=([^;]+)/i)?.[1]?.trim().toLowerCase();
+  const encoding = contentType.includes("application/x-www-form-urlencoded")
+    ? charset || "euc-kr"
+    : charset || "utf-8";
+
+  try {
+    return new TextDecoder(encoding).decode(body);
+  } catch {
+    return new TextDecoder().decode(body);
+  }
+}
+
+function firstField(fields: Record<string, string>, names: string[]) {
+  for (const name of names) {
+    if (fields[name]) {
+      return fields[name];
+    }
+  }
+
+  return "";
+}
+
 async function cancelActiveRegistration(registrationId: string) {
   const supabase = getSupabaseServerClient();
 
@@ -100,14 +123,27 @@ function nicepayOkResponse() {
 
 export async function POST(request: Request) {
   try {
-    const rawBody = await request.text();
+    const contentType = request.headers.get("content-type")?.toLowerCase() || "";
+    const isFormPayload = contentType.includes("application/x-www-form-urlencoded");
+    const rawBody = decodeNicepayBody(await request.arrayBuffer(), contentType);
 
-    // NICEPAY sends an empty JSON object while verifying a newly registered webhook URL.
+    // NICEPAY may probe a newly registered URL with an empty body before sending events.
     if (rawBody.trim() === "") {
       return nicepayOkResponse();
     }
 
-    const parsedPayload = JSON.parse(rawBody) as unknown;
+    let parsedPayload: unknown;
+
+    try {
+      parsedPayload = isFormPayload
+        ? Object.fromEntries(new URLSearchParams(rawBody).entries())
+        : JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "NICEPAY 웹훅 본문 형식이 올바르지 않습니다." },
+        { status: 400 },
+      );
+    }
 
     if (!isRecord(parsedPayload)) {
       return NextResponse.json(
@@ -123,20 +159,38 @@ export async function POST(request: Request) {
     }
 
     const fields = scalarPayload(payload);
-    const orderId = fields.orderId || "";
-    const tid = fields.tid || "";
-    const amount = Number(fields.amount || 0);
-    const status = fields.status || "";
-    const resultCode = fields.resultCode || "";
+    const orderId = firstField(fields, ["orderId", "order_id", "MOID", "Moid", "moid"]);
+    const tid = firstField(fields, ["tid", "TID", "Tid"]);
+    const amount = Number(firstField(fields, ["amount", "Amt", "amt"]));
+    const status = firstField(fields, ["status", "Status"])
+      || (firstField(fields, ["ResultCode", "resultCode"]) === "0000"
+        || firstField(fields, ["ResultCode", "resultCode"]) === "4110"
+        ? "paid"
+        : "");
+    const resultCode = firstField(fields, ["resultCode", "ResultCode"]);
 
-    if (!orderId || !tid || !amount || !fields.ediDate || !fields.signature) {
+    // A probe without transaction identity must never enter payment processing.
+    if (isFormPayload && !orderId && !tid && !resultCode) {
+      return nicepayOkResponse();
+    }
+
+    if (!orderId || !tid || !amount) {
       return NextResponse.json(
         { success: false, error: "NICEPAY 웹훅 필드가 부족합니다." },
         { status: 400 },
       );
     }
 
-    if (!verifyNicepayResultSignature(fields)) {
+    // The JSON callback contract is signed by this integration. NICEPAY's URL
+    // notification contract is form-urlencoded and has no signature field.
+    if (!isFormPayload && (!fields.ediDate || !fields.signature)) {
+      return NextResponse.json(
+        { success: false, error: "NICEPAY 웹훅 필드가 부족합니다." },
+        { status: 400 },
+      );
+    }
+
+    if (!isFormPayload && !verifyNicepayResultSignature(fields)) {
       return NextResponse.json(
         { success: false, error: "NICEPAY 웹훅 서명이 일치하지 않습니다." },
         { status: 400 },
@@ -191,7 +245,7 @@ export async function POST(request: Request) {
     const isVirtualAccount = payment?.payment_method === "가상계좌";
     const reportedPaymentMethod = getNicepayPaymentMethod(fields);
 
-    if (isVirtualAccount && resultCode === "0000" && status === "paid") {
+    if (isVirtualAccount && (resultCode === "4110" || (resultCode === "0000" && status === "paid"))) {
       const { data: depositResult, error: rpcError } = await supabase.rpc(
         "reconcile_virtual_account_deposit",
         {
