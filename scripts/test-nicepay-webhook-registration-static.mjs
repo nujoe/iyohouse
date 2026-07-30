@@ -65,8 +65,13 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
-    /if \(!isFormPayload && !verifyNicepayResultSignature\(fields\)\)/,
+    /if \(!isFormPayload && !verifyNicepayResultSignature\(signatureFields\)\)/,
     "JSON callback events must still verify the NICEPAY signature",
+  );
+  assert.match(
+    route,
+    /signatureFields[\s\S]*?firstField\(fields, \["ediDate"/,
+    "signature verification must normalize NICEPAY field aliases",
   );
   assert.match(
     route,

@@ -198,6 +198,13 @@ export async function POST(request: Request) {
         ? "paid"
         : "");
     const resultCode = firstField(fields, ["resultCode", "ResultCode"]);
+    const signatureFields = {
+      ...fields,
+      tid,
+      amount: String(amount),
+      ediDate: firstField(fields, ["ediDate", "EdiDate", "EDIDATE"]),
+      signature: firstField(fields, ["signature", "Signature", "SIGNATURE"]),
+    };
 
     // NICEPAY's registration check can include sample MOID/Amt fields, but it
     // cannot include a real transaction TID. Real notifications always have TID.
@@ -225,7 +232,7 @@ export async function POST(request: Request) {
 
     // The JSON callback contract is signed by this integration. NICEPAY's URL
     // notification contract is form-urlencoded and has no signature field.
-    if (!isFormPayload && (!fields.ediDate || !fields.signature)) {
+    if (!isFormPayload && (!signatureFields.ediDate || !signatureFields.signature)) {
       return nicepayBadRequest(
         requestId,
         "signature_fields_missing",
@@ -233,13 +240,13 @@ export async function POST(request: Request) {
         {
           contentType,
           fieldNames: Object.keys(payload),
-          hasEdiDate: Boolean(fields.ediDate),
-          hasSignature: Boolean(fields.signature),
+          hasEdiDate: Boolean(signatureFields.ediDate),
+          hasSignature: Boolean(signatureFields.signature),
         },
       );
     }
 
-    if (!isFormPayload && !verifyNicepayResultSignature(fields)) {
+    if (!isFormPayload && !verifyNicepayResultSignature(signatureFields)) {
       return nicepayBadRequest(
         requestId,
         "signature_mismatch",
