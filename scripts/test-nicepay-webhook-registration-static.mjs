@@ -35,6 +35,11 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
+    /probe=nicepay|probe.*nicepay[\s\S]*?return nicepayOkResponse\(\)/,
+    "NICEPAY probe=nicepay registration checks must receive OK even when mislabeled as JSON",
+  );
+  assert.match(
+    route,
     /Object\.keys\(payload\)\.length === 0[\s\S]*?return nicepayOkResponse\(\)/,
     "empty-object NICEPAY registration probes must receive a 200 OK response",
   );

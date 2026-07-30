@@ -128,11 +128,17 @@ export async function POST(request: Request) {
     const rawBody = decodeNicepayBody(await request.arrayBuffer(), contentType);
 
     // NICEPAY may probe a newly registered URL with an empty body before sending events.
-    if (rawBody.trim() === "") {
-      return nicepayOkResponse();
-    }
+        if (rawBody.trim() === "") {
+          return nicepayOkResponse();
+        }
 
-    let parsedPayload: unknown;
+        // NICEPAY's registration check can send this URL-encoded probe even
+        // when its request header says application/json.
+        if (new URLSearchParams(rawBody.trim()).get("probe") === "nicepay") {
+          return nicepayOkResponse();
+        }
+
+        let parsedPayload: unknown;
 
     try {
       parsedPayload = isFormPayload
