@@ -206,10 +206,9 @@ export async function POST(request: Request) {
       signature: firstField(fields, ["signature", "Signature", "SIGNATURE"]),
     };
 
-    // NICEPAY's registration check can include sample MOID/Amt fields, but it
-    // cannot include a real transaction TID. Real notifications always have TID.
-    // The current NICEPAY webhook contract uses JSON, while older URL notices
-    // may be form-urlencoded, so this probe check must not depend on encoding.
+    // The registration check can omit payment identity entirely. The current
+    // NICEPAY webhook contract uses JSON, while older URL notices may be
+    // form-urlencoded, so this probe check must not depend on encoding.
     if (!tid) {
       return nicepayOkResponse();
     }
@@ -228,6 +227,32 @@ export async function POST(request: Request) {
           amount,
         },
       );
+    }
+
+    const supabase = getSupabaseServerClient();
+    const { data: registration, error: registrationError } = await supabase
+      .from("workshop_registrations_v2")
+      .select("id, order_id, amount, status")
+      .eq("order_id", orderId)
+      .maybeSingle<PaymentRegistration>();
+
+    if (registrationError) {
+      return NextResponse.json(
+        { success: false, error: "신청 내역을 조회하지 못했습니다." },
+        { status: 500 },
+      );
+    }
+
+    // NICEPAY validates a newly registered endpoint with a sample payment
+    // notification. It has no matching internal order, so acknowledge it
+    // without running payment reconciliation or weakening real-order checks.
+    if (!registration) {
+      console.info("NICEPAY webhook registration sample acknowledged", {
+        requestId,
+        contentType,
+        fieldNames: Object.keys(payload),
+      });
+      return nicepayOkResponse();
     }
 
     // The JSON callback contract is signed by this integration. NICEPAY's URL
@@ -252,20 +277,6 @@ export async function POST(request: Request) {
         "signature_mismatch",
         "NICEPAY 웹훅 서명이 일치하지 않습니다.",
         { contentType, fieldNames: Object.keys(payload) },
-      );
-    }
-
-    const supabase = getSupabaseServerClient();
-    const { data: registration, error: registrationError } = await supabase
-      .from("workshop_registrations_v2")
-      .select("id, order_id, amount, status")
-      .eq("order_id", orderId)
-      .single<PaymentRegistration>();
-
-    if (registrationError || !registration) {
-      return NextResponse.json(
-        { success: false, error: "신청 내역을 찾을 수 없습니다." },
-        { status: 404 },
       );
     }
 

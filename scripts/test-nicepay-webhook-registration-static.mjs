@@ -70,6 +70,11 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
+    /\.eq\("order_id",\s*orderId\)[\s\S]*?if \(!registration\)[\s\S]*?return nicepayOkResponse\(\)[\s\S]*?verifyNicepayResultSignature\(signatureFields\)/,
+    "NICEPAY registration samples without an internal order must receive OK before signature validation",
+  );
+  assert.match(
+    route,
     /signatureFields[\s\S]*?firstField\(fields, \["ediDate"/,
     "signature verification must normalize NICEPAY field aliases",
   );
