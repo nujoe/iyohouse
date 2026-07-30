@@ -171,15 +171,13 @@ export async function POST(request: Request) {
 
     // NICEPAY's registration check can include sample MOID/Amt fields, but it
     // cannot include a real transaction TID. Real notifications always have TID.
-    if (isFormPayload && !tid) {
+    // The current NICEPAY webhook contract uses JSON, while older URL notices
+    // may be form-urlencoded, so this probe check must not depend on encoding.
+    if (!tid) {
       return nicepayOkResponse();
     }
 
     // A probe without transaction identity must never enter payment processing.
-    if (isFormPayload && !orderId && !tid && !resultCode) {
-      return nicepayOkResponse();
-    }
-
     if (!orderId || !tid || !amount) {
       return NextResponse.json(
         { success: false, error: "NICEPAY 웹훅 필드가 부족합니다." },

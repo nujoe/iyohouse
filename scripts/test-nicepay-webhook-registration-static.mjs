@@ -25,8 +25,8 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
-    /isFormPayload && !tid[\s\S]*?return nicepayOkResponse\(\)/,
-    "form probes without a transaction TID must receive OK without entering payment processing",
+    /if \(\s*!tid\s*\)[\s\S]*?return nicepayOkResponse\(\)/,
+    "registration probes without a transaction TID must receive OK without entering payment processing",
   );
   assert.match(
     route,
@@ -37,6 +37,11 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
     route,
     /Object\.keys\(payload\)\.length === 0[\s\S]*?return nicepayOkResponse\(\)/,
     "empty-object NICEPAY registration probes must receive a 200 OK response",
+  );
+  assert.match(
+    route,
+    /Content-Type.*text\/html/,
+    "NICEPAY webhook responses must use the text/html content type",
   );
   assert.match(
     route,
