@@ -90,7 +90,7 @@
   width: 100%;
 }
 
-.nicepay-payment-method-button-primary {
+.nicepay-payment-method-button {
   background: #000000;
   color: #ffffff;
 }
@@ -100,11 +100,6 @@
 .nicepay-payment-close:hover {
   background: #000000;
   color: #ffffff;
-}
-
-.nicepay-payment-method-button-primary:hover {
-  background: #ffffff;
-  color: #000000;
 }
 
 .nicepay-payment-action:focus-visible,

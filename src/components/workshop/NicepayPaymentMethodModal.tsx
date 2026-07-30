@@ -39,7 +39,7 @@ export default function NicepayPaymentMethodModal({
         </button>
         <button
           type="button"
-          className="nicepay-payment-method-button nicepay-payment-method-button-primary"
+          className="nicepay-payment-method-button"
           disabled={busy || !cardAndEasyPayEnabled}
           onClick={() => onSelect("cardAndEasyPay")}
         >

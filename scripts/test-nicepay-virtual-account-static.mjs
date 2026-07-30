@@ -26,6 +26,7 @@ const modal = readRoute("src/components/workshop/NicepayPaymentMethodModal.tsx")
 const success = readRoute("src/app/payment/success/page.tsx");
 const failPage = readRoute("src/app/payment/fail/page.tsx");
 const globals = readRoute("src/app/globals.css");
+const paymentStyles = readRoute("src/styles/14-payment.css");
 const outputDir = mkdtempSync(join(tmpdir(), "iyohouse-nicepay-test-"));
 
 try {
@@ -175,6 +176,16 @@ test("payment UI uses the isolated NICEPAY method and status surfaces", () => {
   assert.match(modal, /aria-label="결제수단 선택 닫기"/);
   assert.match(modal, /카드·간편결제/);
   assert.match(modal, /가상계좌/);
+  assert.doesNotMatch(
+    modal,
+    /nicepay-payment-method-button-primary/,
+    "payment methods must not use a visual primary/secondary distinction",
+  );
+  assert.match(
+    paymentStyles,
+    /\.nicepay-payment-method-button\s*\{[\s\S]*?background:\s*#000000;[\s\S]*?color:\s*#ffffff;/,
+    "every enabled payment-method button must use the black NICEPAY action style",
+  );
   assert.match(overlay, /method,?\s*:\s*selectedMethod/);
   assert.equal(existsSync(join(root, "src/app/payment/pending/page.tsx")), true);
   assert.match(globals, /14-payment\.css/);
