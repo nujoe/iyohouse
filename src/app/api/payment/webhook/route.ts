@@ -121,7 +121,27 @@ function nicepayOkResponse() {
   });
 }
 
+function nicepayBadRequest(
+  requestId: string,
+  reason: string,
+  message: string,
+  details: Record<string, unknown> = {},
+) {
+  console.warn("NICEPAY webhook rejected", {
+    requestId,
+    reason,
+    ...details,
+  });
+
+  return NextResponse.json(
+    { success: false, error: message },
+    { status: 400, headers: { "X-Nicepay-Request-Id": requestId } },
+  );
+}
+
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+
   try {
     const contentType = request.headers.get("content-type")?.toLowerCase() || "";
     const isFormPayload = contentType.includes("application/x-www-form-urlencoded");
@@ -145,16 +165,20 @@ export async function POST(request: Request) {
         ? Object.fromEntries(new URLSearchParams(rawBody).entries())
         : JSON.parse(rawBody);
     } catch {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 본문 형식이 올바르지 않습니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "invalid_body",
+        "NICEPAY 웹훅 본문 형식이 올바르지 않습니다.",
+        { contentType, bodyLength: rawBody.length },
       );
     }
 
     if (!isRecord(parsedPayload)) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 본문 형식이 올바르지 않습니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "invalid_payload_shape",
+        "NICEPAY 웹훅 본문 형식이 올바르지 않습니다.",
+        { contentType, bodyLength: rawBody.length },
       );
     }
 
@@ -185,25 +209,42 @@ export async function POST(request: Request) {
 
     // A probe without transaction identity must never enter payment processing.
     if (!orderId || !tid || !amount) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 필드가 부족합니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "required_fields_missing",
+        "NICEPAY 웹훅 필드가 부족합니다.",
+        {
+          contentType,
+          fieldNames: Object.keys(payload),
+          hasOrderId: Boolean(orderId),
+          hasTid: Boolean(tid),
+          amount,
+        },
       );
     }
 
     // The JSON callback contract is signed by this integration. NICEPAY's URL
     // notification contract is form-urlencoded and has no signature field.
     if (!isFormPayload && (!fields.ediDate || !fields.signature)) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 필드가 부족합니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "signature_fields_missing",
+        "NICEPAY 웹훅 필드가 부족합니다.",
+        {
+          contentType,
+          fieldNames: Object.keys(payload),
+          hasEdiDate: Boolean(fields.ediDate),
+          hasSignature: Boolean(fields.signature),
+        },
       );
     }
 
     if (!isFormPayload && !verifyNicepayResultSignature(fields)) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 서명이 일치하지 않습니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "signature_mismatch",
+        "NICEPAY 웹훅 서명이 일치하지 않습니다.",
+        { contentType, fieldNames: Object.keys(payload) },
       );
     }
 
@@ -222,9 +263,11 @@ export async function POST(request: Request) {
     }
 
     if (Number(registration.amount) !== amount) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 웹훅 금액이 신청 금액과 일치하지 않습니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "amount_mismatch",
+        "NICEPAY 웹훅 금액이 신청 금액과 일치하지 않습니다.",
+        { providerAmount: amount, registrationAmount: Number(registration.amount) },
       );
     }
 
@@ -246,9 +289,11 @@ export async function POST(request: Request) {
       payment
       && (payment.registration_id !== registration.id || Number(payment.amount) !== amount)
     ) {
-      return NextResponse.json(
-        { success: false, error: "NICEPAY 거래가 신청 정보와 일치하지 않습니다." },
-        { status: 400 },
+      return nicepayBadRequest(
+        requestId,
+        "payment_identity_mismatch",
+        "NICEPAY 거래가 신청 정보와 일치하지 않습니다.",
+        { hasPaymentLedger: true },
       );
     }
 

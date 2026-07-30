@@ -50,6 +50,16 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
+    /NICEPAY webhook rejected[\s\S]*?requestId[\s\S]*?reason/,
+    "NICEPAY webhook rejections must log a request id and a safe failure reason",
+  );
+  assert.match(
+    route,
+    /X-Nicepay-Request-Id/,
+    "NICEPAY webhook rejection responses must expose the diagnostic request id",
+  );
+  assert.match(
+    route,
     /if \(!orderId \|\| !tid \|\| !amount\)/,
     "non-empty events must still require the payment identity fields",
   );
