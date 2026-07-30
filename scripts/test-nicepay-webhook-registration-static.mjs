@@ -25,6 +25,11 @@ test("NICEPAY webhook registration probe receives OK without weakening payment v
   );
   assert.match(
     route,
+    /isFormPayload && !tid[\s\S]*?return nicepayOkResponse\(\)/,
+    "form probes without a transaction TID must receive OK without entering payment processing",
+  );
+  assert.match(
+    route,
     /rawBody\.trim\(\) === ""[\s\S]*?return nicepayOkResponse\(\)/,
     "empty-body NICEPAY registration probes must receive a 200 OK response",
   );

@@ -169,6 +169,12 @@ export async function POST(request: Request) {
         : "");
     const resultCode = firstField(fields, ["resultCode", "ResultCode"]);
 
+    // NICEPAY's registration check can include sample MOID/Amt fields, but it
+    // cannot include a real transaction TID. Real notifications always have TID.
+    if (isFormPayload && !tid) {
+      return nicepayOkResponse();
+    }
+
     // A probe without transaction identity must never enter payment processing.
     if (isFormPayload && !orderId && !tid && !resultCode) {
       return nicepayOkResponse();
