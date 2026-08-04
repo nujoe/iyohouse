@@ -9,6 +9,7 @@ const schema = read("src/sanity/schemaTypes/workshop.ts");
 const detail = read("src/components/workshop/WorkshopDetailOverlay.tsx");
 const grid = read("src/components/WorkshopGrid.tsx");
 const translations = read("src/lib/i18n/translations.ts");
+const overlayStyles = read("src/styles/10-overlays-responsive.css");
 
 const curriculumIndex = schema.indexOf("name: 'curriculum'");
 const applicationGuideIndex = schema.indexOf("name: 'applicationGuide'");
@@ -78,6 +79,16 @@ assert.ok(
 assert.ok(
   translations.includes('scheduleWaitlist: "정원 마감 - 대기자 신청"'),
   "Korean translations should include the full-schedule waitlist status",
+);
+assert.ok(
+  overlayStyles.includes(".schedule-option.is-waitlist .s-date") &&
+    overlayStyles.includes(".schedule-option.is-waitlist .s-time"),
+  "waitlist schedules should retain the muted closed-schedule text style",
+);
+assert.ok(
+  overlayStyles.includes(".schedule-option.is-waitlist .s-status") &&
+    overlayStyles.includes("color: #000"),
+  "waitlist status text should remain black",
 );
 assert.ok(
   translations.includes('waitlistApply: "Join waitlist"'),
