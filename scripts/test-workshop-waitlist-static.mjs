@@ -54,10 +54,30 @@ assert.ok(
   detail.includes('target="_blank"') && detail.includes('rel="noopener noreferrer"'),
   "waitlist Google Form should open safely in a new tab",
 );
+assert.ok(
+  detail.includes("selectedScheduleWaitlist"),
+  "detail page should distinguish a selected full schedule with a waitlist URL",
+);
+assert.ok(
+  detail.includes("hasWaitlistSelectableSchedule"),
+  "all-full workshops should keep schedule selection available when a waitlist exists",
+);
+assert.ok(
+  detail.includes("t.workshop.scheduleWaitlist"),
+  "full schedules with a waitlist should show the explicit waitlist status",
+);
+assert.ok(
+  !detail.includes("disabled={isFull}"),
+  "a full schedule with a waitlist must not be unconditionally disabled",
+);
 
 assert.ok(
   translations.includes('waitlistApply: "대기자 신청"'),
   "Korean translations should include waitlist button text",
+);
+assert.ok(
+  translations.includes('scheduleWaitlist: "정원 마감 - 대기자 신청"'),
+  "Korean translations should include the full-schedule waitlist status",
 );
 assert.ok(
   translations.includes('waitlistApply: "Join waitlist"'),

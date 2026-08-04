@@ -201,7 +201,9 @@ requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
   "getSessionCapacity",
   "isScheduleFull",
   "getScheduleKey",
-  "disabled={isFull}",
+  "hasWaitlistSelectableSchedule",
+  "isScheduleOptionDisabled",
+  "t.workshop.scheduleWaitlist",
 ]);
 
 requireExcludes("src/components/workshop/WorkshopDetailOverlay.tsx", [

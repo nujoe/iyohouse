@@ -468,8 +468,19 @@ export default function WorkshopDetailOverlay({
     const workshopClosedForPayment = isWorkshopClosedForPayment(workshop);
     const workshopManuallyClosed = Boolean(workshop?.isClosed);
     const waitlistFormUrl = typeof workshop?.waitlistFormUrl === "string" ? workshop.waitlistFormUrl.trim() : "";
-    const capacityClosed = (workshopClosedForPayment || selectedScheduleFull) && !workshopManuallyClosed;
-    const shouldShowWaitlistButton = capacityClosed && Boolean(waitlistFormUrl);
+    const workshopSchedule = getWorkshopSchedule(workshop);
+    const hasWaitlistSelectableSchedule = workshopSchedule.some((session: any) =>
+        isScheduleFull(workshop, session) && !workshopManuallyClosed && Boolean(waitlistFormUrl),
+    );
+    const selectedScheduleWaitlist = Boolean(
+        selectedScheduleFull && !workshopManuallyClosed && waitlistFormUrl,
+    );
+    const scheduleSelectorDisabled = workshopManuallyClosed ||
+        (workshopClosedForPayment && !hasWaitlistSelectableSchedule);
+    const shouldShowWaitlistButton = !workshopManuallyClosed && Boolean(waitlistFormUrl) && (
+        selectedScheduleWaitlist ||
+        (!hasSelectableSchedule(workshop) && workshopClosedForPayment)
+    );
     const isApplyDisabled = isPaymentStarting || workshopClosedForPayment || selectedScheduleFull;
     const studentPrice = getNonNegativeInteger(workshop?.studentPrice);
     const regularPriceSource = workshop?.regularPrice ?? workshop?.price;
@@ -634,26 +645,28 @@ export default function WorkshopDetailOverlay({
                                 <div className="schedule-selector-wrapper">
                                     <button
                                         type="button"
-                                        className={`action-btn outline-btn ${selectedSession ? 'selected' : ''} ${workshopClosedForPayment ? 'schedule-locked' : ''}`}
-                                        disabled={workshopClosedForPayment}
+                                        className={`action-btn outline-btn ${selectedSession ? 'selected' : ''} ${scheduleSelectorDisabled ? 'schedule-locked' : ''}`}
+                                        disabled={scheduleSelectorDisabled}
                                         onClick={() => {
-                                            if (workshopClosedForPayment) return;
+                                            if (scheduleSelectorDisabled) return;
                                             setShowSchedule(!showSchedule);
                                         }}
                                     >
                                         {selectedSession ? getScheduleSessionLabel(selectedSession, language) : t.workshop.scheduleSelect}
                                     </button>
-                                    {showSchedule && !workshopClosedForPayment && (
+                                    {showSchedule && !scheduleSelectorDisabled && (
                                         <div className="schedule-dropdown">
-                                            {getWorkshopSchedule(workshop).map((session: any, index: number) => {
+                                            {workshopSchedule.map((session: any, index: number) => {
                                                 const localizedSession = getLocalizedScheduleSession(session, language);
                                                 const isFull = isScheduleFull(workshop, session);
+                                                const isWaitlistSchedule = isFull && !workshopManuallyClosed && Boolean(waitlistFormUrl);
+                                                const isScheduleOptionDisabled = workshopManuallyClosed || (isFull && !isWaitlistSchedule);
                                                 return (
                                                     <button
                                                         type="button"
                                                         key={`${session.date || 'date'}-${session.time || 'time'}-${index}`}
-                                                        className={`schedule-option ${isFull ? 'is-full' : ''}`}
-                                                        disabled={isFull}
+                                                        className={`schedule-option ${isFull ? 'is-full' : ''} ${isWaitlistSchedule ? 'is-waitlist' : ''}`}
+                                                        disabled={isScheduleOptionDisabled}
                                                         onClick={() => {
                                                             setSelectedSession(session);
                                                             setShowSchedule(false);
@@ -661,6 +674,11 @@ export default function WorkshopDetailOverlay({
                                                     >
                                                         {localizedSession.date && <span className="s-date">{localizedSession.date}</span>}
                                                         {localizedSession.time && <span className="s-time">{localizedSession.time}</span>}
+                                                        {isFull && (
+                                                            <span className="s-status">
+                                                                {isWaitlistSchedule ? t.workshop.scheduleWaitlist : t.workshop.closed}
+                                                            </span>
+                                                        )}
                                                     </button>
                                                 );
                                             })}
