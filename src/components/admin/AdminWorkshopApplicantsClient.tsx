@@ -21,6 +21,8 @@ type AdminApplicantRow = {
   snapshot_bio?: string | null;
   price_type?: string | null;
   created_at: string | null;
+  payment_amount?: number | null;
+  payment_method?: string | null;
   schedule_key?: string | null;
   schedule_label?: string | null;
   schedule_date?: string | null;
@@ -30,6 +32,16 @@ type AdminApplicantRow = {
 type AdminApplicantGroup = {
   label: string;
   applicants: AdminApplicantRow[];
+};
+
+type AdminPendingVirtualAccountRow = {
+  id: string;
+  snapshot_name: string | null;
+  snapshot_email: string | null;
+  amount: number;
+  vbank_name: string | null;
+  masked_vbank_number: string;
+  expires_at: string;
 };
 
 type AdminScheduleOption = {
@@ -48,6 +60,7 @@ type AdminWorkshopApplicantsClientProps = {
   cancelledGroups: AdminApplicantGroup[];
   emailTemplate: AdminWorkshopEmailTemplate | null;
   groups: AdminApplicantGroup[];
+  pendingVirtualAccounts: AdminPendingVirtualAccountRow[];
   scheduleCounts: AdminScheduleCounts;
   scheduleOptions: AdminScheduleOption[];
   workshopId: string;
@@ -70,12 +83,52 @@ function mergeIds(currentIds: string[], idsToAdd: string[]) {
   return Array.from(new Set([...currentIds, ...idsToAdd]));
 }
 
+function renderPendingVirtualAccountSection(pendingVirtualAccounts: AdminPendingVirtualAccountRow[]) {
+  if (pendingVirtualAccounts.length === 0) return null;
+
+  return (
+    <section className="admin-section admin-virtual-account-section">
+      <div className="admin-section-header">
+        <h2>가상계좌 입금 대기</h2>
+        <span>{pendingVirtualAccounts.length}명</span>
+      </div>
+      <div className="admin-table-wrap">
+        <table className="admin-table admin-virtual-account-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th className="admin-virtual-account-amount-cell">결제금액</th>
+              <th>은행</th>
+              <th className="admin-virtual-account-number-cell">계좌번호</th>
+              <th className="admin-virtual-account-expiry-cell">입금기한</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingVirtualAccounts.map((account) => (
+              <tr key={account.id}>
+                <td>{account.snapshot_name || "-"}</td>
+                <td>{account.snapshot_email || "-"}</td>
+                <td className="admin-virtual-account-amount-cell">{account.amount.toLocaleString()}원</td>
+                <td>{account.vbank_name || "-"}</td>
+                <td className="admin-virtual-account-number-cell">{account.masked_vbank_number}</td>
+                <td className="admin-virtual-account-expiry-cell">{formatAdminDateTime(account.expires_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminWorkshopApplicantsClient({
   applicantCount,
   cancelledCount,
   cancelledGroups,
   emailTemplate,
   groups,
+  pendingVirtualAccounts,
   scheduleCounts,
   scheduleOptions,
   workshopId,
@@ -215,6 +268,7 @@ export default function AdminWorkshopApplicantsClient({
           workshopId={workshopId}
         />
         <section className="admin-empty-panel">확정된 신청자가 없습니다.</section>
+        {renderPendingVirtualAccountSection(pendingVirtualAccounts)}
         {hasCancelledApplicants && (
           <section className="admin-section">
             <div className="admin-section-header">
@@ -299,6 +353,8 @@ export default function AdminWorkshopApplicantsClient({
                     <th>연락처</th>
                     <th>자기소개</th>
                     <th>신청일</th>
+                    <th className="admin-payment-amount-cell">결제금액</th>
+                    <th className="admin-payment-method-cell">결제수단</th>
                     <th>일정 변경</th>
                   </tr>
                 </thead>
@@ -323,6 +379,14 @@ export default function AdminWorkshopApplicantsClient({
                       <td>{applicant.snapshot_phone || "-"}</td>
                       <td>{applicant.snapshot_bio || "-"}</td>
                       <td>{formatAdminDateTime(applicant.created_at)}</td>
+                      <td className="admin-payment-amount-cell">
+                        {typeof applicant.payment_amount === "number"
+                          ? `${applicant.payment_amount.toLocaleString()}원`
+                          : "-"}
+                      </td>
+                      <td className="admin-payment-method-cell">
+                        {applicant.payment_method || "기록 없음"}
+                      </td>
                       <td>
                         <div className="admin-schedule-change-cell">
                           <select
@@ -370,6 +434,8 @@ export default function AdminWorkshopApplicantsClient({
           </section>
         );
       })}
+
+      {renderPendingVirtualAccountSection(pendingVirtualAccounts)}
 
       {hasCancelledApplicants && (
         <section className="admin-section">

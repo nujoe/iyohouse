@@ -4,6 +4,7 @@ type NicepayMode = "test" | "production";
 
 export type NicepayPaymentMethod =
   | "card"
+  | "cardAndEasyPay"
   | "vbank"
   | "bank"
   | "cellphone"
@@ -19,8 +20,44 @@ type NicepayConfig = {
   secretKey: string;
   method: NicepayPaymentMethod;
   methods: NicepayPaymentMethod[];
+  vbankEnabled: boolean;
+  vbankValidHours: number;
   scriptUrl: string;
   apiBaseUrl: string;
+};
+
+export type NicepayCheckoutMethod = "cardAndEasyPay" | "vbank";
+
+export type NicepayConfirmationAction = "confirmed" | "compensate" | "processing";
+
+type NicepayVirtualAccount = {
+  code: string;
+  name: string;
+  number: string;
+  holder: string;
+  expiresAt: string;
+};
+
+export type NicepayPaymentLedger = {
+  registration_id: string;
+  payment_key: string;
+  order_id: string;
+  amount: number;
+  payment_method: string | null;
+  status: string;
+  provider_status: string | null;
+  expires_at: string | null;
+};
+
+type NicepayPaymentIdentity = {
+  registrationId: string;
+  orderId: string;
+  amount: number;
+};
+
+type NicepayConfirmedPaymentIdentity = NicepayPaymentIdentity & {
+  tid: string;
+  paymentMethod: string;
 };
 
 type NicepayAuthPayload = Record<string, string>;
@@ -38,7 +75,7 @@ type CreateNicepayPaymentPayloadInput = {
   userId: string;
   orderName: string;
   origin: string;
-  method?: string;
+  method?: unknown;
   mallReserved?: URLSearchParams;
 };
 
@@ -85,6 +122,7 @@ type NicepayCancelResult =
 
 const supportedMethods = new Set<NicepayPaymentMethod>([
   "card",
+  "cardAndEasyPay",
   "vbank",
   "bank",
   "cellphone",
@@ -117,11 +155,72 @@ function truthy(value: string, fallback = false) {
 }
 
 export function sanitizeNicepayPaymentMethod(method: string): NicepayPaymentMethod | "" {
-  const normalized = method.trim() === "cardAndEasyPay" ? "card" : method.trim();
+  const normalized = method.trim();
 
   return supportedMethods.has(normalized as NicepayPaymentMethod)
     ? (normalized as NicepayPaymentMethod)
     : "";
+}
+
+function normalizeConfiguredNicepayPaymentMethod(method: string): NicepayPaymentMethod | "" {
+  const sanitized = sanitizeNicepayPaymentMethod(method);
+
+  // NICEPAY's hosted modal uses cardAndEasyPay; accept the older card env alias.
+  return sanitized === "card" ? "cardAndEasyPay" : sanitized;
+}
+
+function vbankValidHours() {
+  const value = Number(envValue(["IYO_NICEPAY_VBANK_VALID_HOURS"], ""));
+
+  return Number.isFinite(value) && value > 0 ? value : 3;
+}
+
+export function getNicepayPaymentMethod(payload: Record<string, unknown>): string | null {
+  const rawMethod = payload.PayMethod ?? payload.payMethod ?? payload.method;
+
+  if (typeof rawMethod !== "string" || rawMethod.trim() === "") {
+    return null;
+  }
+
+  const normalized = rawMethod.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  const labels: Record<string, string> = {
+    CARD: "카드",
+    CARDANDEASYPAY: "카드",
+    BANK: "계좌이체",
+    VBANK: "가상계좌",
+    CELLPHONE: "휴대폰결제",
+    KAKAOPAY: "카카오페이",
+    PAYCO: "페이코",
+    SAMSUNGPAY: "삼성페이",
+    SAMSUNGPAYCARD: "삼성페이",
+    NAVERPAY: "네이버페이",
+    NAVERPAYCARD: "네이버페이",
+  };
+
+  return labels[normalized] ?? null;
+}
+
+/**
+ * Database reconciliation is intentionally three-valued. Only a structured
+ * terminal rejection authorizes provider compensation; unavailable or unknown
+ * outcomes must remain recoverable by the signed webhook.
+ */
+export function getNicepayConfirmationAction(result: unknown): NicepayConfirmationAction {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return "processing";
+  }
+
+  const outcome = (result as Record<string, unknown>).outcome;
+
+  if (outcome === "confirmed") {
+    return "confirmed";
+  }
+
+  if (outcome === "reconciliation_required") {
+    return "compensate";
+  }
+
+  return "processing";
 }
 
 function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
@@ -130,7 +229,7 @@ function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
   const methods: NicepayPaymentMethod[] = [];
 
   for (const method of source.split(/[\s,]+/)) {
-    const sanitized = sanitizeNicepayPaymentMethod(method);
+    const sanitized = normalizeConfiguredNicepayPaymentMethod(method);
 
     if (sanitized && !methods.includes(sanitized)) {
       methods.push(sanitized);
@@ -139,14 +238,16 @@ function nicepayPaymentMethodsFromEnv(fallbackMethod: string) {
 
   if (methods.length > 0) return methods;
 
-  return [sanitizeNicepayPaymentMethod(fallbackMethod) || "card"];
+  return [normalizeConfiguredNicepayPaymentMethod(fallbackMethod) || "cardAndEasyPay"];
 }
 
 export function getNicepayConfig(): NicepayConfig {
   const mode = envValue(["IYO_NICEPAY_MODE"], "test").toLowerCase() === "production"
     ? "production"
     : "test";
-  const fallbackMethod = sanitizeNicepayPaymentMethod(envValue(["IYO_NICEPAY_METHOD"], "card")) || "card";
+  const fallbackMethod = normalizeConfiguredNicepayPaymentMethod(
+    envValue(["IYO_NICEPAY_METHOD"], "card"),
+  ) || "cardAndEasyPay";
   const scriptUrlOverride = envValue(["IYO_NICEPAY_SCRIPT_URL"], "");
   const apiBaseUrlOverride = envValue(["IYO_NICEPAY_API_BASE_URL"], "");
 
@@ -157,6 +258,8 @@ export function getNicepayConfig(): NicepayConfig {
     secretKey: envValue(["IYO_NICEPAY_SECRET_KEY"]),
     method: fallbackMethod,
     methods: nicepayPaymentMethodsFromEnv(fallbackMethod),
+    vbankEnabled: truthy(envValue(["IYO_NICEPAY_VBANK_ENABLED"], "0")),
+    vbankValidHours: vbankValidHours(),
     scriptUrl: /^https:\/\//i.test(scriptUrlOverride)
       ? scriptUrlOverride
       : "https://pay.nicepay.co.kr/v1/js/",
@@ -166,6 +269,114 @@ export function getNicepayConfig(): NicepayConfig {
         ? "https://sandbox-api.nicepay.co.kr"
         : "https://api.nicepay.co.kr",
   };
+}
+
+export function getNicepayAvailableCheckoutMethods() {
+  const config = getNicepayConfig();
+
+  return {
+    cardAndEasyPay: config.methods.includes("cardAndEasyPay"),
+    vbank: config.vbankEnabled && config.methods.includes("vbank"),
+  };
+}
+
+function getRequestedCheckoutMethod(method: string): NicepayCheckoutMethod | "" {
+  return method === "cardAndEasyPay" || method === "vbank" ? method : "";
+}
+
+export function nicepayCheckoutMethodInput(request: { method?: unknown }) {
+  return Object.hasOwn(request, "method") ? { method: request.method } : {};
+}
+
+function isIso8601(value: string) {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && Number.isFinite(Date.parse(value));
+}
+
+export function getNicepayVirtualAccount(payload: Record<string, unknown>): NicepayVirtualAccount | null {
+  const vbank = payload.vbank;
+
+  if (!vbank || typeof vbank !== "object" || Array.isArray(vbank)) {
+    return null;
+  }
+
+  const fields = vbank as Record<string, unknown>;
+  const code = fields.code;
+  const name = fields.name;
+  const number = fields.number;
+  const holder = fields.holder;
+  const expiresAt = fields.expiresAt ?? fields.expiry;
+
+  if (
+    typeof code !== "string" || !code.trim() ||
+    typeof name !== "string" || !name.trim() ||
+    typeof number !== "string" || !number.trim() ||
+    typeof holder !== "string" || !holder.trim() ||
+    typeof expiresAt !== "string" || !isIso8601(expiresAt)
+  ) {
+    return null;
+  }
+
+  return {
+    code: code.trim(),
+    name: name.trim(),
+    number: number.trim(),
+    holder: holder.trim(),
+    expiresAt,
+  };
+}
+
+export function isPendingReadyVirtualAccountPayment(
+  payment: NicepayPaymentLedger | null,
+  expected: NicepayPaymentIdentity,
+  now = Date.now(),
+) {
+  if (!payment?.expires_at) return false;
+
+  const expiresAt = Date.parse(payment.expires_at);
+
+  return payment.registration_id === expected.registrationId
+    && payment.order_id === expected.orderId
+    && Number(payment.amount) === expected.amount
+    && payment.payment_method === "가상계좌"
+    && payment.status === "pending"
+    && payment.provider_status === "ready"
+    && Number.isFinite(expiresAt)
+    && expiresAt > now;
+}
+
+export function shouldCancelRegistrationAfterIssuanceConflict({
+  activePaymentFound,
+  lookupSucceeded,
+  compensationSucceeded,
+}: {
+  activePaymentFound: boolean;
+  lookupSucceeded: boolean;
+  compensationSucceeded: boolean;
+}) {
+  return lookupSucceeded && !activePaymentFound && compensationSucceeded;
+}
+
+export function isMatchingConfirmedNicepayPayment(
+  payment: NicepayPaymentLedger | null,
+  expected: NicepayConfirmedPaymentIdentity,
+) {
+  return payment?.registration_id === expected.registrationId
+    && payment.payment_key === expected.tid
+    && payment.order_id === expected.orderId
+    && Number(payment.amount) === expected.amount
+    && payment.payment_method === expected.paymentMethod
+    && payment.status === "success";
+}
+
+export function canAcknowledgeNicepayCardCancellation({
+  updateSucceeded,
+  currentStatus,
+}: {
+  updateSucceeded: boolean;
+  currentStatus: string | null;
+}) {
+  return updateSucceeded || currentStatus === "cancelled";
 }
 
 export function isNicepayConfigured(config = getNicepayConfig()) {
@@ -237,19 +448,30 @@ function nicepayGoodsName(name: string) {
   return Array.from(cleaned).slice(0, 40).join("") || "IYOHOUSE Workshop";
 }
 
-export function createNicepayPaymentPayload({
-  registration,
-  userId,
-  orderName,
-  origin,
-  method,
-  mallReserved,
-}: CreateNicepayPaymentPayloadInput) {
+export function createNicepayPaymentPayload(input: CreateNicepayPaymentPayloadInput) {
+  const {
+    registration,
+    userId,
+    orderName,
+    origin,
+    method,
+    mallReserved,
+  } = input;
   const config = getNicepayConfig();
-  let selectedMethod = sanitizeNicepayPaymentMethod(method || "") || config.method;
+  let selectedMethod = config.method;
 
-  if (!config.methods.includes(selectedMethod)) {
-    selectedMethod = config.method;
+  if (Object.hasOwn(input, "method")) {
+    const requestedMethod = typeof method === "string" ? getRequestedCheckoutMethod(method) : "";
+
+    if (!requestedMethod || !config.methods.includes(requestedMethod)) {
+      throw new Error("Requested NICEPAY checkout method is not configured.");
+    }
+
+    selectedMethod = requestedMethod;
+  }
+
+  if (selectedMethod === "vbank" && !config.vbankEnabled) {
+    throw new Error("NICEPAY virtual-account checkout is disabled.");
   }
 
   const reserved = mallReserved || new URLSearchParams();
@@ -271,7 +493,7 @@ export function createNicepayPaymentPayload({
 
   if (selectedMethod === "vbank") {
     payload.vbankHolder = registration.snapshot_name || "IYOHOUSE";
-    payload.vbankValidHours = Number(envValue(["IYO_NICEPAY_VBANK_VALID_HOURS"], "72"));
+    payload.vbankValidHours = config.vbankValidHours;
   }
 
   if (selectedMethod === "cellphone") {
@@ -294,6 +516,8 @@ export function safeNicepayPayload(payload: Record<string, unknown>) {
     "failedAt",
     "cancelledAt",
     "receiptUrl",
+    "PayMethod",
+    "payMethod",
   ];
 
   return allowed.reduce<Record<string, string>>((safe, key) => {

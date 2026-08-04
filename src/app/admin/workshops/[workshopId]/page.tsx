@@ -29,6 +29,7 @@ export default async function AdminWorkshopApplicantsPage({
     workshop,
     groups,
     applicantCount,
+    pendingVirtualAccounts,
     cancelledGroups,
     cancelledCount,
     emailTemplate,
@@ -58,6 +59,7 @@ export default async function AdminWorkshopApplicantsPage({
           cancelledGroups={cancelledGroups}
           emailTemplate={emailTemplate}
           groups={groups}
+          pendingVirtualAccounts={pendingVirtualAccounts}
           scheduleCounts={scheduleCounts}
           scheduleOptions={scheduleOptions}
           workshopId={workshopId}

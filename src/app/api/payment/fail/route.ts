@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server'
+import { getSupabaseServerClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
 
   try {
-    const { registration_id } = await request.json()
+    const { registration_id, checkout_attempt_id } = await request.json()
+    const checkoutAttemptId = typeof checkout_attempt_id === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkout_attempt_id)
+      ? checkout_attempt_id
+      : null
+
+    if (checkout_attempt_id != null && !checkoutAttemptId) {
+      return NextResponse.json({ success: false, error: '결제 시도 ID가 올바르지 않습니다.' }, { status: 400 })
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (!user || authError) {
@@ -30,32 +40,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: '이미 처리된 신청입니다.' })
     }
 
-    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+    const serviceRoleClient = getSupabaseServerClient()
+    const { data: releaseResult, error: releaseError } = await serviceRoleClient.rpc(
+      'release_virtual_account_checkout',
+      {
+        p_registration_id: registration.id,
+        p_user_id: user.id,
+        p_attempt_id: checkoutAttemptId,
+      },
+    )
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (
+      releaseError
+      || (
+        releaseResult !== 'preserved'
+        && releaseResult !== 'cancelled'
+        && releaseResult !== 'expired'
+        && releaseResult !== 'unchanged'
+        && releaseResult !== 'stale_attempt'
+      )
+    ) {
+      console.error('가상계좌 결제 정리 RPC 에러:', {
+        registrationId: registration.id,
+        outcome: releaseResult,
+        hasError: Boolean(releaseError),
+      })
+      return NextResponse.json({ success: false, error: '상태 업데이트 중 에러가 발생했습니다.' }, { status: 500 })
+    }
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('환경 변수 누락: NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY')
+    if (releaseResult === 'stale_attempt') {
       return NextResponse.json(
-        { success: false, error: '서버 설정 오류: 환경 변수가 누락되었습니다.' },
-        { status: 500 },
+        { success: false, error: '현재 결제 시도와 일치하지 않습니다.' },
+        { status: 409 },
       )
     }
 
-    const serviceRoleClient = createSupabaseClient(
-      supabaseUrl,
-      serviceRoleKey,
-    )
-
-    const { error: updateError } = await serviceRoleClient
-      .from('workshop_registrations_v2')
-      .update({ status: 'cancelled' })
-      .eq('id', registration_id)
-
-    if (updateError) {
-      console.error('취소 업데이트 에러:', updateError)
-      return NextResponse.json({ success: false, error: '상태 업데이트 중 에러가 발생했습니다.' }, { status: 500 })
+    if (releaseResult === 'preserved') {
+      return NextResponse.json({
+        success: true,
+        pending: true,
+        order_id: registration.order_id,
+      })
     }
 
     return NextResponse.json({ success: true })

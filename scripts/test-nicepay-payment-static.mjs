@@ -87,7 +87,7 @@ requireIncludes("src/app/api/payment/checkout/route.ts", [
 requireIncludes("src/app/api/payment/confirm/route.ts", [
   "parseNicepayRequest",
   "approveNicepayPaymentAuth",
-  "confirm_payment_registration",
+  "reconcile_payment_registration",
   "p_payment_key",
   "authResultCode",
   "cancelNicepayPayment",
@@ -95,14 +95,25 @@ requireIncludes("src/app/api/payment/confirm/route.ts", [
   "registration_id",
 ]);
 
+const confirmRoute = read("src/app/api/payment/confirm/route.ts");
+if (!/const paymentMethod = getNicepayPaymentMethod\(approval\.payload\)[\s\S]*?registration\.status === "confirmed"/.test(confirmRoute)) {
+  failures.push("src/app/api/payment/confirm/route.ts must handle confirmed replays only after verified approval.");
+}
+
 requireIncludes("src/app/api/payment/webhook/route.ts", [
   "verifyNicepayResultSignature",
-  "confirm_payment_registration",
+  "reconcile_payment_registration",
+  "reconcile_virtual_account_deposit",
+  "fail_virtual_account_payment",
   "workshop_registrations_v2",
   "cancelled",
-  "payment_failed",
   "text/html;charset=utf-8",
   "new NextResponse(\"OK\"",
+]);
+
+requireIncludes("src/components/workshop/WorkshopDetailOverlay.tsx", [
+  "/api/payment/fail",
+  "cancelPendingPaymentRegistration",
 ]);
 
 requireExcludes("src/app/api/payment/confirm/route.ts", [

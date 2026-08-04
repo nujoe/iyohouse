@@ -20,11 +20,14 @@ const nicepayErrorBlock = overlaySource.match(/fnError:\s*\(result:[\s\S]*?\n\s*
 assert.ok(nicepayErrorBlock, "NICEPAY fnError handler must exist");
 assert.match(
   nicepayErrorBlock[0],
-  /cancelPendingPaymentRegistration\(registration_id\)/,
-  "NICEPAY payment-window errors must cancel the pending registration they created",
+  /cancelPendingPaymentRegistration\(registration_id,\s*checkoutAttemptId\)/,
+  "NICEPAY payment-window errors must cancel the matching VBank checkout attempt",
 );
 
-const catchBlock = overlaySource.match(/catch\s*\(error:[\s\S]*?\n\s*\}\s*finally/);
+const paymentStartupSource = overlaySource.slice(
+  overlaySource.indexOf("const startWorkshopPayment"),
+);
+const catchBlock = paymentStartupSource.match(/catch\s*\(error:[\s\S]*?\n\s*\}\s*finally/);
 assert.ok(catchBlock, "payment startup catch block must exist");
 assert.match(
   catchBlock[0],
@@ -33,8 +36,19 @@ assert.match(
 );
 assert.match(
   catchBlock[0],
-  /cancelPendingPaymentRegistration\(pendingRegistrationId\)/,
-  "payment startup failures must cancel the pending registration before showing the error",
+  /cancelPendingPaymentRegistration\(pendingRegistrationId,\s*checkoutAttemptId\)/,
+  "payment startup failures must cancel the matching VBank checkout attempt before showing the error",
+);
+
+assert.match(
+  overlaySource,
+  /checkoutAttemptId = selectedMethod === "vbank"[\s\S]*?: null;/,
+  "card checkout must leave the optional VBank attempt ID unset",
+);
+assert.match(
+  overlaySource,
+  /checkoutAttemptId \? \{ checkout_attempt_id: checkoutAttemptId \} : \{\}/,
+  "card cleanup must remain a registration-only request",
 );
 
 const registrationCheckBlock = overlaySource.match(/const checkRegistration = async \(\) => \{[\s\S]*?\n\s*\};/);
@@ -54,16 +68,16 @@ const authFailureBlock = confirmRouteSource.match(/if\s*\(auth\.authResultCode !
 assert.ok(authFailureBlock, "NICEPAY auth failure block must exist");
 assert.match(
   authFailureBlock[0],
-  /markPendingRegistrationCancelled\(registration\.id,\s*"auth_failed"\)/,
-  "NICEPAY auth failures must cancel the pending registration",
+  /releaseVirtualAccountCheckout\(\s*registration,\s*checkoutAttemptId,\s*"auth_failed",/,
+  "NICEPAY auth failures must release the matching checkout attempt",
 );
 
 const approvalFailureBlock = confirmRouteSource.match(/if\s*\(!approval\.ok\)\s*\{[\s\S]*?\n\s*\}/);
 assert.ok(approvalFailureBlock, "NICEPAY approval failure block must exist");
 assert.match(
   approvalFailureBlock[0],
-  /markPendingRegistrationCancelled\(registration\.id,\s*"approval_failed"\)/,
-  "NICEPAY approval failures must cancel the pending registration",
+  /releaseVirtualAccountCheckout\(\s*registration,\s*checkoutAttemptId,\s*"approval_failed",/,
+  "NICEPAY approval failures must release the matching checkout attempt",
 );
 
 console.log("payment cancellation cleanup checks passed.");

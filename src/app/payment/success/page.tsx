@@ -22,44 +22,42 @@ function SuccessContent() {
   const returnPath = buildWorkshopReturnPath(workshopId);
 
   return (
-    <div className="login-overlay-wrapper active payment-success-wrapper">
-      <div className="login-dimmer" />
-      <div className="login-modal-card payment-success-card">
-        <div className="login-modal-frame">
-          <div className="login-modal-body">
-            <div className="login-intro payment-success-intro">
-              <h3>결제가 성공적으로 완료되었습니다.</h3>
-              {workshopTitle && (
-                <p className="payment-success-workshop-title">{workshopTitle}</p>
-              )}
-              <p>워크숍 신청이 완료되었습니다.</p>
+    <main className="nicepay-payment-shell">
+      <section className="nicepay-payment-card">
+        <h1 className="nicepay-payment-heading">결제가 성공적으로 완료되었습니다.</h1>
+        {workshopTitle && <p className="nicepay-payment-workshop-title">{workshopTitle}</p>}
+        <p className="nicepay-payment-copy">워크숍 신청이 완료되었습니다.</p>
+        {amount && (
+          <div className="nicepay-payment-details" aria-label="결제 완료 정보">
+            <div className="nicepay-payment-detail-row">
+              <span className="nicepay-payment-detail-label">결제 금액</span>
+              <span className="nicepay-payment-detail-value">{Number(amount).toLocaleString()}원</span>
             </div>
-
-            <div className="payment-success-meta" aria-label="결제 완료 정보">
-              {amount && (
-                <div className="payment-success-meta-row">
-                  <span>결제 금액</span>
-                  <span>{Number(amount).toLocaleString()}원</span>
-                </div>
-              )}
-            </div>
-
-            <button
-              className="email-submit-btn payment-success-return-btn"
-              onClick={() => router.push(returnPath)}
-            >
-              워크숍 신청 페이지로 돌아가기
-            </button>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+        <button
+          type="button"
+          className="nicepay-payment-action"
+          onClick={() => router.push(returnPath)}
+        >
+          워크숍 신청 페이지로 돌아가기
+        </button>
+      </section>
+    </main>
   );
 }
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={<div>로딩 중...</div>}>
+    <Suspense
+      fallback={(
+        <main className="nicepay-payment-shell">
+          <section className="nicepay-payment-card">
+            <p className="nicepay-payment-copy">결제 정보를 불러오는 중입니다.</p>
+          </section>
+        </main>
+      )}
+    >
       <SuccessContent />
     </Suspense>
   );
