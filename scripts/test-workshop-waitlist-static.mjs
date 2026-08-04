@@ -91,6 +91,10 @@ assert.ok(
   "waitlist status text should remain black",
 );
 assert.ok(
+  /\.schedule-option\.is-waitlist:hover\s*\{[^}]*background:\s*#000/s.test(overlayStyles),
+  "waitlist schedules should use the selectable black hover state",
+);
+assert.ok(
   translations.includes('waitlistApply: "Join waitlist"'),
   "English translations should include waitlist button text",
 );
