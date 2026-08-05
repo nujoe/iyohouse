@@ -42,7 +42,7 @@ test("batch delivery outcomes preserve recipient indexes and provider IDs", () =
 });
 
 test("send route records outcomes without leaving the confirmed-recipient flow", () => {
-  assert.match(route, /workshop_email_delivery_logs/);
+  assert.match(route, /recordWorkshopEmailDeliveryLogs/);
   assert.match(route, /batchId/);
   assert.match(route, /providerMessageId/);
   assert.match(route, /resend\.batch\.send/);

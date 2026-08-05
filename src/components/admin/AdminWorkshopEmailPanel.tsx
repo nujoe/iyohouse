@@ -15,6 +15,11 @@ type AdminWorkshopEmailPanelProps = {
   selectedApplicantCount: number;
   selectedRegistrationIds: string[];
   workshopId: string;
+  onDeliveryStatuses?: (statuses: Record<string, {
+    status: "sent" | "failed";
+    sentAt: string;
+    updatedAt: string;
+  }>) => void;
 };
 
 type SendResult = {
@@ -23,6 +28,12 @@ type SendResult = {
   recipientCount?: number;
   sentCount?: number;
   failedCount?: number;
+  deliveryStatuses?: Record<string, {
+    status: "sent" | "failed";
+    sentAt: string;
+    updatedAt: string;
+  }>;
+  emailLogWarning?: boolean;
 };
 
 function renderPreview(template: AdminWorkshopEmailTemplate) {
@@ -38,6 +49,7 @@ export default function AdminWorkshopEmailPanel({
   selectedApplicantCount,
   selectedRegistrationIds,
   workshopId,
+  onDeliveryStatuses,
 }: AdminWorkshopEmailPanelProps) {
   const [confirmation, setConfirmation] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -71,6 +83,7 @@ export default function AdminWorkshopEmailPanel({
       const data = await response.json().catch(() => ({}));
 
       setResult(data);
+      onDeliveryStatuses?.(data.deliveryStatuses ?? {});
     } catch (error) {
       setResult({
         success: false,

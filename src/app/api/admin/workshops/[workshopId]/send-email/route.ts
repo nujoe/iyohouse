@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -8,6 +10,10 @@ import {
   renderWorkshopEmail,
   selectWorkshopEmailTemplate,
 } from "@/lib/admin/workshopEmail";
+import {
+  recordWorkshopEmailDeliveryLogs,
+  resolveWorkshopEmailBatchOutcomes,
+} from "@/lib/admin/workshopEmailDelivery";
 import { SITE_EMAIL } from "@/lib/site";
 import { getSupabaseServerClient } from "@/lib/supabase/admin";
 
@@ -87,6 +93,7 @@ async function sendWorkshopEmailBatchWithRetry(
       return {
         sentCount: data?.data?.length ?? 0,
         failedCount: data?.errors?.length ?? 0,
+        providerMessageIds: (data?.data ?? []).map((item) => item.id),
         errors: data?.errors ?? [],
       };
     }
@@ -95,6 +102,7 @@ async function sendWorkshopEmailBatchWithRetry(
       return {
         sentCount: 0,
         failedCount: emails.length,
+        providerMessageIds: [],
         errors: [{ index: -1, message: error.message || "Batch email delivery failed" }],
       };
     }
@@ -105,6 +113,7 @@ async function sendWorkshopEmailBatchWithRetry(
   return {
     sentCount: 0,
     failedCount: emails.length,
+    providerMessageIds: [],
     errors: [{ index: -1, message: "Batch email delivery failed after retries" }],
   };
 }
@@ -217,6 +226,13 @@ export async function POST(request: Request, context: RouteContext) {
     let sentCount = 0;
     let failedCount = 0;
     const deliveryErrors: Array<{ index: number; message: string }> = [];
+    const batchId = randomUUID();
+    const deliveryStatuses: Record<string, {
+      status: "sent" | "failed";
+      sentAt: string;
+      updatedAt: string;
+    }> = {};
+    let emailLogWarning = false;
 
     const emailPayloads = recipients.map((recipient) => {
       const template = selectWorkshopEmailTemplate(fallbackTemplate, scheduleEmailTemplates, {
@@ -235,6 +251,8 @@ export async function POST(request: Request, context: RouteContext) {
         html: rendered.html,
         text: rendered.text,
         recipientId: recipient.id,
+        recipientName: recipient.name,
+        templateKey: recipient.scheduleKey ? `schedule:${recipient.scheduleKey}` : "fallback",
       };
     });
 
@@ -247,6 +265,47 @@ export async function POST(request: Request, context: RouteContext) {
       sentCount += result.sentCount;
       failedCount += result.failedCount;
       deliveryErrors.push(...result.errors);
+
+      const outcomes = resolveWorkshopEmailBatchOutcomes(result, chunk.length);
+      const statusAt = new Date().toISOString();
+      const logRows = outcomes.map((outcome) => {
+        const recipient = chunk[outcome.index];
+
+        if (!recipient) {
+          return null;
+        }
+
+        deliveryStatuses[recipient.recipientId] = {
+          status: outcome.status,
+          sentAt: statusAt,
+          updatedAt: statusAt,
+        };
+
+        return {
+          workshop_id: workshopId,
+          registration_id: recipient.recipientId,
+          recipient_email: recipient.to[0],
+          recipient_name: recipient.recipientName,
+          template_key: recipient.templateKey,
+          subject: recipient.subject,
+          status: outcome.status,
+          provider_message_id: outcome.providerMessageId,
+          batch_id: batchId,
+          failure_reason: outcome.failureReason,
+          sent_by: auth.userId,
+        };
+      }).filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+      try {
+        await recordWorkshopEmailDeliveryLogs(adminClient, logRows);
+      } catch (error) {
+        emailLogWarning = true;
+        console.error("Admin workshop email delivery log error", {
+          workshopId,
+          batchId,
+          error,
+        });
+      }
 
       for (const error of result.errors) {
         const recipientId = error.index >= 0 ? chunk[error.index]?.recipientId : undefined;
@@ -281,6 +340,9 @@ export async function POST(request: Request, context: RouteContext) {
         recipientCount: recipients.length,
         sentCount,
         failedCount,
+        batchId,
+        deliveryStatuses,
+        ...(emailLogWarning ? { emailLogWarning: true } : {}),
       },
       { status: failedCount === 0 ? 200 : 207 },
     );

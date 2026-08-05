@@ -19,6 +19,7 @@ type WorkshopEmailBatchResult = {
   data?: {
     data?: Array<{ id?: unknown }>;
   } | null;
+  providerMessageIds?: Array<string | null>;
   errors?: Array<{ index?: unknown; message?: unknown }> | null;
 };
 
@@ -46,7 +47,7 @@ export function resolveWorkshopEmailBatchOutcomes(
     }
   }
 
-  const providerMessageIds = (result.data?.data ?? []).map((item) => {
+  const providerMessageIds = result.providerMessageIds ?? (result.data?.data ?? []).map((item) => {
     const id = readText(item?.id);
     return id || null;
   });
