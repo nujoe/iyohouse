@@ -54,11 +54,20 @@ type AdminScheduleOption = {
 
 type AdminScheduleCounts = Record<string, number>;
 
+type AdminWorkshopEmailStatus = {
+  status: "sent" | "delivered" | "failed" | "bounced";
+  sentAt: string;
+  updatedAt: string;
+};
+
+type AdminWorkshopEmailStatuses = Record<string, AdminWorkshopEmailStatus>;
+
 type AdminWorkshopApplicantsClientProps = {
   applicantCount: number;
   cancelledCount: number;
   cancelledGroups: AdminApplicantGroup[];
   emailTemplate: AdminWorkshopEmailTemplate | null;
+  emailStatuses: AdminWorkshopEmailStatuses;
   groups: AdminApplicantGroup[];
   pendingVirtualAccounts: AdminPendingVirtualAccountRow[];
   scheduleCounts: AdminScheduleCounts;
@@ -127,6 +136,7 @@ export default function AdminWorkshopApplicantsClient({
   cancelledCount,
   cancelledGroups,
   emailTemplate,
+  emailStatuses,
   groups,
   pendingVirtualAccounts,
   scheduleCounts,
@@ -135,6 +145,7 @@ export default function AdminWorkshopApplicantsClient({
 }: AdminWorkshopApplicantsClientProps) {
   const router = useRouter();
   const [selectedRegistrationIds, setSelectedRegistrationIds] = useState<string[]>([]);
+  const [emailStatusesByRegistration, setEmailStatusesByRegistration] = useState<AdminWorkshopEmailStatuses>(emailStatuses);
   const [pendingScheduleByRegistration, setPendingScheduleByRegistration] = useState<Record<string, string>>({});
   const [changingRegistrationId, setChangingRegistrationId] = useState<string | null>(null);
   const [scheduleChangeMessage, setScheduleChangeMessage] = useState<{ success: boolean; text: string } | null>(null);
@@ -241,6 +252,27 @@ export default function AdminWorkshopApplicantsClient({
     ].filter(Boolean).join(" ");
   }
 
+  function getEmailStatusLabel(status: AdminWorkshopEmailStatus | undefined) {
+    if (!status) return "미발송";
+
+    switch (status.status) {
+      case "sent":
+        return "메일 발송됨";
+      case "delivered":
+        return "전달 완료";
+      case "bounced":
+        return "반송";
+      case "failed":
+        return "발송 실패";
+      default:
+        return "미발송";
+    }
+  }
+
+  function getEmailStatusClassName(status: AdminWorkshopEmailStatus | undefined) {
+    return `admin-email-status admin-email-status-${status?.status ?? "none"}`;
+  }
+
   function renderReadOnlyApplicantRows(applicants: AdminApplicantRow[]) {
     return applicants.map((applicant, index) => (
       <tr className="admin-cancelled-applicant-row" key={applicant.id}>
@@ -266,6 +298,9 @@ export default function AdminWorkshopApplicantsClient({
           selectedApplicantCount={selectedApplicantCount}
           selectedRegistrationIds={selectedRegistrationIds}
           workshopId={workshopId}
+          onDeliveryStatuses={(statuses) => {
+            setEmailStatusesByRegistration((current) => ({ ...current, ...statuses }));
+          }}
         />
         <section className="admin-empty-panel">확정된 신청자가 없습니다.</section>
         {renderPendingVirtualAccountSection(pendingVirtualAccounts)}
@@ -306,6 +341,9 @@ export default function AdminWorkshopApplicantsClient({
         selectedApplicantCount={selectedApplicantCount}
         selectedRegistrationIds={selectedRegistrationIds}
         workshopId={workshopId}
+        onDeliveryStatuses={(statuses) => {
+          setEmailStatusesByRegistration((current) => ({ ...current, ...statuses }));
+        }}
       />
 
       <div className="admin-selection-controls" aria-label="신청자 선택">
@@ -350,6 +388,7 @@ export default function AdminWorkshopApplicantsClient({
                     <th>No.</th>
                     <th>이름</th>
                     <th>이메일</th>
+                    <th>메일 상태</th>
                     <th>연락처</th>
                     <th>자기소개</th>
                     <th>신청일</th>
@@ -376,6 +415,16 @@ export default function AdminWorkshopApplicantsClient({
                         <span className={getNameClassName(applicant)}>{applicant.snapshot_name || "-"}</span>
                       </td>
                       <td>{applicant.snapshot_email || "-"}</td>
+                      <td className="admin-email-status-cell">
+                        <span className={getEmailStatusClassName(emailStatusesByRegistration[applicant.id])}>
+                          {getEmailStatusLabel(emailStatusesByRegistration[applicant.id])}
+                        </span>
+                        {emailStatusesByRegistration[applicant.id] && (
+                          <small className="admin-email-status-time">
+                            {formatAdminDateTime(emailStatusesByRegistration[applicant.id].sentAt)}
+                          </small>
+                        )}
+                      </td>
                       <td>{applicant.snapshot_phone || "-"}</td>
                       <td>{applicant.snapshot_bio || "-"}</td>
                       <td>{formatAdminDateTime(applicant.created_at)}</td>

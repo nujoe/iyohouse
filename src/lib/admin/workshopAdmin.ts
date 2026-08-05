@@ -7,6 +7,10 @@ import { apiVersion, dataset, projectId } from "@/sanity/env";
 import type { AdminWorkshopEmailTemplate } from "@/lib/admin/workshopEmail";
 import { getWorkshopScheduleEmailTemplates } from "@/lib/admin/workshopEmail";
 import {
+  getLatestWorkshopEmailStatuses,
+  type AdminWorkshopEmailStatus,
+} from "@/lib/admin/workshopEmailDelivery";
+import {
   getWorkshopScheduleChangeData,
   type AdminScheduleCounts,
   type AdminScheduleOption,
@@ -78,6 +82,7 @@ export type AdminWorkshopApplicantsData = {
   cancelledGroups: AdminApplicantGroup[];
   cancelledCount: number;
   emailTemplate: AdminWorkshopEmailTemplate | null;
+  emailStatuses: Record<string, AdminWorkshopEmailStatus>;
   scheduleOptions: AdminScheduleOption[];
   scheduleCounts: AdminScheduleCounts;
 };
@@ -405,10 +410,11 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     };
   });
 
-  const [emailTemplateSet, scheduleChangeData] = await Promise.all([
-    getWorkshopScheduleEmailTemplates(workshopId),
-    getWorkshopScheduleChangeData(workshopId),
-  ]);
+      const [emailTemplateSet, scheduleChangeData, emailStatuses] = await Promise.all([
+        getWorkshopScheduleEmailTemplates(workshopId),
+        getWorkshopScheduleChangeData(workshopId),
+        getLatestWorkshopEmailStatuses(adminClient, workshopId, confirmedRegistrationIds),
+      ]);
   const emailTemplate = emailTemplateSet.fallbackTemplate ||
     Object.values(emailTemplateSet.scheduleEmailTemplates)[0] ||
     null;
@@ -424,9 +430,10 @@ export async function getAdminWorkshopApplicants(workshopId: string): Promise<Ad
     applicantCount: applicantRows.length,
     pendingVirtualAccounts,
     cancelledGroups: groupApplicantsBySchedule(cancelledRows),
-    cancelledCount: cancelledRows.length,
-    emailTemplate,
-    scheduleOptions: scheduleChangeData.scheduleOptions,
+        cancelledCount: cancelledRows.length,
+        emailTemplate,
+        emailStatuses,
+        scheduleOptions: scheduleChangeData.scheduleOptions,
     scheduleCounts: scheduleChangeData.scheduleCounts,
   };
 }
