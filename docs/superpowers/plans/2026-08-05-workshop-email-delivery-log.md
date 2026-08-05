@@ -350,4 +350,3 @@ Confirm unrelated `.worktrees/` and existing Sanity plan files remain untouched,
 - [ ] **Step 5: Provide deployment handoff**
 
 Before production use, apply `20260805000000_add_workshop_email_delivery_logs.sql` in Supabase and set `RESEND_WEBHOOK_SECRET` in Vercel. Register the Resend webhook endpoint and enable the two delivery events. Do not claim production status until those external steps are completed.
-

@@ -79,8 +79,19 @@ npm run dev
 | `IYO_NICEPAY_CLIENT_KEY` | NICEPAY 클라이언트 사이드 SDK 호출 시 식별자로 사용하는 클라이언트 키입니다. |
 | `IYO_NICEPAY_SECRET_KEY` | **[서버 전용]** NICEPAY 승인 API 호출 시 본인 인증 및 SHA256 서명 서명용으로 사용되는 비밀키입니다. |
 | `RESEND_API_KEY` | **[서버 전용]** 이메일 발송 서비스인 Resend 인증에 사용되는 API 비밀키입니다. |
+| `RESEND_WEBHOOK_SECRET` | **[서버 전용]** Resend 웹훅의 `svix` 서명 검증에 사용하는 웹훅별 시크릿입니다. |
 
 ---
+
+## ✉️ 워크숍 이메일 발송 상태 웹훅
+
+관리자 워크숍 이메일의 전달 상태를 갱신하려면 Resend에 아래 endpoint를 등록합니다.
+
+```text
+https://www.iyohouse.com/api/webhooks/resend
+```
+
+`email.delivered`, `email.bounced`, `email.failed` 이벤트를 선택하고, Resend 웹훅 상세 화면의 signing secret을 Vercel의 `RESEND_WEBHOOK_SECRET` 환경변수에 저장합니다. 애플리케이션은 원문 요청 body와 `svix-id`, `svix-timestamp`, `svix-signature`를 검증한 뒤 일치하는 발송 로그만 갱신합니다.
 
 ## 🗄️ DB & Supabase 세팅 (Database Setup)
 
